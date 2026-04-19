@@ -29,7 +29,7 @@ const firebaseConfig = {
 };
 
 // ★ 替換為你的 Apps Script Web App 部署 URL
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw833GfMLZT-8IDmHh7aRLf_zAMYNnv8FMuXnCzOcByVMg-KuhwLHFzrPNZov9DgEuB/exec';
+const APPS_SCRIPT_URL = 'AKfycbw833GfMLZT-8IDmHh7aRLf_zAMYNnv8FMuXnCzOcByVMg-KuhwLHFzrPNZov9DgEuB';
 
 // Firebase app 實例（init 後賦值）
 let firebaseAuth = null;
