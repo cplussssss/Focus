@@ -605,31 +605,10 @@ function saveRecord({ status, endReason }) {
     taskNote:    EL.taskNote.value.trim(),
     plannedSec:  STATE.workTotalSeconds,
     actualSec:   STATE.actualWorkSeconds,
-    status:      status,      // 'done' | 'incomplete'
-    endReason:   endReason,   // 中途結束原因，done 時為空字串
+    status:      status,
+    endReason:   endReason,
+    synced:      false,
   };
-// 在既有的 saveRecord 函式中，修改 record 物件的建立
-// 找到這段：
-const record = {
-  id:          Date.now(),
-  timestamp:   getNowString(),
-  taskName:    EL.taskName.value.trim() || '（未填寫）',
-  // ...其他欄位...
-};
-
-// 在 record 物件最後加入 synced: false：
-const record = {
-  id:          Date.now(),
-  timestamp:   getNowString(),
-  taskName:    EL.taskName.value.trim() || '（未填寫）',
-  taskReason:  EL.taskReason.value.trim() || '（未填寫）',
-  taskNote:    EL.taskNote.value.trim(),
-  plannedSec:  STATE.workTotalSeconds,
-  actualSec:   STATE.actualWorkSeconds,
-  status:      status,
-  endReason:   endReason,
-  synced:      false   // ★ 新增這行
-};
   STATE.records.unshift(record); // 最新的排在最上面
   saveToStorage();
   renderHistory();
