@@ -931,39 +931,38 @@ async function handleSyncAll() {
 
 // ── 同步單筆紀錄 ──
 async function syncOneRecord(record) {
-    try {
-        const idToken = await currentUser.getIdToken(false);
+  try {
+    const idToken = await currentUser.getIdToken(false);
 
-        const payload = {
-            timestamp: record.timestamp || '',
-            task: record.taskName || '',
-            reason: record.taskReason || '',
-            plannedMinutes: Math.round((record.plannedSec || 0) / 60),
-            actualMinutes: Math.round((record.actualSec || 0) / 60),
-            status: record.status || 'incomplete',
-            stopReason: record.endReason || '',
-            note: record.taskNote || ''
-        };
+    const payload = {
+      idToken: idToken,
+      record: {
+        timestamp:      record.timestamp  || '',
+        task:           record.taskName   || '',
+        reason:         record.taskReason || '',
+        plannedMinutes: Math.round((record.plannedSec || 0) / 60),
+        actualMinutes:  Math.round((record.actualSec  || 0) / 60),
+        status:         record.status     || 'incomplete',
+        stopReason:     record.endReason  || '',
+        note:           record.taskNote   || ''
+      }
+    };
 
-        const url = APPS_SCRIPT_URL
-            + '?idToken=' + encodeURIComponent(idToken)
-            + '&record=' + encodeURIComponent(JSON.stringify(payload));
+    // no-cors + POST + text/plain：
+    // 唯一能繞過 CORS 又能傳長資料的方式
+    // body 用 text/plain 不會觸發 preflight
+    await fetch(APPS_SCRIPT_URL, {
+      method:  'POST',
+      mode:    'no-cors',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body:    JSON.stringify(payload)
+    });
 
-        // no-cors：瀏覽器允許送出但不給你讀回應（opaque response）
-        // 這是 GitHub Pages → Apps Script 唯一穩定可行的方式
-        await fetch(url, {
-            method: 'GET',
-            mode: 'no-cors',
-            redirect: 'follow'
-        });
+    return { success: true };
 
-        // no-cors 下無法判斷成功與否，採樂觀策略
-        // 只要 fetch 沒有拋出例外，就視為送出成功
-        return { success: true };
-
-    } catch (err) {
-        return { success: false, error: err.message || String(err) };
-    }
+  } catch (err) {
+    return { success: false, error: err.message || String(err) };
+  }
 }
 
 // ── 設定同步結果文字 ──
