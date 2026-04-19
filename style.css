@@ -454,3 +454,72 @@ body.mode-overtime .progress-bar-fill { background: var(--overtime); }
   100% { transform: scale(1); }
 }
 .pulse { animation: pulse-once 0.4s ease; }
+/* ============================================================
+   新增：同步面板樣式
+   ============================================================ */
+.sync-section {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 24px 28px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  margin-bottom: 28px;
+}
+
+.sync-hint {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+}
+
+.btn-google {
+  background: #fff;
+  color: #3c4043;
+  border: 1px solid #dadce0;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+}
+.btn-google:hover { background: #f8f9fa; }
+
+.btn-sm { padding: 6px 14px; font-size: 0.82rem; }
+
+.sync-user-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.sync-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+}
+.sync-email {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sync-btn-row { margin-bottom: 10px; }
+
+.sync-result {
+  font-size: 0.85rem;
+  color: var(--break-green);
+  min-height: 1.2em;
+}
+.sync-result.error { color: #e85d3a; }
+/* 新增：同步狀態徽章 */
+.sync-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: 99px;
+}
+.sync-badge.synced     { color: var(--break-green); opacity: 0.7; }
+.sync-badge.not-synced { color: var(--text-muted); }
