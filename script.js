@@ -809,27 +809,12 @@ function initFirebase() {
     firebase.initializeApp(firebaseConfig);
     firebaseAuth = firebase.auth();
 
-    // ★ 關鍵：處理 signInWithRedirect 跳回後的登入結果
-    // 每次頁面載入都要呼叫，有 redirect 結果時會自動觸發 onAuthStateChanged
-    firebaseAuth.getRedirectResult().then(function(result) {
-      // result.user 不是 null 代表剛從 Google 跳回來
-      // onAuthStateChanged 會自動接手，這裡不需要額外處理
-      if (result && result.user) {
-        console.log('Redirect 登入成功：', result.user.email);
-      }
-    }).catch(function(err) {
-      // 常見錯誤：popup 被擋、帳號問題等
-      console.error('getRedirectResult 錯誤：', err);
-      setSyncResult('登入失敗：' + (err.message || err.code), true);
-    });
-
-    // 監聽登入狀態變化（登入/登出都會觸發）
+    // 監聽登入狀態變化
     firebaseAuth.onAuthStateChanged(function(user) {
       currentUser = user;
       updateSyncUI(user);
     });
 
-    // 綁定按鈕事件
     document.getElementById('btnGoogleLogin').addEventListener('click', handleGoogleLogin);
     document.getElementById('btnGoogleLogout').addEventListener('click', handleGoogleLogout);
     document.getElementById('btnSyncAll').addEventListener('click', handleSyncAll);
@@ -864,18 +849,28 @@ function updateSyncUI(user) {
 
 // ── Google 登入 ──
 async function handleGoogleLogin() {
-    try {
-        const provider = new firebase.auth.GoogleAuthProvider();
-        provider.setCustomParameters({ prompt: 'select_account' });
+  try {
+    setSyncResult('登入中...', false);
+    const provider = new firebase.auth.GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
 
-        // ★ 把 signInWithPopup 改成 signInWithRedirect，避免 COOP 問題
-        await firebaseAuth.signInWithRedirect(provider);
-        // redirect 後頁面會重新載入，onAuthStateChanged 會自動偵測登入結果
+    // GitHub Pages 上 signInWithRedirect 會因 COOP header 失敗，
+    // 改用 signInWithPopup，COOP 的警告不影響實際登入功能
+    const result = await firebaseAuth.signInWithPopup(provider);
+    // 登入成功後 onAuthStateChanged 會自動更新 UI，不需要額外處理
+    console.log('登入成功：', result.user.email);
 
-    } catch (err) {
-        console.error('Google 登入失敗：', err);
-        setSyncResult('登入失敗：' + (err.message || err.code), true);
+  } catch (err) {
+    console.error('Google 登入失敗：', err);
+    // auth/popup-blocked：瀏覽器擋住 popup，提示使用者允許
+    if (err.code === 'auth/popup-blocked') {
+      setSyncResult('Popup 被瀏覽器封鎖，請允許此網站開啟彈出視窗後再試', true);
+    } else if (err.code === 'auth/popup-closed-by-user') {
+      setSyncResult('登入視窗已關閉', true);
+    } else {
+      setSyncResult('登入失敗：' + (err.message || err.code), true);
     }
+  }
 }
 
 // ── Google 登出 ──
