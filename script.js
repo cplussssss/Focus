@@ -29,7 +29,7 @@ const firebaseConfig = {
 };
 
 // ★ 替換為你的 Apps Script Web App 部署 URL
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwArAWu_-NMeUp3-xqrqpABSs8TZqgxfvqZiN8Pz4YKiRcM28Q7A3XxdW-x28KLuuNt/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw833GfMLZT-8IDmHh7aRLf_zAMYNnv8FMuXnCzOcByVMg-KuhwLHFzrPNZov9DgEuB/exec';
 
 // Firebase app 實例（init 後賦值）
 let firebaseAuth = null;
@@ -805,23 +805,23 @@ function init() {
 
 // ── Firebase 初始化 ──
 function initFirebase() {
-  try {
-    firebase.initializeApp(firebaseConfig);
-    firebaseAuth = firebase.auth();
+    try {
+        firebase.initializeApp(firebaseConfig);
+        firebaseAuth = firebase.auth();
 
-    // 監聽登入狀態變化
-    firebaseAuth.onAuthStateChanged(function(user) {
-      currentUser = user;
-      updateSyncUI(user);
-    });
+        // 監聽登入狀態變化
+        firebaseAuth.onAuthStateChanged(function (user) {
+            currentUser = user;
+            updateSyncUI(user);
+        });
 
-    document.getElementById('btnGoogleLogin').addEventListener('click', handleGoogleLogin);
-    document.getElementById('btnGoogleLogout').addEventListener('click', handleGoogleLogout);
-    document.getElementById('btnSyncAll').addEventListener('click', handleSyncAll);
+        document.getElementById('btnGoogleLogin').addEventListener('click', handleGoogleLogin);
+        document.getElementById('btnGoogleLogout').addEventListener('click', handleGoogleLogout);
+        document.getElementById('btnSyncAll').addEventListener('click', handleSyncAll);
 
-  } catch (err) {
-    console.error('Firebase 初始化失敗：', err);
-  }
+    } catch (err) {
+        console.error('Firebase 初始化失敗：', err);
+    }
 }
 // ── 更新同步面板 UI ──
 function updateSyncUI(user) {
@@ -849,28 +849,28 @@ function updateSyncUI(user) {
 
 // ── Google 登入 ──
 async function handleGoogleLogin() {
-  try {
-    setSyncResult('登入中...', false);
-    const provider = new firebase.auth.GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: 'select_account' });
+    try {
+        setSyncResult('登入中...', false);
+        const provider = new firebase.auth.GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: 'select_account' });
 
-    // GitHub Pages 上 signInWithRedirect 會因 COOP header 失敗，
-    // 改用 signInWithPopup，COOP 的警告不影響實際登入功能
-    const result = await firebaseAuth.signInWithPopup(provider);
-    // 登入成功後 onAuthStateChanged 會自動更新 UI，不需要額外處理
-    console.log('登入成功：', result.user.email);
+        // GitHub Pages 上 signInWithRedirect 會因 COOP header 失敗，
+        // 改用 signInWithPopup，COOP 的警告不影響實際登入功能
+        const result = await firebaseAuth.signInWithPopup(provider);
+        // 登入成功後 onAuthStateChanged 會自動更新 UI，不需要額外處理
+        console.log('登入成功：', result.user.email);
 
-  } catch (err) {
-    console.error('Google 登入失敗：', err);
-    // auth/popup-blocked：瀏覽器擋住 popup，提示使用者允許
-    if (err.code === 'auth/popup-blocked') {
-      setSyncResult('Popup 被瀏覽器封鎖，請允許此網站開啟彈出視窗後再試', true);
-    } else if (err.code === 'auth/popup-closed-by-user') {
-      setSyncResult('登入視窗已關閉', true);
-    } else {
-      setSyncResult('登入失敗：' + (err.message || err.code), true);
+    } catch (err) {
+        console.error('Google 登入失敗：', err);
+        // auth/popup-blocked：瀏覽器擋住 popup，提示使用者允許
+        if (err.code === 'auth/popup-blocked') {
+            setSyncResult('Popup 被瀏覽器封鎖，請允許此網站開啟彈出視窗後再試', true);
+        } else if (err.code === 'auth/popup-closed-by-user') {
+            setSyncResult('登入視窗已關閉', true);
+        } else {
+            setSyncResult('登入失敗：' + (err.message || err.code), true);
+        }
     }
-  }
 }
 
 // ── Google 登出 ──
@@ -931,42 +931,42 @@ async function handleSyncAll() {
 
 // ── 同步單筆紀錄 ──
 async function syncOneRecord(record) {
-  try {
-    const idToken = await currentUser.getIdToken(false);
+    try {
+        const idToken = await currentUser.getIdToken(false);
 
-    const payload = {
-      timestamp:      record.timestamp  || '',
-      task:           record.taskName   || '',
-      reason:         record.taskReason || '',
-      plannedMinutes: Math.round((record.plannedSec || 0) / 60),
-      actualMinutes:  Math.round((record.actualSec  || 0) / 60),
-      status:         record.status     || 'incomplete',
-      stopReason:     record.endReason  || '',
-      note:           record.taskNote   || ''
-    };
+        const payload = {
+            timestamp: record.timestamp || '',
+            task: record.taskName || '',
+            reason: record.taskReason || '',
+            plannedMinutes: Math.round((record.plannedSec || 0) / 60),
+            actualMinutes: Math.round((record.actualSec || 0) / 60),
+            status: record.status || 'incomplete',
+            stopReason: record.endReason || '',
+            note: record.taskNote || ''
+        };
 
-    // 用 GET + URL 參數，完全避開 CORS/CORB 問題
-    // idToken 和 record 都放在 query string 裡
-    const url = APPS_SCRIPT_URL
-      + '?idToken=' + encodeURIComponent(idToken)
-      + '&record='  + encodeURIComponent(JSON.stringify(payload));
+        // 用 GET + URL 參數，完全避開 CORS/CORB 問題
+        // idToken 和 record 都放在 query string 裡
+        const url = APPS_SCRIPT_URL
+            + '?idToken=' + encodeURIComponent(idToken)
+            + '&record=' + encodeURIComponent(JSON.stringify(payload));
 
-    const response = await fetch(url, {
-      method:   'GET',
-      redirect: 'follow'
-      // GET 請求不需要設定 Content-Type，也不會觸發 CORB
-    });
+        const response = await fetch(url, {
+            method: 'GET',
+            redirect: 'follow'
+            // GET 請求不需要設定 Content-Type，也不會觸發 CORB
+        });
 
-    if (!response.ok) {
-      return { success: false, error: `HTTP ${response.status}` };
+        if (!response.ok) {
+            return { success: false, error: `HTTP ${response.status}` };
+        }
+
+        const data = await response.json();
+        return data.success ? { success: true } : { success: false, error: data.message || data.error };
+
+    } catch (err) {
+        return { success: false, error: err.message || String(err) };
     }
-
-    const data = await response.json();
-    return data.success ? { success: true } : { success: false, error: data.message || data.error };
-
-  } catch (err) {
-    return { success: false, error: err.message || String(err) };
-  }
 }
 
 // ── 設定同步結果文字 ──
