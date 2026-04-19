@@ -961,36 +961,6 @@ async function syncOneRecord(record) {
   }
 }
 
-    const response = await fetch(APPS_SCRIPT_URL, {
-      method:  'POST',
-      // 注意：Apps Script Web App 有 CORS 限制，
-      // 必須用 no-cors 模式，但這樣就無法讀取回傳內容。
-      // 解決方式：用 redirect: 'follow' + mode: 'cors'，
-      // 讓 Apps Script 的 redirect 正確處理。
-      redirect: 'follow',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      // ⚠️ 故意用 text/plain 而非 application/json，
-      // 避免 CORS preflight 問題（Apps Script 不處理 OPTIONS）
-      body: JSON.stringify(payload)
-    });
-
-    if (!response.ok) {
-      return { success: false, error: `HTTP ${response.status}` };
-    }
-
-    const data = await response.json();
-
-    if (data.success) {
-      return { success: true };
-    } else {
-      return { success: false, error: data.message || data.error };
-    }
-
-  } catch (err) {
-    return { success: false, error: err.message || String(err) };
-  }
-}
-
 // ── 設定同步結果文字 ──
 function setSyncResult(text, isError) {
   const el = document.getElementById('syncResult');
