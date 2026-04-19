@@ -29,7 +29,7 @@ const firebaseConfig = {
 };
 
 // ★ 替換為你的 Apps Script Web App 部署 URL
-const APPS_SCRIPT_URL = 'https://script.googleusercontent.com/macros/echo?user_content_key=AWDtjMWxjbMuWavFHBDT1VPxIDLbU6iIZn_8hVwnqdXapR-xvAkBcuRD-9qMx65-hf--BTciQGKoK5r6HSXWpaFwkXK1oYGWSL674vVJDdw7jkZvnEUQ8EFi54ei15gJOPA8Pr_1RcqlSe2MfOBgcrUK5OMklui7GO44Gj41Hl8C21SIkpZrqKRMuIzt0Ffr12gV8v_3UKmiI8OMHxlUua7aPTT1Zu8SZ9OgGcMIshkcuBqtNN7VuWCvhTBVbPFBbahM9GaUQlatHhk4DXwCxjWRpej_iBtlXeZQXozgwOQ5gArzMLmMHXU&lib=MPsK8u2DXFsVamRb-4Nf-81GbHsHgHB7E';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw833GfMLZT-8IDmHh7aRLf_zAMYNnv8FMuXnCzOcByVMg-KuhwLHFzrPNZov9DgEuB/exec';
 
 // Firebase app 實例（init 後賦值）
 let firebaseAuth = null;
@@ -931,39 +931,39 @@ async function handleSyncAll() {
 
 // ── 同步單筆紀錄 ──
 async function syncOneRecord(record) {
-  try {
-    const idToken = await currentUser.getIdToken(false);
+    try {
+        const idToken = await currentUser.getIdToken(false);
 
-    const payload = {
-      timestamp:      record.timestamp  || '',
-      task:           record.taskName   || '',
-      reason:         record.taskReason || '',
-      plannedMinutes: Math.round((record.plannedSec || 0) / 60),
-      actualMinutes:  Math.round((record.actualSec  || 0) / 60),
-      status:         record.status     || 'incomplete',
-      stopReason:     record.endReason  || '',
-      note:           record.taskNote   || ''
-    };
+        const payload = {
+            timestamp: record.timestamp || '',
+            task: record.taskName || '',
+            reason: record.taskReason || '',
+            plannedMinutes: Math.round((record.plannedSec || 0) / 60),
+            actualMinutes: Math.round((record.actualSec || 0) / 60),
+            status: record.status || 'incomplete',
+            stopReason: record.endReason || '',
+            note: record.taskNote || ''
+        };
 
-    const url = APPS_SCRIPT_URL
-      + '?idToken=' + encodeURIComponent(idToken)
-      + '&record='  + encodeURIComponent(JSON.stringify(payload));
+        const url = APPS_SCRIPT_URL
+            + '?idToken=' + encodeURIComponent(idToken)
+            + '&record=' + encodeURIComponent(JSON.stringify(payload));
 
-    // no-cors：瀏覽器允許送出但不給你讀回應（opaque response）
-    // 這是 GitHub Pages → Apps Script 唯一穩定可行的方式
-    await fetch(url, {
-      method:   'GET',
-      mode:     'no-cors',
-      redirect: 'follow'
-    });
+        // no-cors：瀏覽器允許送出但不給你讀回應（opaque response）
+        // 這是 GitHub Pages → Apps Script 唯一穩定可行的方式
+        await fetch(url, {
+            method: 'GET',
+            mode: 'no-cors',
+            redirect: 'follow'
+        });
 
-    // no-cors 下無法判斷成功與否，採樂觀策略
-    // 只要 fetch 沒有拋出例外，就視為送出成功
-    return { success: true };
+        // no-cors 下無法判斷成功與否，採樂觀策略
+        // 只要 fetch 沒有拋出例外，就視為送出成功
+        return { success: true };
 
-  } catch (err) {
-    return { success: false, error: err.message || String(err) };
-  }
+    } catch (err) {
+        return { success: false, error: err.message || String(err) };
+    }
 }
 
 // ── 設定同步結果文字 ──
