@@ -931,42 +931,42 @@ async function handleSyncAll() {
 
 // ── 同步單筆紀錄 ──
 async function syncOneRecord(record) {
-    try {
-        const idToken = await currentUser.getIdToken(false);
+  try {
+    const idToken = await currentUser.getIdToken(false);
 
-        const payload = {
-            idToken: idToken,
-            record: {
-                timestamp: record.timestamp || '',
-                task: record.taskName || '',
-                reason: record.taskReason || '',
-                plannedMinutes: Math.round((record.plannedSec || 0) / 60),
-                actualMinutes: Math.round((record.actualSec || 0) / 60),
-                status: record.status || 'incomplete',
-                stopReason: record.endReason || '',
-                note: record.taskNote || ''
-            }
-        };
+    const payload = {
+      timestamp:      record.timestamp  || '',
+      task:           record.taskName   || '',
+      reason:         record.taskReason || '',
+      plannedMinutes: Math.round((record.plannedSec || 0) / 60),
+      actualMinutes:  Math.round((record.actualSec  || 0) / 60),
+      status:         record.status     || 'incomplete',
+      stopReason:     record.endReason  || '',
+      note:           record.taskNote   || ''
+    };
 
-        // ★ 改用 no-cors：Apps Script 的跨來源 redirect 會被瀏覽器的 CORS 擋住，
-        //   no-cors 可繞過這個限制，代價是無法讀取回應內容（response 為 opaque）。
-        //   因此改成「送出後樂觀標記成功」，若網路完全失敗才回傳 error。
-        await fetch(APPS_SCRIPT_URL, {
-            method: 'POST',
-            mode: 'no-cors',      // ← 關鍵改動
-            redirect: 'follow',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify(payload)
-        });
+    // 用 GET + URL 參數，完全避開 CORS/CORB 問題
+    // idToken 和 record 都放在 query string 裡
+    const url = APPS_SCRIPT_URL
+      + '?idToken=' + encodeURIComponent(idToken)
+      + '&record='  + encodeURIComponent(JSON.stringify(payload));
 
-        // no-cors 下無法判斷後端是否真的成功，
-        // 這裡採樂觀策略：只要 fetch 本身沒丟出例外就視為成功
-        return { success: true };
+    const response = await fetch(url, {
+      method:   'GET',
+      redirect: 'follow'
+      // GET 請求不需要設定 Content-Type，也不會觸發 CORB
+    });
 
-    } catch (err) {
-        // 只有網路完全中斷才會進到這裡
-        return { success: false, error: err.message || String(err) };
+    if (!response.ok) {
+      return { success: false, error: `HTTP ${response.status}` };
     }
+
+    const data = await response.json();
+    return data.success ? { success: true } : { success: false, error: data.message || data.error };
+
+  } catch (err) {
+    return { success: false, error: err.message || String(err) };
+  }
 }
 
 // ── 設定同步結果文字 ──
