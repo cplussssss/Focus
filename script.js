@@ -853,9 +853,12 @@ function updateSyncUI(user) {
 async function handleGoogleLogin() {
   try {
     const provider = new firebase.auth.GoogleAuthProvider();
-    // 強制每次都顯示帳號選擇畫面
     provider.setCustomParameters({ prompt: 'select_account' });
-    await firebaseAuth.signInWithPopup(provider);
+
+    // ★ 把 signInWithPopup 改成 signInWithRedirect，避免 COOP 問題
+    await firebaseAuth.signInWithRedirect(provider);
+    // redirect 後頁面會重新載入，onAuthStateChanged 會自動偵測登入結果
+
   } catch (err) {
     console.error('Google 登入失敗：', err);
     setSyncResult('登入失敗：' + (err.message || err.code), true);
@@ -921,23 +924,42 @@ async function handleSyncAll() {
 // ── 同步單筆紀錄 ──
 async function syncOneRecord(record) {
   try {
-    // 取得最新的 ID Token（Firebase 會自動處理 refresh）
-    const idToken = await currentUser.getIdToken(/* forceRefresh = */ false);
+    const idToken = await currentUser.getIdToken(false);
 
-    // 將 record 轉換為後端期望的欄位格式
     const payload = {
       idToken: idToken,
       record: {
-        timestamp:      record.timestamp     || '',
-        task:           record.taskName      || '',   // 注意：前端欄位名稱是 taskName
-        reason:         record.taskReason    || '',   // 前端是 taskReason
-        plannedMinutes: Math.round((record.plannedSec  || 0) / 60),  // 秒→分
-        actualMinutes:  Math.round((record.actualSec   || 0) / 60),  // 秒→分
-        status:         record.status        || 'incomplete',
-        stopReason:     record.endReason     || '',   // 前端是 endReason
-        note:           record.taskNote      || ''    // 前端是 taskNote
+        timestamp:      record.timestamp  || '',
+        task:           record.taskName   || '',
+        reason:         record.taskReason || '',
+        plannedMinutes: Math.round((record.plannedSec || 0) / 60),
+        actualMinutes:  Math.round((record.actualSec  || 0) / 60),
+        status:         record.status     || 'incomplete',
+        stopReason:     record.endReason  || '',
+        note:           record.taskNote   || ''
       }
     };
+
+    // ★ 改用 no-cors：Apps Script 的跨來源 redirect 會被瀏覽器的 CORS 擋住，
+    //   no-cors 可繞過這個限制，代價是無法讀取回應內容（response 為 opaque）。
+    //   因此改成「送出後樂觀標記成功」，若網路完全失敗才回傳 error。
+    await fetch(APPS_SCRIPT_URL, {
+      method:   'POST',
+      mode:     'no-cors',      // ← 關鍵改動
+      redirect: 'follow',
+      headers:  { 'Content-Type': 'text/plain;charset=utf-8' },
+      body:     JSON.stringify(payload)
+    });
+
+    // no-cors 下無法判斷後端是否真的成功，
+    // 這裡採樂觀策略：只要 fetch 本身沒丟出例外就視為成功
+    return { success: true };
+
+  } catch (err) {
+    // 只有網路完全中斷才會進到這裡
+    return { success: false, error: err.message || String(err) };
+  }
+}
 
     const response = await fetch(APPS_SCRIPT_URL, {
       method:  'POST',
