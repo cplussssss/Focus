@@ -948,14 +948,15 @@ async function syncOneRecord(record) {
       }
     };
 
-    // no-cors + POST + text/plain：
-    // 唯一能繞過 CORS 又能傳長資料的方式
-    // body 用 text/plain 不會觸發 preflight
+    // application/x-www-form-urlencoded 不觸發 preflight
+    // Apps Script doPost 用 e.postData.contents 接收
+    const body = 'data=' + encodeURIComponent(JSON.stringify(payload));
+
     await fetch(APPS_SCRIPT_URL, {
       method:  'POST',
       mode:    'no-cors',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body:    JSON.stringify(payload)
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body:    body
     });
 
     return { success: true };
