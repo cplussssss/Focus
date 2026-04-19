@@ -815,10 +815,11 @@ function init() {
   updateProgressBar(0, getWorkSeconds(), 'work');
   setButtons({ start: false, pause: true, endRound: true, reset: false, break: true });
   setStatus('準備開始');
+  initFirebase();
 }
 // 在既有的 init() 函式最末尾呼叫 Firebase 初始化
 // （確保 initElements() 已執行）
-initFirebase();
+
 /* ============================================================
    新增：Firebase 登入 & Google Sheet 同步邏輯
    ============================================================ */
@@ -826,7 +827,7 @@ initFirebase();
 // ── Firebase 初始化 ──
 function initFirebase() {
   try {
-    firebase.initializeApp(FIREBASE_CONFIG);
+    firebase.initializeApp(firebaseConfig);
     firebaseAuth = firebase.auth();
 
     // 監聽登入狀態變化
