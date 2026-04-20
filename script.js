@@ -856,12 +856,12 @@ async function handleGoogleLogin() {
         provider.addScope('profile');
         provider.setCustomParameters({ prompt: 'select_account' });
 
-        // GitHub Pages 上 signInWithRedirect 會因 COOP header 失敗，
-        // 改用 signInWithPopup，COOP 的警告不影響實際登入功能
+        // ✅ 必須先 await signInWithPopup，才能拿到 result
+        const result = await firebaseAuth.signInWithPopup(provider);
         const credential = firebase.auth.GoogleAuthProvider.credentialFromResult(result);
-        window._googleIdToken = credential.idToken; // 暫存 Google 原生 idToken
-        // 登入成功後 onAuthStateChanged 會自動更新 UI，不需要額外處理
+        window._googleIdToken = credential.idToken; // 存 Google 原生 idToken
         console.log('登入成功：', result.user.email);
+
 
     } catch (err) {
         console.error('Google 登入失敗：', err);
@@ -934,40 +934,37 @@ async function handleSyncAll() {
 
 // ── 同步單筆紀錄 ──
 async function syncOneRecord(record) {
-  try {
-    // 優先用 Google 原生 idToken（可被 tokeninfo API 驗證）
-    // 若沒有則嘗試 refresh 取得新的
-    let idToken = window._googleIdToken;
-    if (!idToken) {
-      // 沒有暫存的話，請使用者重新登入
-      setSyncResult('請重新登入後再同步', true);
-      return { success: false, error: 'NO_GOOGLE_TOKEN' };
+    try {
+        let idToken = window._googleIdToken;
+        const freshToken = await currentUser.getIdToken(/* forceRefresh */ true);
+        if (!idToken) {
+            setSyncResult('請重新登入後再同步', true);
+            return { success: false, error: 'NO_GOOGLE_TOKEN' };
+        }
+
+        const payload = {
+            timestamp:      record.timestamp  || '',
+            task:           record.taskName   || '',
+            reason:         record.taskReason || '',
+            plannedMinutes: Math.round((record.plannedSec || 0) / 60),
+            actualMinutes:  Math.round((record.actualSec  || 0) / 60),
+            status:         record.status     || 'incomplete',
+            stopReason:     record.endReason  || '',
+            note:           record.taskNote   || ''
+        };
+
+        const url = APPS_SCRIPT_URL
+            + '?idToken=' + encodeURIComponent(idToken)
+            + '&record='  + encodeURIComponent(JSON.stringify(payload));
+
+        // ✅ 用 fetch + no-cors（GAS 不支援 CORS，但請求會送達，只是無法讀回應）
+        await fetch(url, { method: 'GET', mode: 'no-cors' });
+
+        return { success: true };
+
+    } catch (err) {
+        return { success: false, error: err.message || String(err) };
     }
-
-    const payload = {
-      timestamp:      record.timestamp  || '',
-      task:           record.taskName   || '',
-      reason:         record.taskReason || '',
-      plannedMinutes: Math.round((record.plannedSec || 0) / 60),
-      actualMinutes:  Math.round((record.actualSec  || 0) / 60),
-      status:         record.status     || 'incomplete',
-      stopReason:     record.endReason  || '',
-      note:           record.taskNote   || ''
-    };
-
-    const url = APPS_SCRIPT_URL
-      + '?idToken=' + encodeURIComponent(idToken)
-      + '&record='  + encodeURIComponent(JSON.stringify(payload));
-
-    const win = window.open(url, '_blank', 'width=1,height=1');
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    if (win && !win.closed) win.close();
-
-    return { success: true };
-
-  } catch (err) {
-    return { success: false, error: err.message || String(err) };
-  }
 }
 
 // ── 設定同步結果文字 ──
