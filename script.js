@@ -18,7 +18,7 @@
 // ============================================================
 
 // ★ 替換為你的 Apps Script Web App 部署 URL
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw833GfMLZT-8IDmHh7aRLf_zAMYNnv8FMuXnCzOcByVMg-KuhwLHFzrPNZov9DgEuB/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxO4TyOky13MOWPRqowoy--DgWF01Ci6HEeUXpZuhU4SWiQz9FJWD728lQ-RkDWZz6a/exec';
 
 /* ============================================================
    1. 全域狀態 (STATE)
