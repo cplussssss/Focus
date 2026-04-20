@@ -935,29 +935,26 @@ async function syncOneRecord(record) {
     const idToken = await currentUser.getIdToken(false);
 
     const payload = {
-      idToken: idToken,
-      record: {
-        timestamp:      record.timestamp  || '',
-        task:           record.taskName   || '',
-        reason:         record.taskReason || '',
-        plannedMinutes: Math.round((record.plannedSec || 0) / 60),
-        actualMinutes:  Math.round((record.actualSec  || 0) / 60),
-        status:         record.status     || 'incomplete',
-        stopReason:     record.endReason  || '',
-        note:           record.taskNote   || ''
-      }
+      timestamp:      record.timestamp  || '',
+      task:           record.taskName   || '',
+      reason:         record.taskReason || '',
+      plannedMinutes: Math.round((record.plannedSec || 0) / 60),
+      actualMinutes:  Math.round((record.actualSec  || 0) / 60),
+      status:         record.status     || 'incomplete',
+      stopReason:     record.endReason  || '',
+      note:           record.taskNote   || ''
     };
 
-    // application/x-www-form-urlencoded 不觸發 preflight
-    // Apps Script doPost 用 e.postData.contents 接收
-    const body = 'data=' + encodeURIComponent(JSON.stringify(payload));
+    // 用 window.open 開新分頁來觸發 doGet，完全繞過 CORS
+    // Apps Script doGet 會寫入 Sheet 後關閉
+    const url = APPS_SCRIPT_URL
+      + '?idToken=' + encodeURIComponent(idToken)
+      + '&record='  + encodeURIComponent(JSON.stringify(payload));
 
-    await fetch(APPS_SCRIPT_URL, {
-      method:  'POST',
-      mode:    'no-cors',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body:    body
-    });
+    // 開新視窗送出請求，0.5 秒後自動關閉
+    const win = window.open(url, '_blank', 'width=1,height=1');
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    if (win && !win.closed) win.close();
 
     return { success: true };
 
