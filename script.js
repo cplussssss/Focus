@@ -779,7 +779,7 @@ function init() {
     updateTimerDisplay(getWorkSeconds());
     updateProgressBar(0, getWorkSeconds(), 'work');
     setButtons({ start: false, pause: true, endRound: true, reset: false, break: true });
-    setStatus('準備開始');
+        setStatus('準備開始');
     initSync();
 }
 
@@ -832,7 +832,7 @@ async function confirmPasswordSync() {
     const passwordInput = document.getElementById('syncPasswordInput');
     const password = passwordInput.value.trim();
     if (!password) {
-        setSyncResult('93654', true);
+        setSyncResult('請輸入密碼', true);
         return;
     }
 
@@ -884,35 +884,26 @@ async function confirmPasswordSync() {
 async function syncOneRecord(record, password) {
     try {
         const payload = {
-            timestamp: record.timestamp || '',
-            task: record.taskName || '',
-            reason: record.taskReason || '',
+            timestamp:      record.timestamp  || '',
+            task:           record.taskName   || '',
+            reason:         record.taskReason || '',
             plannedMinutes: Math.round((record.plannedSec || 0) / 60),
-            actualMinutes: Math.round((record.actualSec || 0) / 60),
-            status: record.status || 'incomplete',
-            stopReason: record.endReason || '',
-            note: record.taskNote || ''
+            actualMinutes:  Math.round((record.actualSec  || 0) / 60),
+            status:         record.status     || 'incomplete',
+            stopReason:     record.endReason  || '',
+            note:           record.taskNote   || ''
         };
 
         const url = APPS_SCRIPT_URL
             + '?password=' + encodeURIComponent(password)
-            + '&record=' + encodeURIComponent(JSON.stringify(payload));
+            + '&record='   + encodeURIComponent(JSON.stringify(payload));
 
-        // HtmlService 版 GAS 支援 CORS，可正常讀取回應
-        const resp = await fetch(url, { method: 'GET' });
-        const text = await resp.text();
-
-        // GAS HtmlService 回傳的內容裡取出 JSON
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-            const data = JSON.parse(jsonMatch[0]);
-            if (data.error === 'WRONG_PASSWORD') {
-                return { success: false, error: 'WRONG_PASSWORD', message: data.message };
-            }
-            if (!data.success) {
-                return { success: false, error: data.error || 'UNKNOWN', message: data.message };
-            }
-        }
+        // 用 Image 請求繞過 CORS（GAS 不支援跨域，但圖片請求不受 CORS 限制）
+        await new Promise((resolve) => {
+            const img = new Image();
+            img.onload = img.onerror = resolve; // 不管成功失敗都 resolve
+            img.src = url;
+        });
 
         return { success: true };
 
