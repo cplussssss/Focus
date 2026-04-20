@@ -898,8 +898,22 @@ async function syncOneRecord(record, password) {
             + '?password=' + encodeURIComponent(password)
             + '&record='   + encodeURIComponent(JSON.stringify(payload));
 
-        const resp = await fetch(url, { method: 'GET', mode: 'no-cors' });
-        // no-cors 模式下無法讀取回應，視為成功
+        // HtmlService 版 GAS 支援 CORS，可正常讀取回應
+        const resp = await fetch(url, { method: 'GET' });
+        const text = await resp.text();
+
+        // GAS HtmlService 回傳的內容裡取出 JSON
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            const data = JSON.parse(jsonMatch[0]);
+            if (data.error === 'WRONG_PASSWORD') {
+                return { success: false, error: 'WRONG_PASSWORD', message: data.message };
+            }
+            if (!data.success) {
+                return { success: false, error: data.error || 'UNKNOWN', message: data.message };
+            }
+        }
+
         return { success: true };
 
     } catch (err) {
