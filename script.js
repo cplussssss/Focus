@@ -779,7 +779,7 @@ function init() {
     updateTimerDisplay(getWorkSeconds());
     updateProgressBar(0, getWorkSeconds(), 'work');
     setButtons({ start: false, pause: true, endRound: true, reset: false, break: true });
-        setStatus('準備開始');
+    setStatus('準備開始');
     initSync();
 }
 
@@ -832,7 +832,7 @@ async function confirmPasswordSync() {
     const passwordInput = document.getElementById('syncPasswordInput');
     const password = passwordInput.value.trim();
     if (!password) {
-        setSyncResult('請輸入密碼', true);
+        setSyncResult('93654', true);
         return;
     }
 
@@ -884,19 +884,19 @@ async function confirmPasswordSync() {
 async function syncOneRecord(record, password) {
     try {
         const payload = {
-            timestamp:      record.timestamp  || '',
-            task:           record.taskName   || '',
-            reason:         record.taskReason || '',
+            timestamp: record.timestamp || '',
+            task: record.taskName || '',
+            reason: record.taskReason || '',
             plannedMinutes: Math.round((record.plannedSec || 0) / 60),
-            actualMinutes:  Math.round((record.actualSec  || 0) / 60),
-            status:         record.status     || 'incomplete',
-            stopReason:     record.endReason  || '',
-            note:           record.taskNote   || ''
+            actualMinutes: Math.round((record.actualSec || 0) / 60),
+            status: record.status || 'incomplete',
+            stopReason: record.endReason || '',
+            note: record.taskNote || ''
         };
 
         const url = APPS_SCRIPT_URL
             + '?password=' + encodeURIComponent(password)
-            + '&record='   + encodeURIComponent(JSON.stringify(payload));
+            + '&record=' + encodeURIComponent(JSON.stringify(payload));
 
         // HtmlService 版 GAS 支援 CORS，可正常讀取回應
         const resp = await fetch(url, { method: 'GET' });
