@@ -883,6 +883,9 @@ async function confirmPasswordSync() {
 // ── 同步單筆紀錄 ──
 async function syncOneRecord(record, password) {
     try {
+        const img = new Image();
+        img.onload = img.onerror = resolve;
+        img.src = url;
         const payload = {
             timestamp:      record.timestamp  || '',
             task:           record.taskName   || '',
