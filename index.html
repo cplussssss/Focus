@@ -2,15 +2,7 @@
 <html lang="zh-TW">
 
 <head>
-        <!-- ==========================================
-     新增：Firebase Authentication SDK
-     放在 </head> 前
-     ========================================== -->
-<!-- Firebase App（核心，必須第一個載入） -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<!-- Firebase Authentication -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-  <meta charset="UTF-8" />
+        <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>🍅 番茄鐘</title>
   <link rel="stylesheet" href="style.css" />
@@ -81,40 +73,12 @@
       </section>
 
     </main>
-<!-- ==========================================
-     新增：Google 登入 & 同步面板
-     放在 history-section 的上方
-     ========================================== -->
 <section class="sync-section" id="syncSection">
-
-  <!-- 未登入狀態 -->
-  <div id="syncLoggedOut">
-    <p class="sync-hint">登入 Google 帳號以將紀錄同步到 Google Sheet</p>
-    <button class="btn btn-google" id="btnGoogleLogin">
-      <svg width="18" height="18" viewBox="0 0 48 48" style="vertical-align:middle;margin-right:8px">
-        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-        <path fill="none" d="M0 0h48v48H0z"/>
-      </svg>
-      使用 Google 帳號登入
-    </button>
+  <p class="sync-hint" id="syncHint">同步紀錄到 Google Sheet</p>
+  <div class="sync-btn-row">
+    <button class="btn btn-primary" id="btnSyncAll">☁ 同步所有未同步紀錄</button>
   </div>
-
-  <!-- 已登入狀態 -->
-  <div id="syncLoggedIn" hidden>
-    <div class="sync-user-row">
-      <img id="syncUserAvatar" src="" alt="頭像" class="sync-avatar" />
-      <span id="syncUserEmail" class="sync-email"></span>
-      <button class="btn btn-secondary btn-sm" id="btnGoogleLogout">登出</button>
-    </div>
-    <div class="sync-btn-row">
-      <button class="btn btn-primary" id="btnSyncAll">☁ 同步所有未同步紀錄到 Google Sheet</button>
-    </div>
-    <p class="sync-result" id="syncResult"></p>
-  </div>
-
+  <p class="sync-result" id="syncResult"></p>
 </section>
     <!-- ===== 歷史紀錄區 ===== -->
     <section class="history-section">
@@ -159,6 +123,20 @@
       <h3>休息結束！</h3>
       <p>準備好了嗎？可以開始下一輪工作了。</p>
       <button class="btn btn-primary" id="btnModalNextRound">開始下一輪</button>
+    </div>
+  </div>
+
+
+  <!-- ===== Modal：同步密碼輸入 ===== -->
+  <div class="modal-overlay" id="modalPassword" hidden>
+    <div class="modal-box">
+      <h3>🔒 輸入同步密碼</h3>
+      <p>請輸入你設定的同步密碼，以將紀錄寫入 Google Sheet：</p>
+      <input type="password" id="syncPasswordInput" placeholder="輸入密碼" style="width:100%;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;font-size:0.95rem;color:var(--text-primary);outline:none;margin-bottom:18px;" />
+      <div class="modal-btn-row">
+        <button class="btn btn-primary" id="btnConfirmPassword">確認同步</button>
+        <button class="btn btn-secondary" id="btnCancelPassword">取消</button>
+      </div>
     </div>
   </div>
 

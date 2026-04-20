@@ -14,26 +14,12 @@
 
 'use strict';
 // ============================================================
-// 新增：後端串接設定
+// 後端串接設定
 // ============================================================
-
-// ★ 替換為你自己的 Firebase 設定
-const firebaseConfig = {
-    apiKey: "AIzaSyDeAM6lR-NcH--3avA1fqnA620DX2ktsNM",
-    authDomain: "focus-e5f62.firebaseapp.com",
-    projectId: "focus-e5f62",
-    storageBucket: "focus-e5f62.firebasestorage.app",
-    messagingSenderId: "1075734057431",
-    appId: "1:1075734057431:web:add0bd3e6f1069ac317b92",
-    measurementId: "G-5SKT3TEVHW"
-};
 
 // ★ 替換為你的 Apps Script Web App 部署 URL
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw833GfMLZT-8IDmHh7aRLf_zAMYNnv8FMuXnCzOcByVMg-KuhwLHFzrPNZov9DgEuB/exec';
 
-// Firebase app 實例（init 後賦值）
-let firebaseAuth = null;
-let currentUser = null;
 /* ============================================================
    1. 全域狀態 (STATE)
    ============================================================ */
@@ -793,118 +779,67 @@ function init() {
     updateTimerDisplay(getWorkSeconds());
     updateProgressBar(0, getWorkSeconds(), 'work');
     setButtons({ start: false, pause: true, endRound: true, reset: false, break: true });
-    setStatus('準備開始');
-    initFirebase();
+        setStatus('準備開始');
+    initSync();
 }
-// 在既有的 init() 函式最末尾呼叫 Firebase 初始化
-// （確保 initElements() 已執行）
 
 /* ============================================================
-   新增：Firebase 登入 & Google Sheet 同步邏輯
+   同步：密碼驗證寫入 Google Sheet
    ============================================================ */
 
-// ── Firebase 初始化 ──
-function initFirebase() {
-    try {
-        firebase.initializeApp(firebaseConfig);
-        firebaseAuth = firebase.auth();
+// ── 初始化同步面板事件 ──
+function initSync() {
+    document.getElementById('btnSyncAll').addEventListener('click', handleSyncAll);
 
-        // 監聽登入狀態變化
-        firebaseAuth.onAuthStateChanged(function (user) {
-            currentUser = user;
-            updateSyncUI(user);
-        });
+    // 密碼 Modal 按鈕
+    document.getElementById('btnConfirmPassword').addEventListener('click', confirmPasswordSync);
+    document.getElementById('btnCancelPassword').addEventListener('click', () => {
+        hideModal(document.getElementById('modalPassword'));
+        document.getElementById('syncPasswordInput').value = '';
+    });
 
-        // ★ 處理 signInWithRedirect 返回結果
-        // 頁面在 redirect 登入後重新載入時，這裡會拿到登入結果
-        firebaseAuth.getRedirectResult().then(function(result) {
-            if (result && result.user) {
-                const credential = firebase.auth.GoogleAuthProvider.credentialFromResult(result);
-                if (credential && credential.idToken) {
-                    window._googleIdToken = credential.idToken;
-                    console.log('Redirect 登入成功，idToken 已取得');
-                }
-            }
-        }).catch(function(err) {
-            console.error('getRedirectResult 錯誤：', err);
-        });
+    // Enter 鍵送出密碼
+    document.getElementById('syncPasswordInput').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') confirmPasswordSync();
+    });
 
-        document.getElementById('btnGoogleLogin').addEventListener('click', handleGoogleLogin);
-        document.getElementById('btnGoogleLogout').addEventListener('click', handleGoogleLogout);
-        document.getElementById('btnSyncAll').addEventListener('click', handleSyncAll);
-
-    } catch (err) {
-        console.error('Firebase 初始化失敗：', err);
-    }
-}
-// ── 更新同步面板 UI ──
-function updateSyncUI(user) {
-    const loggedOut = document.getElementById('syncLoggedOut');
-    const loggedIn = document.getElementById('syncLoggedIn');
-    if (!loggedOut || !loggedIn) return;
-
-    if (user) {
-        loggedOut.hidden = true;
-        loggedIn.hidden = false;
-        document.getElementById('syncUserEmail').textContent = user.email || '';
-        const avatar = document.getElementById('syncUserAvatar');
-        if (user.photoURL) {
-            avatar.src = user.photoURL;
-            avatar.hidden = false;
-        } else {
-            avatar.hidden = true;
-        }
-    } else {
-        loggedOut.hidden = false;
-        loggedIn.hidden = true;
-    }
-    setSyncResult('', false);
+    setSyncUI();
 }
 
-// ── Google 登入 ──
-async function handleGoogleLogin() {
-    try {
-        setSyncResult('跳轉至 Google 登入...', false);
-        const provider = new firebase.auth.GoogleAuthProvider();
-        provider.addScope('email');
-        provider.addScope('profile');
-        provider.setCustomParameters({ prompt: 'select_account' });
-
-        // 改用 signInWithRedirect：不受 COOP header 影響
-        // 登入完成後 Google 會把使用者導回本頁，再由 getRedirectResult() 取得 idToken
-        await firebaseAuth.signInWithRedirect(provider);
-        // ↑ 這行執行後頁面會跳走，以下程式碼不會執行
-
-
-    } catch (err) {
-        console.error('Google 登入失敗：', err);
-        setSyncResult('登入失敗：' + (err.message || err.code), true);
-    }
+// ── 更新同步面板顯示 ──
+function setSyncUI() {
+    const unsynced = STATE.records.filter(r => !r.synced).length;
+    const hint = document.getElementById('syncHint');
+    if (hint) hint.textContent = unsynced > 0
+        ? `有 ${unsynced} 筆紀錄尚未同步`
+        : '所有紀錄都已同步';
 }
 
-// ── Google 登出 ──
-async function handleGoogleLogout() {
-    try {
-        await firebaseAuth.signOut();
-    } catch (err) {
-        console.error('登出失敗：', err);
-    }
-}
-
-// ── 同步所有未同步紀錄 ──
+// ── 點擊同步按鈕 ──
 async function handleSyncAll() {
-    if (!currentUser) {
-        setSyncResult('請先登入 Google 帳號', true);
-        return;
-    }
-
-    // 篩選尚未同步的紀錄
     const unsynced = STATE.records.filter(r => !r.synced);
     if (unsynced.length === 0) {
         setSyncResult('✅ 所有紀錄都已同步過了', false);
         return;
     }
 
+    // 跳出密碼輸入 Modal
+    showModal(document.getElementById('modalPassword'));
+}
+
+// ── 確認密碼並執行同步 ──
+async function confirmPasswordSync() {
+    const passwordInput = document.getElementById('syncPasswordInput');
+    const password = passwordInput.value.trim();
+    if (!password) {
+        setSyncResult('請輸入密碼', true);
+        return;
+    }
+
+    hideModal(document.getElementById('modalPassword'));
+    passwordInput.value = '';
+
+    const unsynced = STATE.records.filter(r => !r.synced);
     const btn = document.getElementById('btnSyncAll');
     btn.disabled = true;
     setSyncResult(`正在同步 ${unsynced.length} 筆紀錄...`, false);
@@ -913,40 +848,41 @@ async function handleSyncAll() {
     let failCount = 0;
 
     for (const record of unsynced) {
-        const result = await syncOneRecord(record);
+        const result = await syncOneRecord(record, password);
         if (result.success) {
-            // 標記為已同步（更新 STATE.records 中對應的項目）
             const idx = STATE.records.findIndex(r => r.id === record.id);
             if (idx !== -1) STATE.records[idx].synced = true;
             successCount++;
         } else {
             failCount++;
             console.error('同步失敗：', result.error, record);
+            // 密碼錯誤就直接停止
+            if (result.error === 'WRONG_PASSWORD') {
+                setSyncResult('❌ 密碼錯誤，請重試', true);
+                btn.disabled = false;
+                saveToStorage();
+                renderHistory();
+                return;
+            }
         }
     }
 
-    // 儲存更新後的 synced 狀態到 localStorage
     saveToStorage();
     renderHistory();
+    setSyncUI();
 
     if (failCount === 0) {
         setSyncResult(`✅ 成功同步 ${successCount} 筆紀錄`, false);
     } else {
-        setSyncResult(`⚠️ 成功 ${successCount} 筆，失敗 ${failCount} 筆，請查看 console`, true);
+        setSyncResult(`⚠️ 成功 ${successCount} 筆，失敗 ${failCount} 筆`, true);
     }
 
     btn.disabled = false;
 }
 
 // ── 同步單筆紀錄 ──
-async function syncOneRecord(record) {
+async function syncOneRecord(record, password) {
     try {
-        let idToken = window._googleIdToken;
-        if (!idToken) {
-            setSyncResult('請重新登入後再同步', true);
-            return { success: false, error: 'NO_GOOGLE_TOKEN' };
-        }
-
         const payload = {
             timestamp:      record.timestamp  || '',
             task:           record.taskName   || '',
@@ -959,12 +895,11 @@ async function syncOneRecord(record) {
         };
 
         const url = APPS_SCRIPT_URL
-            + '?idToken=' + encodeURIComponent(idToken)
-            + '&record='  + encodeURIComponent(JSON.stringify(payload));
+            + '?password=' + encodeURIComponent(password)
+            + '&record='   + encodeURIComponent(JSON.stringify(payload));
 
-        // ✅ 用 fetch + no-cors（GAS 不支援 CORS，但請求會送達，只是無法讀回應）
-        await fetch(url, { method: 'GET', mode: 'no-cors' });
-
+        const resp = await fetch(url, { method: 'GET', mode: 'no-cors' });
+        // no-cors 模式下無法讀取回應，視為成功
         return { success: true };
 
     } catch (err) {
@@ -979,5 +914,6 @@ function setSyncResult(text, isError) {
     el.textContent = text;
     el.className = 'sync-result' + (isError ? ' error' : '');
 }
+
 // DOM 載入完成後執行初始化
 document.addEventListener('DOMContentLoaded', init);
