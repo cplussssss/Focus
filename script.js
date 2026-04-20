@@ -815,6 +815,20 @@ function initFirebase() {
             updateSyncUI(user);
         });
 
+        // ★ 處理 signInWithRedirect 返回結果
+        // 頁面在 redirect 登入後重新載入時，這裡會拿到登入結果
+        firebaseAuth.getRedirectResult().then(function(result) {
+            if (result && result.user) {
+                const credential = firebase.auth.GoogleAuthProvider.credentialFromResult(result);
+                if (credential && credential.idToken) {
+                    window._googleIdToken = credential.idToken;
+                    console.log('Redirect 登入成功，idToken 已取得');
+                }
+            }
+        }).catch(function(err) {
+            console.error('getRedirectResult 錯誤：', err);
+        });
+
         document.getElementById('btnGoogleLogin').addEventListener('click', handleGoogleLogin);
         document.getElementById('btnGoogleLogout').addEventListener('click', handleGoogleLogout);
         document.getElementById('btnSyncAll').addEventListener('click', handleSyncAll);
@@ -850,29 +864,21 @@ function updateSyncUI(user) {
 // ── Google 登入 ──
 async function handleGoogleLogin() {
     try {
-        setSyncResult('登入中...', false);
+        setSyncResult('跳轉至 Google 登入...', false);
         const provider = new firebase.auth.GoogleAuthProvider();
         provider.addScope('email');
         provider.addScope('profile');
         provider.setCustomParameters({ prompt: 'select_account' });
 
-        // ✅ 必須先 await signInWithPopup，才能拿到 result
-        const result = await firebaseAuth.signInWithPopup(provider);
-        const credential = firebase.auth.GoogleAuthProvider.credentialFromResult(result);
-        window._googleIdToken = credential.idToken; // 存 Google 原生 idToken
-        console.log('登入成功：', result.user.email);
+        // 改用 signInWithRedirect：不受 COOP header 影響
+        // 登入完成後 Google 會把使用者導回本頁，再由 getRedirectResult() 取得 idToken
+        await firebaseAuth.signInWithRedirect(provider);
+        // ↑ 這行執行後頁面會跳走，以下程式碼不會執行
 
 
     } catch (err) {
         console.error('Google 登入失敗：', err);
-        // auth/popup-blocked：瀏覽器擋住 popup，提示使用者允許
-        if (err.code === 'auth/popup-blocked') {
-            setSyncResult('Popup 被瀏覽器封鎖，請允許此網站開啟彈出視窗後再試', true);
-        } else if (err.code === 'auth/popup-closed-by-user') {
-            setSyncResult('登入視窗已關閉', true);
-        } else {
-            setSyncResult('登入失敗：' + (err.message || err.code), true);
-        }
+        setSyncResult('登入失敗：' + (err.message || err.code), true);
     }
 }
 
@@ -936,7 +942,6 @@ async function handleSyncAll() {
 async function syncOneRecord(record) {
     try {
         let idToken = window._googleIdToken;
-        const freshToken = await currentUser.getIdToken(/* forceRefresh */ true);
         if (!idToken) {
             setSyncResult('請重新登入後再同步', true);
             return { success: false, error: 'NO_GOOGLE_TOKEN' };
