@@ -852,11 +852,14 @@ async function handleGoogleLogin() {
     try {
         setSyncResult('登入中...', false);
         const provider = new firebase.auth.GoogleAuthProvider();
+        provider.addScope('email');
+        provider.addScope('profile');
         provider.setCustomParameters({ prompt: 'select_account' });
 
         // GitHub Pages 上 signInWithRedirect 會因 COOP header 失敗，
         // 改用 signInWithPopup，COOP 的警告不影響實際登入功能
-        const result = await firebaseAuth.signInWithPopup(provider);
+        const credential = firebase.auth.GoogleAuthProvider.credentialFromResult(result);
+        window._googleIdToken = credential.idToken; // 暫存 Google 原生 idToken
         // 登入成功後 onAuthStateChanged 會自動更新 UI，不需要額外處理
         console.log('登入成功：', result.user.email);
 
@@ -932,7 +935,14 @@ async function handleSyncAll() {
 // ── 同步單筆紀錄 ──
 async function syncOneRecord(record) {
   try {
-    const idToken = await currentUser.getIdToken(false);
+    // 優先用 Google 原生 idToken（可被 tokeninfo API 驗證）
+    // 若沒有則嘗試 refresh 取得新的
+    let idToken = window._googleIdToken;
+    if (!idToken) {
+      // 沒有暫存的話，請使用者重新登入
+      setSyncResult('請重新登入後再同步', true);
+      return { success: false, error: 'NO_GOOGLE_TOKEN' };
+    }
 
     const payload = {
       timestamp:      record.timestamp  || '',
@@ -945,13 +955,10 @@ async function syncOneRecord(record) {
       note:           record.taskNote   || ''
     };
 
-    // 用 window.open 開新分頁來觸發 doGet，完全繞過 CORS
-    // Apps Script doGet 會寫入 Sheet 後關閉
     const url = APPS_SCRIPT_URL
       + '?idToken=' + encodeURIComponent(idToken)
       + '&record='  + encodeURIComponent(JSON.stringify(payload));
 
-    // 開新視窗送出請求，0.5 秒後自動關閉
     const win = window.open(url, '_blank', 'width=1,height=1');
     await new Promise(resolve => setTimeout(resolve, 2000));
     if (win && !win.closed) win.close();
