@@ -147,17 +147,118 @@ function doPost(e) {
 }
 
 // ============================================================
-// doGet：用於測試後端是否正常運作
+// doGet：
+//   - 帶有 idToken + record 參數 → 寫入試算表（前端 Image hack 走這裡）
+//   - 無參數 → 健康狀態檢查
 // ============================================================
 function doGet(e) {
   var output = ContentService.createTextOutput();
   output.setMimeType(ContentService.MimeType.JSON);
-  output.setContent(JSON.stringify({
-    status: 'ok',
-    message: '番茄鐘後端運作正常',
-    timestamp: new Date().toISOString()
-  }));
-  return output;
+
+  // 無 idToken → 健康狀態回傳
+  if (!e || !e.parameter || !e.parameter.idToken) {
+    output.setContent(JSON.stringify({
+      status: 'ok',
+      message: '番茄鐘後端運作正常',
+      timestamp: new Date().toISOString()
+    }));
+    return output;
+  }
+
+  try {
+    // ── 1. 取得並驗證 ID Token ──
+    var idToken = e.parameter.idToken;
+    var verifyResult = verifyGoogleIdToken(idToken);
+    if (!verifyResult.valid) {
+      output.setContent(JSON.stringify({
+        success: false,
+        error: 'INVALID_TOKEN',
+        message: verifyResult.message
+      }));
+      return output;
+    }
+
+    // ── 2. 比對 email 白名單 ──
+    var props = PropertiesService.getScriptProperties();
+    var allowedEmail = props.getProperty('ALLOWED_EMAIL');
+    if (!allowedEmail) {
+      output.setContent(JSON.stringify({
+        success: false,
+        error: 'SERVER_CONFIG_ERROR',
+        message: '後端尚未設定 ALLOWED_EMAIL'
+      }));
+      return output;
+    }
+    if (verifyResult.email.toLowerCase() !== allowedEmail.toLowerCase()) {
+      output.setContent(JSON.stringify({
+        success: false,
+        error: 'UNAUTHORIZED_EMAIL',
+        message: '此帳號無寫入權限：' + verifyResult.email
+      }));
+      return output;
+    }
+
+    // ── 3. 解析 record ──
+    var recordStr = e.parameter.record;
+    if (!recordStr) {
+      output.setContent(JSON.stringify({
+        success: false,
+        error: 'MISSING_RECORD',
+        message: '缺少 record 參數'
+      }));
+      return output;
+    }
+
+    var record;
+    try {
+      record = JSON.parse(recordStr);
+    } catch (parseErr) {
+      output.setContent(JSON.stringify({
+        success: false,
+        error: 'INVALID_RECORD_JSON',
+        message: '無法解析 record JSON：' + parseErr.toString()
+      }));
+      return output;
+    }
+
+    // ── 4. 驗證欄位 ──
+    var validationResult = validateRecord(record);
+    if (!validationResult.valid) {
+      output.setContent(JSON.stringify({
+        success: false,
+        error: 'VALIDATION_ERROR',
+        message: validationResult.message
+      }));
+      return output;
+    }
+
+    // ── 5. 寫入試算表 ──
+    var writeResult = appendToSheet(record, props);
+    if (!writeResult.success) {
+      output.setContent(JSON.stringify({
+        success: false,
+        error: 'SHEET_WRITE_ERROR',
+        message: writeResult.message
+      }));
+      return output;
+    }
+
+    output.setContent(JSON.stringify({
+      success: true,
+      message: '寫入成功',
+      writtenAt: new Date().toISOString(),
+      email: verifyResult.email
+    }));
+    return output;
+
+  } catch (unexpectedErr) {
+    output.setContent(JSON.stringify({
+      success: false,
+      error: 'UNEXPECTED_ERROR',
+      message: unexpectedErr.toString()
+    }));
+    return output;
+  }
 }
 
 // ============================================================

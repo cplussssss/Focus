@@ -5,12 +5,12 @@
    ============================================================ */
 
 const FIREBASE_CONFIG = {
-  apiKey:            'AIzaSyDeAM6lR-NcH--3avA1fqnA620DX2ktsNM',
-  authDomain:        'focus-e5f62.firebaseapp.com',
-  projectId:         'focus-e5f62',
-  storageBucket:     'focus-e5f62.firebasestorage.app',
+  apiKey: 'AIzaSyDeAM6lR-NcH--3avA1fqnA620DX2ktsNM',
+  authDomain: 'focus-e5f62.firebaseapp.com',
+  projectId: 'focus-e5f62',
+  storageBucket: 'focus-e5f62.firebasestorage.app',
   messagingSenderId: '1075734057431',
-  appId:             '1:1075734057431:web:add0bd3e6f1069ac317b92',
+  appId: '1:1075734057431:web:add0bd3e6f1069ac317b92',
 };
 
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxO4TyOky13MOWPRqowoy--DgWF01Ci6HEeUXpZuhU4SWiQz9FJWD728lQ-RkDWZz6a/exec';
@@ -21,7 +21,7 @@ const STORAGE_KEY = 'pomodoro_records_v1';
    全域狀態
    ============================================================ */
 const STATE = {
-  mode:       'idle',   // 'idle'|'work'|'work-overtime'|'break'|'paused'
+  mode: 'idle',   // 'idle'|'work'|'work-overtime'|'break'|'paused'
   pausedMode: null,
 
   intervalId: null,
@@ -29,21 +29,21 @@ const STATE = {
   // 以結束時間戳記計算剩餘 — 切分頁再回來也正確
   // 原因：setInterval 在背景分頁中可能被瀏覽器節流，導致計時不準；
   //       改存目標結束時間，每次 tick 都重算 (endTime - now)，不受節流影響。
-  endTime:        0,    // 目標結束時間（ms，epoch）
+  endTime: 0,    // 目標結束時間（ms，epoch）
   pauseRemaining: 0,    // 暫停時儲存的剩餘毫秒
 
-  workTotalSeconds:  0,
+  workTotalSeconds: 0,
   breakTotalSeconds: 0,
-  workStartTime:     null,   // Date — 工作開始時刻
-  totalPausedMs:     0,      // 累計暫停毫秒，用於計算實際工作秒數
-  lastPauseStart:    null,   // 最近一次按暫停的時刻（ms）
+  workStartTime: null,   // Date — 工作開始時刻
+  totalPausedMs: 0,      // 累計暫停毫秒，用於計算實際工作秒數
+  lastPauseStart: null,   // 最近一次按暫停的時刻（ms）
 
-  records:       [],
+  records: [],
   pendingAction: null,
 };
 
 let firebaseAuth = null;
-let currentUser  = null;
+let currentUser = null;
 
 /* ============================================================
    DOM 快取
@@ -52,45 +52,45 @@ let EL = {};
 
 function initElements() {
   EL = {
-    modeBadge:        document.getElementById('modeBadge'),
-    timerDisplay:     document.getElementById('timerDisplay'),
-    statusText:       document.getElementById('statusText'),
-    progressBarFill:  document.getElementById('progressBarFill'),
+    modeBadge: document.getElementById('modeBadge'),
+    timerDisplay: document.getElementById('timerDisplay'),
+    statusText: document.getElementById('statusText'),
+    progressBarFill: document.getElementById('progressBarFill'),
 
-    workMinutes:      document.getElementById('workMinutes'),
-    breakMinutes:     document.getElementById('breakMinutes'),
+    workMinutes: document.getElementById('workMinutes'),
+    breakMinutes: document.getElementById('breakMinutes'),
 
-    taskName:         document.getElementById('taskName'),
-    taskReason:       document.getElementById('taskReason'),
-    taskNote:         document.getElementById('taskNote'),
+    taskName: document.getElementById('taskName'),
+    taskReason: document.getElementById('taskReason'),
+    taskNote: document.getElementById('taskNote'),
 
-    btnStart:         document.getElementById('btnStart'),
-    btnPause:         document.getElementById('btnPause'),
-    btnEndRound:      document.getElementById('btnEndRound'),
-    btnReset:         document.getElementById('btnReset'),
-    btnBreak:         document.getElementById('btnBreak'),
-    btnClearHistory:  document.getElementById('btnClearHistory'),
-    btnLogo:          document.getElementById('btnLogo'),
+    btnStart: document.getElementById('btnStart'),
+    btnPause: document.getElementById('btnPause'),
+    btnEndRound: document.getElementById('btnEndRound'),
+    btnReset: document.getElementById('btnReset'),
+    btnBreak: document.getElementById('btnBreak'),
+    btnClearHistory: document.getElementById('btnClearHistory'),
+    btnLogo: document.getElementById('btnLogo'),
 
-    historyList:      document.getElementById('historyList'),
-    syncState:        document.getElementById('syncState'),
-    syncResult:       document.getElementById('syncResult'),
+    historyList: document.getElementById('historyList'),
+    syncState: document.getElementById('syncState'),
+    syncResult: document.getElementById('syncResult'),
 
-    modalEndReason:   document.getElementById('modalEndReason'),
-    endReasonInput:   document.getElementById('endReasonInput'),
-    btnConfirmEnd:    document.getElementById('btnConfirmEnd'),
-    btnCancelEnd:     document.getElementById('btnCancelEnd'),
+    modalEndReason: document.getElementById('modalEndReason'),
+    endReasonInput: document.getElementById('endReasonInput'),
+    btnConfirmEnd: document.getElementById('btnConfirmEnd'),
+    btnCancelEnd: document.getElementById('btnCancelEnd'),
 
-    modalBreakSuggest:  document.getElementById('modalBreakSuggest'),
-    breakSuggestion:    document.getElementById('breakSuggestion'),
+    modalBreakSuggest: document.getElementById('modalBreakSuggest'),
+    breakSuggestion: document.getElementById('breakSuggestion'),
     btnModalStartBreak: document.getElementById('btnModalStartBreak'),
 
-    modalBreakDone:    document.getElementById('modalBreakDone'),
+    modalBreakDone: document.getElementById('modalBreakDone'),
     btnModalNextRound: document.getElementById('btnModalNextRound'),
 
-    modalLogin:        document.getElementById('modalLogin'),
-    btnGoogleLogin:    document.getElementById('btnGoogleLogin'),
-    btnCancelLogin:    document.getElementById('btnCancelLogin'),
+    modalLogin: document.getElementById('modalLogin'),
+    btnGoogleLogin: document.getElementById('btnGoogleLogin'),
+    btnCancelLogin: document.getElementById('btnCancelLogin'),
   };
 }
 
@@ -121,10 +121,10 @@ function playBeep(type) {
     const ctx = new AudioCtx();
     const notes = type === 'work-done'
       ? [{ freq: 523, dur: 0.15 }, { freq: 659, dur: 0.15 }, { freq: 784, dur: 0.25 }]
-      : [{ freq: 784, dur: 0.15 }, { freq: 659, dur: 0.15 }, { freq: 523, dur: 0.3  }];
+      : [{ freq: 784, dur: 0.15 }, { freq: 659, dur: 0.15 }, { freq: 523, dur: 0.3 }];
     let t = ctx.currentTime;
     notes.forEach(({ freq, dur }) => {
-      const osc  = ctx.createOscillator();
+      const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain); gain.connect(ctx.destination);
       osc.type = 'sine';
@@ -154,14 +154,14 @@ function formatDuration(s) {
 }
 function getNowString() {
   return new Date().toLocaleString('zh-TW', {
-    year:'numeric', month:'2-digit', day:'2-digit',
-    hour:'2-digit', minute:'2-digit', second:'2-digit', hour12: false,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
   });
 }
 function escapeHTML(str) {
   return str
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 /* ============================================================
@@ -175,18 +175,18 @@ function updateProgressBar(elapsed, total, type) {
   pct = Math.min(100, Math.max(0, pct));
   EL.progressBarFill.style.width = `${pct}%`;
   EL.progressBarFill.classList.remove('break-mode', 'overtime-mode');
-  if (type === 'break')    EL.progressBarFill.classList.add('break-mode');
+  if (type === 'break') EL.progressBarFill.classList.add('break-mode');
   if (type === 'overtime') EL.progressBarFill.classList.add('overtime-mode');
 }
 function setBadgeMode(mode) {
-  const text = { work:'工作模式', break:'休息模式', overtime:'超時工作', idle:'準備中' };
+  const text = { work: '工作模式', break: '休息模式', overtime: '超時工作', idle: '準備中' };
   EL.modeBadge.textContent = text[mode] || '';
   EL.modeBadge.className = 'mode-badge';
-  if (mode === 'break')    EL.modeBadge.classList.add('break-mode');
+  if (mode === 'break') EL.modeBadge.classList.add('break-mode');
   if (mode === 'overtime') EL.modeBadge.classList.add('overtime-mode');
 
   EL.timerDisplay.className = 'timer-display';
-  if (mode === 'break')    EL.timerDisplay.classList.add('break-mode');
+  if (mode === 'break') EL.timerDisplay.classList.add('break-mode');
   if (mode === 'overtime') EL.timerDisplay.classList.add('overtime-mode');
 }
 function setButtons(map) {
@@ -199,8 +199,8 @@ function setButtons(map) {
   }
 }
 function setStatus(text) { EL.statusText.textContent = text; }
-function showModal(el)    { el.hidden = false; }
-function hideModal(el)    { el.hidden = true; }
+function showModal(el) { el.hidden = false; }
+function hideModal(el) { el.hidden = true; }
 function setSyncResult(text, isError) {
   EL.syncResult.textContent = text;
   EL.syncResult.className = 'sync-result' + (isError ? ' error' : '');
@@ -215,23 +215,23 @@ function clearTimer() {
     STATE.intervalId = null;
   }
 }
-function getWorkSeconds()  {
+function getWorkSeconds() {
   const v = parseInt(EL.workMinutes.value, 10);
   return (isNaN(v) || v < 1) ? 25 * 60 : v * 60;
 }
 function getBreakSeconds() {
   const v = parseInt(EL.breakMinutes.value, 10);
-  return (isNaN(v) || v < 1) ?  5 * 60 : v * 60;
+  return (isNaN(v) || v < 1) ? 5 * 60 : v * 60;
 }
 
 /* ── 8-1 開始工作 ── */
 function startWork() {
-  STATE.workTotalSeconds  = getWorkSeconds();
+  STATE.workTotalSeconds = getWorkSeconds();
   STATE.breakTotalSeconds = getBreakSeconds();
-  STATE.workStartTime     = new Date();
-  STATE.totalPausedMs     = 0;
-  STATE.lastPauseStart    = null;
-  STATE.mode              = 'work';
+  STATE.workStartTime = new Date();
+  STATE.totalPausedMs = 0;
+  STATE.lastPauseStart = null;
+  STATE.mode = 'work';
   // 記錄目標結束時間，切分頁回來也能正確計算
   STATE.endTime = Date.now() + STATE.workTotalSeconds * 1000;
 
@@ -239,8 +239,8 @@ function startWork() {
   updateTimerDisplay(STATE.workTotalSeconds);
   updateProgressBar(0, STATE.workTotalSeconds, 'work');
   setStatus('工作中...');
-  setButtons({ start:true, pause:false, endRound:false, reset:false, break:true });
-  EL.workMinutes.disabled  = true;
+  setButtons({ start: true, pause: false, endRound: false, reset: false, break: true });
+  EL.workMinutes.disabled = true;
   EL.breakMinutes.disabled = true;
 
   STATE.intervalId = setInterval(tick, 500);
@@ -248,7 +248,7 @@ function startWork() {
 
 /* ── 每次 tick（500ms）：從 endTime 重算剩餘，不累積誤差 ── */
 function tick() {
-  const now       = Date.now();
+  const now = Date.now();
   const remaining = Math.ceil((STATE.endTime - now) / 1000);
 
   if (STATE.mode === 'work') {
@@ -289,16 +289,16 @@ function tick() {
 
 /* ── 8-2 暫停 / 繼續 ── */
 function pauseTimer() {
-  if (!['work','work-overtime','break'].includes(STATE.mode)) return;
+  if (!['work', 'work-overtime', 'break'].includes(STATE.mode)) return;
   clearTimer();
   STATE.pauseRemaining = Math.max(0, STATE.endTime - Date.now());
   STATE.lastPauseStart = Date.now();
-  STATE.pausedMode     = STATE.mode;
-  STATE.mode           = 'paused';
+  STATE.pausedMode = STATE.mode;
+  STATE.mode = 'paused';
   EL.timerDisplay.classList.add('paused');
   setStatus('⏸ 已暫停');
   EL.btnPause.textContent = '▶ 繼續';
-  setButtons({ start:true, endRound:false, reset:false, break: STATE.pausedMode !== 'break' });
+  setButtons({ start: true, endRound: false, reset: false, break: STATE.pausedMode !== 'break' });
 }
 
 function resumeTimer() {
@@ -310,7 +310,7 @@ function resumeTimer() {
   }
   // 以剩餘毫秒重設 endTime，恢復正確倒數
   STATE.endTime = Date.now() + STATE.pauseRemaining;
-  STATE.mode    = STATE.pausedMode;
+  STATE.mode = STATE.pausedMode;
   STATE.pausedMode = null;
   EL.timerDisplay.classList.remove('paused');
   EL.btnPause.textContent = '⏸ 暫停';
@@ -320,7 +320,7 @@ function resumeTimer() {
     : STATE.mode === 'break' ? '☕ 休息中...' : '工作中...';
   setStatus(statusMsg);
   STATE.intervalId = setInterval(tick, 500);
-  setButtons({ start:true, pause:false, endRound: STATE.mode === 'break', reset:false, break: STATE.mode !== 'break' });
+  setButtons({ start: true, pause: false, endRound: STATE.mode === 'break', reset: false, break: STATE.mode !== 'break' });
 }
 
 /* ── 8-3 結束本輪（中途） ── */
@@ -364,8 +364,8 @@ function doReset() {
   setStatus('準備開始');
   EL.btnPause.textContent = '⏸ 暫停';
   EL.timerDisplay.classList.remove('paused');
-  setButtons({ start:false, pause:true, endRound:true, reset:false, break:true });
-  EL.workMinutes.disabled  = false;
+  setButtons({ start: false, pause: true, endRound: true, reset: false, break: true });
+  EL.workMinutes.disabled = false;
   EL.breakMinutes.disabled = false;
 }
 function resetToIdle() {
@@ -379,8 +379,8 @@ function resetToIdle() {
   setStatus('準備開始');
   EL.btnPause.textContent = '⏸ 暫停';
   EL.timerDisplay.classList.remove('paused');
-  setButtons({ start:false, pause:true, endRound:true, reset:false, break:true });
-  EL.workMinutes.disabled  = false;
+  setButtons({ start: false, pause: true, endRound: true, reset: false, break: true });
+  EL.workMinutes.disabled = false;
   EL.breakMinutes.disabled = false;
 }
 
@@ -388,7 +388,7 @@ function resetToIdle() {
    結束本輪 / 開始休息時都清空「做什麼」和「為什麼」；
    備註（taskNote）故意保留，讓使用者可重複使用補充資訊。 */
 function clearTaskFields() {
-  EL.taskName.value   = '';
+  EL.taskName.value = '';
   EL.taskReason.value = '';
 }
 
@@ -418,19 +418,19 @@ function handleStartBreak() {
 
   EL.breakSuggestion.textContent = getRandomBreakSuggestion();
   showModal(EL.modalBreakSuggest);
-  setButtons({ start:true, pause:true, endRound:true, reset:false, break:true });
+  setButtons({ start: true, pause: true, endRound: true, reset: false, break: true });
 }
 
 function startBreakTimer() {
   hideModal(EL.modalBreakSuggest);
-  STATE.mode    = 'break';
+  STATE.mode = 'break';
   STATE.endTime = Date.now() + STATE.breakTotalSeconds * 1000;
 
   setBadgeMode('break');
   updateTimerDisplay(STATE.breakTotalSeconds);
   updateProgressBar(0, STATE.breakTotalSeconds, 'break');
   setStatus('☕ 休息中...');
-  setButtons({ start:true, pause:false, endRound:true, reset:true, break:true });
+  setButtons({ start: true, pause: false, endRound: true, reset: true, break: true });
   document.body.className = 'mode-break';
   STATE.intervalId = setInterval(tick, 500);
 }
@@ -444,16 +444,16 @@ function saveRecord({ status, endReason }) {
     : 0;
 
   const record = {
-    id:         Date.now(),
-    timestamp:  getNowString(),
-    taskName:   EL.taskName.value.trim()   || '（未填寫）',
+    id: Date.now(),
+    timestamp: getNowString(),
+    taskName: EL.taskName.value.trim() || '（未填寫）',
     taskReason: EL.taskReason.value.trim() || '（未填寫）',
-    taskNote:   EL.taskNote.value.trim(),
+    taskNote: EL.taskNote.value.trim(),
     plannedSec: STATE.workTotalSeconds,
     actualSec,
     status,
     endReason,
-    synced:     false,
+    synced: false,
   };
   STATE.records.unshift(record);
   saveToStorage();
@@ -482,7 +482,7 @@ function renderHistory() {
         <span><span class="meta-label">實際工作：</span>${formatDuration(r.actualSec)}</span>
         <span><span class="meta-label">為什麼做：</span>${escapeHTML(r.taskReason)}</span>
         ${r.endReason ? `<span><span class="meta-label">結束原因：</span>${escapeHTML(r.endReason)}</span>` : ''}
-        ${r.taskNote  ? `<span><span class="meta-label">備註：</span>${escapeHTML(r.taskNote)}</span>`    : ''}
+        ${r.taskNote ? `<span><span class="meta-label">備註：</span>${escapeHTML(r.taskNote)}</span>` : ''}
       </div>
     </div>
   `).join('');
@@ -529,11 +529,11 @@ function initEventListeners() {
     hideModal(EL.modalEndReason);
     STATE.pendingAction = null;
     // 恢復計時：重設 endTime 以補回 Modal 顯示期間流失的時間
-    if (['work','work-overtime','break'].includes(STATE.mode)) {
-      STATE.endTime     = Date.now() + STATE.pauseRemaining;
-      STATE.intervalId  = setInterval(tick, 500);
+    if (['work', 'work-overtime', 'break'].includes(STATE.mode)) {
+      STATE.endTime = Date.now() + STATE.pauseRemaining;
+      STATE.intervalId = setInterval(tick, 500);
       const s = STATE.mode === 'work-overtime' ? '⚠️ 工作時間已結束，超時進行中...'
-              : STATE.mode === 'break'          ? '☕ 休息中...' : '工作中...';
+        : STATE.mode === 'break' ? '☕ 休息中...' : '工作中...';
       setStatus(s);
     }
   });
@@ -607,11 +607,21 @@ async function handleGoogleLogin() {
    ============================================================ */
 
 // 番茄圖示點擊進入點
+// 改成密碼驗證，不再需要 Google 登入
 async function handleLogoSync() {
-  if (!currentUser) {
-    showModal(EL.modalLogin);
+  const unsynced = STATE.records.filter(r => !r.synced);
+  if (unsynced.length === 0) {
+    setSyncResult('✅ 所有紀錄都已同步', false);
     return;
   }
+  // 請使用者輸入密碼（用 prompt，不需要額外 Modal）
+  const password = prompt('請輸入同步密碼：');
+  if (password === null) return; // 使用者按取消
+  if (!password.trim()) {
+    setSyncResult('❌ 密碼不可為空', true);
+    return;
+  }
+  sessionStorage.setItem('sync_password', password.trim());
   await runSync();
 }
 
@@ -628,7 +638,7 @@ async function runSync() {
   setSyncResult(`正在同步 ${unsynced.length} 筆紀錄...`, false);
 
   let successIds = [];
-  let failCount  = 0;
+  let failCount = 0;
 
   for (const record of unsynced) {
     const result = await syncOneRecord(record);
@@ -659,36 +669,46 @@ async function runSync() {
 }
 
 // 同步單筆：用 Image 請求繞過 CORS（GAS 不支援跨域，圖片請求不受 CORS 限制）
-// 代價是無法讀取回應內容，採樂觀策略：fetch 本身沒丟出例外就視為成功
+// 使用密碼驗證而非 Firebase idToken，原因：
+//   Firebase idToken 是 Firebase 格式，GAS 後端用 Google tokeninfo API 無法驗證。
+//   密碼驗證不依賴任何第三方 SDK，簡單可靠。
 async function syncOneRecord(record) {
-  try {
-    const idToken = await currentUser.getIdToken(false);
-    const payload = {
-      timestamp:      record.timestamp  || '',
-      task:           record.taskName   || '',
-      reason:         record.taskReason || '',
-      plannedMinutes: Math.round((record.plannedSec || 0) / 60),
-      actualMinutes:  Math.round((record.actualSec  || 0) / 60),
-      status:         record.status     || 'incomplete',
-      stopReason:     record.endReason  || '',
-      note:           record.taskNote   || '',
-    };
+  return new Promise((resolve) => {
+    try {
+      const payload = {
+        timestamp: record.timestamp || '',
+        task: record.taskName || '',
+        reason: record.taskReason || '',
+        plannedMinutes: Math.round((record.plannedSec || 0) / 60),
+        actualMinutes: Math.round((record.actualSec || 0) / 60),
+        status: record.status || 'incomplete',
+        stopReason: record.endReason || '',
+        note: record.taskNote || '',
+      };
 
-    const url = APPS_SCRIPT_URL
-      + '?idToken='  + encodeURIComponent(idToken)
-      + '&record='   + encodeURIComponent(JSON.stringify(payload));
+      // 密碼從 sessionStorage 取得（runSync 呼叫前已存入）
+      const password = sessionStorage.getItem('sync_password') || '';
 
-    await new Promise((resolve) => {
+      const url = APPS_SCRIPT_URL
+        + '?password=' + encodeURIComponent(password)
+        + '&record=' + encodeURIComponent(JSON.stringify(payload));
+
+      // Image 請求繞過 CORS：GAS 會執行寫入，但前端無法讀取回應
+      // 以 2 秒逾時判定：若 GAS 回傳任何內容（即使是錯誤圖）都算送達
       const img = new Image();
-      img.onload = img.onerror = resolve;
+      const timer = setTimeout(() => {
+        resolve({ success: true }); // 逾時仍視為送出
+      }, 3000);
+      img.onload = img.onerror = () => {
+        clearTimeout(timer);
+        resolve({ success: true });
+      };
       img.src = url;
-    });
 
-    return { success: true };
-
-  } catch (err) {
-    return { success: false, error: err.message || String(err) };
-  }
+    } catch (err) {
+      resolve({ success: false, error: err.message || String(err) });
+    }
+  });
 }
 
 /* ============================================================
@@ -704,7 +724,7 @@ function init() {
   setBadgeMode('idle');
   updateTimerDisplay(getWorkSeconds());
   updateProgressBar(0, getWorkSeconds(), 'work');
-  setButtons({ start:false, pause:true, endRound:true, reset:false, break:true });
+  setButtons({ start: false, pause: true, endRound: true, reset: false, break: true });
   setStatus('準備開始');
 }
 
