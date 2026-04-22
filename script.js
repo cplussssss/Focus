@@ -3,47 +3,58 @@
 /* ============================================================
    設定
    ============================================================ */
-
 const FIREBASE_CONFIG = {
-  apiKey: 'AIzaSyDeAM6lR-NcH--3avA1fqnA620DX2ktsNM',
-  authDomain: 'focus-e5f62.firebaseapp.com',
-  projectId: 'focus-e5f62',
-  storageBucket: 'focus-e5f62.firebasestorage.app',
+  apiKey:            'AIzaSyDeAM6lR-NcH--3avA1fqnA620DX2ktsNM',
+  authDomain:        'focus-e5f62.firebaseapp.com',
+  projectId:         'focus-e5f62',
+  storageBucket:     'focus-e5f62.firebasestorage.app',
   messagingSenderId: '1075734057431',
-  appId: '1:1075734057431:web:add0bd3e6f1069ac317b92',
+  appId:             '1:1075734057431:web:add0bd3e6f1069ac317b92',
 };
 
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxO4TyOky13MOWPRqowoy--DgWF01Ci6HEeUXpZuhU4SWiQz9FJWD728lQ-RkDWZz6a/exec';
+const STORAGE_KEY = 'pomodoro_records_v2';
 
-const STORAGE_KEY = 'pomodoro_records_v1';
+/* ============================================================
+   專注度文字對照
+   ============================================================ */
+const FOCUS_LABELS = { 1:'很差', 2:'差', 3:'普通', 4:'不錯', 5:'很專注' };
 
 /* ============================================================
    全域狀態
    ============================================================ */
 const STATE = {
-  mode: 'idle',   // 'idle'|'work'|'work-overtime'|'break'|'paused'
+  mode:       'idle',   // 'idle'|'work'|'work-overtime'|'break'|'paused'
   pausedMode: null,
 
   intervalId: null,
 
-  // 以結束時間戳記計算剩餘 — 切分頁再回來也正確
-  // 原因：setInterval 在背景分頁中可能被瀏覽器節流，導致計時不準；
-  //       改存目標結束時間，每次 tick 都重算 (endTime - now)，不受節流影響。
-  endTime: 0,    // 目標結束時間（ms，epoch）
-  pauseRemaining: 0,    // 暫停時儲存的剩餘毫秒
+  // 以目標結束時間計算剩餘 — 切分頁再回來也正確
+  // 原因：setInterval 在背景分頁中可能被瀏覽器節流導致計時不準；
+  //       改存 endTime (ms epoch)，每次 tick 重算 (endTime - now)，不受節流影響。
+  endTime:        0,
+  pauseRemaining: 0,
 
-  workTotalSeconds: 0,
+  workTotalSeconds:  0,
   breakTotalSeconds: 0,
-  workStartTime: null,   // Date — 工作開始時刻
-  totalPausedMs: 0,      // 累計暫停毫秒，用於計算實際工作秒數
-  lastPauseStart: null,   // 最近一次按暫停的時刻（ms）
+  workStartTime:     null,
+  totalPausedMs:     0,
+  lastPauseStart:    null,
 
-  records: [],
+  records:       [],
   pendingAction: null,
+
+  // 本輪待確認的評分資料（在 Modal 關閉前暫存）
+  pendingResult:      'done',       // 'done'|'partial'|'incomplete'
+  pendingFocus:       5,            // 1-5
+  pendingDistractions: [],          // string[]
+
+  // 今日已完成的累計輪數（用於摘要面板輪數進度）
+  todayActualRounds: 0,
 };
 
 let firebaseAuth = null;
-let currentUser = null;
+let currentUser  = null;
 
 /* ============================================================
    DOM 快取
@@ -52,43 +63,69 @@ let EL = {};
 
 function initElements() {
   EL = {
-    modeBadge: document.getElementById('modeBadge'),
-    timerDisplay: document.getElementById('timerDisplay'),
-    statusText: document.getElementById('statusText'),
+    modeBadge:       document.getElementById('modeBadge'),
+    timerDisplay:    document.getElementById('timerDisplay'),
+    statusText:      document.getElementById('statusText'),
     progressBarFill: document.getElementById('progressBarFill'),
 
-    workMinutes: document.getElementById('workMinutes'),
-    breakMinutes: document.getElementById('breakMinutes'),
+    workMinutes:      document.getElementById('workMinutes'),
+    breakMinutes:     document.getElementById('breakMinutes'),
+    estimatedRounds:  document.getElementById('estimatedRounds'),
 
-    taskName: document.getElementById('taskName'),
-    taskReason: document.getElementById('taskReason'),
-    taskNote: document.getElementById('taskNote'),
+    taskCategory: document.getElementById('taskCategory'),
+    taskProject:  document.getElementById('taskProject'),
+    taskName:     document.getElementById('taskName'),
+    taskReason:   document.getElementById('taskReason'),
+    taskNote:     document.getElementById('taskNote'),
 
-    btnStart: document.getElementById('btnStart'),
-    btnPause: document.getElementById('btnPause'),
-    btnEndRound: document.getElementById('btnEndRound'),
-    btnReset: document.getElementById('btnReset'),
-    btnBreak: document.getElementById('btnBreak'),
+    btnStart:        document.getElementById('btnStart'),
+    btnPause:        document.getElementById('btnPause'),
+    btnEndRound:     document.getElementById('btnEndRound'),
+    btnReset:        document.getElementById('btnReset'),
+    btnBreak:        document.getElementById('btnBreak'),
     btnClearHistory: document.getElementById('btnClearHistory'),
-    btnLogo: document.getElementById('btnLogo'),
+    btnLogo:         document.getElementById('btnLogo'),
 
-    historyList: document.getElementById('historyList'),
-    syncState: document.getElementById('syncState'),
-    syncResult: document.getElementById('syncResult'),
+    historyList:  document.getElementById('historyList'),
+    syncState:    document.getElementById('syncState'),
+    syncResult:   document.getElementById('syncResult'),
 
-    modalEndReason: document.getElementById('modalEndReason'),
-    endReasonInput: document.getElementById('endReasonInput'),
-    btnConfirmEnd: document.getElementById('btnConfirmEnd'),
-    btnCancelEnd: document.getElementById('btnCancelEnd'),
+    // 摘要面板
+    summaryDate:      document.getElementById('summaryDate'),
+    sumRounds:        document.getElementById('sumRounds'),
+    sumMinutes:       document.getElementById('sumMinutes'),
+    sumRate:          document.getElementById('sumRate'),
+    sumInterrupts:    document.getElementById('sumInterrupts'),
+    sumTopCategory:   document.getElementById('sumTopCategory'),
+    sumRoundProgress: document.getElementById('sumRoundProgress'),
 
-    modalBreakSuggest: document.getElementById('modalBreakSuggest'),
-    breakSuggestion: document.getElementById('breakSuggestion'),
-    btnModalStartBreak: document.getElementById('btnModalStartBreak'),
+    // Modal：結束原因
+    modalEndReason:  document.getElementById('modalEndReason'),
+    endReasonInput:  document.getElementById('endReasonInput'),
+    btnConfirmEnd:   document.getElementById('btnConfirmEnd'),
+    btnCancelEnd:    document.getElementById('btnCancelEnd'),
+    resultChips:     document.getElementById('resultChips'),
+    focusStars:      document.getElementById('focusStars'),
+    focusHint:       document.getElementById('focusHint'),
+    distractionChips:document.getElementById('distractionChips'),
+    distractionOther:document.getElementById('distractionOther'),
 
-    modalBreakDone: document.getElementById('modalBreakDone'),
-    btnModalNextRound: document.getElementById('btnModalNextRound'),
+    // Modal：工作完成
+    modalBreakSuggest:   document.getElementById('modalBreakSuggest'),
+    breakSuggestion:     document.getElementById('breakSuggestion'),
+    btnModalStartBreak:  document.getElementById('btnModalStartBreak'),
+    doneResultChips:     document.getElementById('doneResultChips'),
+    doneStars:           document.getElementById('doneStars'),
+    doneHint:            document.getElementById('doneHint'),
+    doneDistractionChips:document.getElementById('doneDistractionChips'),
+    doneDistractionOther:document.getElementById('doneDistractionOther'),
 
-    modalLogin: document.getElementById('modalLogin'),
+    // Modal：休息結束
+    modalBreakDone:   document.getElementById('modalBreakDone'),
+    btnModalNextRound:document.getElementById('btnModalNextRound'),
+
+    // Modal：登入
+    modalLogin:     document.getElementById('modalLogin'),
     btnGoogleLogin: document.getElementById('btnGoogleLogin'),
     btnCancelLogin: document.getElementById('btnCancelLogin'),
   };
@@ -98,14 +135,10 @@ function initElements() {
    休息建議
    ============================================================ */
 const BREAK_SUGGESTIONS = [
-  '喝杯水，補充水分💧',
-  '起來走走，活動一下雙腳🚶',
-  '做幾個伸展動作，放鬆肩頸🧘',
-  '閉上眼睛，讓眼睛休息一下😌',
-  '看向遠方，緩解眼睛疲勞👀',
-  '做幾次深呼吸，讓大腦充電🌬️',
-  '隨意轉轉脖子與肩膀，舒展筋骨💆',
-  '站起來抖一抖，甩掉疲勞！🕺',
+  '喝杯水，補充水分💧', '起來走走，活動一下雙腳🚶',
+  '做幾個伸展動作，放鬆肩頸🧘', '閉上眼睛，讓眼睛休息一下😌',
+  '看向遠方，緩解眼睛疲勞👀', '做幾次深呼吸，讓大腦充電🌬️',
+  '隨意轉轉脖子與肩膀，舒展筋骨💆', '站起來抖一抖，甩掉疲勞！🕺',
 ];
 function getRandomBreakSuggestion() {
   return BREAK_SUGGESTIONS[Math.floor(Math.random() * BREAK_SUGGESTIONS.length)];
@@ -146,30 +179,33 @@ function formatTime(totalSeconds) {
   const s = String(abs % 60).padStart(2, '0');
   return `${m}:${s}`;
 }
-function formatDuration(s) {
-  const m = Math.floor(s / 60), r = s % 60;
+function formatDuration(sec) {
+  const m = Math.floor(sec / 60), r = sec % 60;
   if (m === 0) return `${r} 秒`;
   if (r === 0) return `${m} 分鐘`;
   return `${m} 分 ${r} 秒`;
 }
 function getNowString() {
   return new Date().toLocaleString('zh-TW', {
-    year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+    year:'numeric', month:'2-digit', day:'2-digit',
+    hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false,
   });
 }
+function getTodayPrefix() {
+  return new Date().toLocaleDateString('zh-TW', { year:'numeric', month:'2-digit', day:'2-digit' });
+}
 function escapeHTML(str) {
-  return str
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function getWeekday() {
+  return ['日','一','二','三','四','五','六'][new Date().getDay()];
 }
 
 /* ============================================================
    UI 更新
    ============================================================ */
-function updateTimerDisplay(seconds) {
-  EL.timerDisplay.textContent = formatTime(seconds);
-}
+function updateTimerDisplay(seconds) { EL.timerDisplay.textContent = formatTime(seconds); }
+
 function updateProgressBar(elapsed, total, type) {
   let pct = total > 0 ? (elapsed / total) * 100 : 0;
   pct = Math.min(100, Math.max(0, pct));
@@ -178,24 +214,22 @@ function updateProgressBar(elapsed, total, type) {
   if (type === 'break') EL.progressBarFill.classList.add('break-mode');
   if (type === 'overtime') EL.progressBarFill.classList.add('overtime-mode');
 }
+
 function setBadgeMode(mode) {
-  const text = { work: '工作模式', break: '休息模式', overtime: '超時工作', idle: '準備中' };
+  const text = { work:'工作模式', break:'休息模式', overtime:'超時工作', idle:'準備中' };
   EL.modeBadge.textContent = text[mode] || '';
   EL.modeBadge.className = 'mode-badge';
-  if (mode === 'break') EL.modeBadge.classList.add('break-mode');
+  if (mode === 'break')    EL.modeBadge.classList.add('break-mode');
   if (mode === 'overtime') EL.modeBadge.classList.add('overtime-mode');
-
   EL.timerDisplay.className = 'timer-display';
-  if (mode === 'break') EL.timerDisplay.classList.add('break-mode');
+  if (mode === 'break')    EL.timerDisplay.classList.add('break-mode');
   if (mode === 'overtime') EL.timerDisplay.classList.add('overtime-mode');
 }
+
 function setButtons(map) {
-  const keyToEl = {
-    start: EL.btnStart, pause: EL.btnPause,
-    endRound: EL.btnEndRound, reset: EL.btnReset, break: EL.btnBreak,
-  };
+  const m = { start:EL.btnStart, pause:EL.btnPause, endRound:EL.btnEndRound, reset:EL.btnReset, break:EL.btnBreak };
   for (const [k, disabled] of Object.entries(map)) {
-    if (keyToEl[k]) keyToEl[k].disabled = disabled;
+    if (m[k]) m[k].disabled = disabled;
   }
 }
 function setStatus(text) { EL.statusText.textContent = text; }
@@ -207,13 +241,131 @@ function setSyncResult(text, isError) {
 }
 
 /* ============================================================
+   今日摘要面板
+   ============================================================ */
+function updateSummary() {
+  const today = getTodayPrefix();
+  const todayRecords = STATE.records.filter(r => r.timestamp && r.timestamp.startsWith(today));
+
+  const doneRounds = todayRecords.filter(r => r.status === 'done' || r.status === 'partial').length;
+  const totalRounds = todayRecords.length;
+  const totalMin = Math.round(todayRecords.reduce((s, r) => s + (r.actualSec || 0), 0) / 60);
+  const interrupts = todayRecords.filter(r => r.status === 'incomplete').length;
+  const rate = totalRounds > 0 ? Math.round(doneRounds / totalRounds * 100) + '%' : '—';
+
+  // 最常任務分類
+  const catCount = {};
+  todayRecords.forEach(r => { if (r.category) catCount[r.category] = (catCount[r.category] || 0) + 1; });
+  const topCat = Object.entries(catCount).sort((a, b) => b[1] - a[1])[0];
+
+  EL.sumRounds.textContent    = doneRounds;
+  EL.sumMinutes.textContent   = totalMin;
+  EL.sumRate.textContent      = rate;
+  EL.sumInterrupts.textContent = interrupts;
+  EL.sumTopCategory.textContent = topCat ? `最常分類：${topCat[0]}` : '最常分類：—';
+
+  // 輪數進度：預計 N 輪 / 已做 M 輪
+  const estimated = parseInt(EL.estimatedRounds.value, 10) || 1;
+  EL.sumRoundProgress.textContent = `預計 ${estimated} 輪 ／ 已做 ${totalRounds} 輪`;
+
+  // 日期顯示
+  const now = new Date();
+  EL.summaryDate.textContent = `${now.getMonth()+1}/${now.getDate()}（${getWeekday()}）`;
+}
+
+/* ============================================================
+   Chip / Star 元件初始化
+   ============================================================ */
+
+// 初始化單選 chip 組（任務結果）
+function initResultChips(groupEl, hintKey) {
+  groupEl.querySelectorAll('.chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      groupEl.querySelectorAll('.chip').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      STATE[hintKey] = btn.dataset.value;
+    });
+  });
+}
+
+// 初始化多選 chip 組（干擾來源）
+function initDistractionChips(groupEl, otherInput) {
+  groupEl.querySelectorAll('.chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      btn.classList.toggle('active');
+      const selected = [...groupEl.querySelectorAll('.chip.active')].map(b => b.dataset.value);
+      otherInput.hidden = !selected.includes('其他');
+    });
+  });
+}
+
+// 初始化星等評分
+function initStars(groupEl, hintEl, stateKey) {
+  groupEl.querySelectorAll('.star-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const val = parseInt(btn.dataset.val, 10);
+      STATE[stateKey] = val;
+      groupEl.querySelectorAll('.star-btn').forEach((b, i) => {
+        b.classList.toggle('active', i < val);
+      });
+      hintEl.textContent = `${val} — ${FOCUS_LABELS[val] || ''}`;
+    });
+  });
+}
+
+// 讀取當前 chip/star 選值
+function getChipValue(groupEl) {
+  const active = groupEl.querySelector('.chip.active');
+  return active ? active.dataset.value : null;
+}
+function getMultiChipValues(groupEl, otherInput) {
+  const vals = [...groupEl.querySelectorAll('.chip.active')].map(b => b.dataset.value);
+  if (vals.includes('其他') && otherInput.value.trim()) {
+    const idx = vals.indexOf('其他');
+    vals[idx] = `其他：${otherInput.value.trim()}`;
+  }
+  return vals;
+}
+function getStarValue(groupEl) {
+  const active = [...groupEl.querySelectorAll('.star-btn.active')];
+  return active.length;
+}
+
+// 重置 Modal 評分元件到預設值
+function resetEndModal() {
+  // 結果預設：未完成
+  EL.resultChips.querySelectorAll('.chip').forEach(b => {
+    b.classList.toggle('active', b.dataset.value === 'incomplete');
+  });
+  // 專注度預設：5
+  EL.focusStars.querySelectorAll('.star-btn').forEach((b, i) => b.classList.toggle('active', i < 5));
+  EL.focusHint.textContent = '5 — 很專注';
+  // 干擾清空
+  EL.distractionChips.querySelectorAll('.chip').forEach(b => b.classList.remove('active'));
+  EL.distractionOther.hidden = true;
+  EL.distractionOther.value = '';
+}
+function resetDoneModal() {
+  // 結果預設：完成
+  EL.doneResultChips.querySelectorAll('.chip').forEach(b => {
+    b.classList.toggle('active', b.dataset.value === 'done');
+  });
+  // 專注度預設：5
+  EL.doneStars.querySelectorAll('.star-btn').forEach((b, i) => b.classList.toggle('active', i < 5));
+  EL.doneHint.textContent = '5 — 很專注';
+  // 干擾清空
+  EL.doneDistractionChips.querySelectorAll('.chip').forEach(b => b.classList.remove('active'));
+  EL.doneDistractionOther.hidden = true;
+  EL.doneDistractionOther.value = '';
+}
+
+/* ============================================================
    計時器核心 — 以 endTime timestamp 計算（背景分頁不漂移）
+   原因：setInterval 在背景分頁中可能被瀏覽器節流，
+         改存目標結束時間，每次 tick 都重算 (endTime - now)，不受節流影響。
    ============================================================ */
 function clearTimer() {
-  if (STATE.intervalId !== null) {
-    clearInterval(STATE.intervalId);
-    STATE.intervalId = null;
-  }
+  if (STATE.intervalId !== null) { clearInterval(STATE.intervalId); STATE.intervalId = null; }
 }
 function getWorkSeconds() {
   const v = parseInt(EL.workMinutes.value, 10);
@@ -224,60 +376,53 @@ function getBreakSeconds() {
   return (isNaN(v) || v < 1) ? 5 * 60 : v * 60;
 }
 
-/* ── 8-1 開始工作 ── */
+/* ── 開始工作 ── */
 function startWork() {
-  STATE.workTotalSeconds = getWorkSeconds();
+  STATE.workTotalSeconds  = getWorkSeconds();
   STATE.breakTotalSeconds = getBreakSeconds();
-  STATE.workStartTime = new Date();
-  STATE.totalPausedMs = 0;
+  STATE.workStartTime  = new Date();
+  STATE.totalPausedMs  = 0;
   STATE.lastPauseStart = null;
-  STATE.mode = 'work';
-  // 記錄目標結束時間，切分頁回來也能正確計算
+  STATE.mode   = 'work';
   STATE.endTime = Date.now() + STATE.workTotalSeconds * 1000;
 
   setBadgeMode('work');
   updateTimerDisplay(STATE.workTotalSeconds);
   updateProgressBar(0, STATE.workTotalSeconds, 'work');
   setStatus('工作中...');
-  setButtons({ start: true, pause: false, endRound: false, reset: false, break: true });
-  EL.workMinutes.disabled = true;
+  setButtons({ start:true, pause:false, endRound:false, reset:false, break:true });
+  EL.workMinutes.disabled  = true;
   EL.breakMinutes.disabled = true;
-
   STATE.intervalId = setInterval(tick, 500);
 }
 
-/* ── 每次 tick（500ms）：從 endTime 重算剩餘，不累積誤差 ── */
+/* ── tick（500ms）：從 endTime 重算剩餘，不累積誤差 ── */
 function tick() {
   const now = Date.now();
   const remaining = Math.ceil((STATE.endTime - now) / 1000);
 
   if (STATE.mode === 'work') {
     if (remaining > 0) {
-      const elapsed = STATE.workTotalSeconds - remaining;
       updateTimerDisplay(remaining);
-      updateProgressBar(elapsed, STATE.workTotalSeconds, 'work');
+      updateProgressBar(STATE.workTotalSeconds - remaining, STATE.workTotalSeconds, 'work');
     } else {
-      // 進入超時——只觸發一次
       STATE.mode = 'work-overtime';
       setBadgeMode('overtime');
       setStatus('⚠️ 工作時間已結束，超時進行中...');
       updateProgressBar(100, 100, 'overtime');
       playBeep('work-done');
-      // 修正：倒數結束後啟用「開始休息」按鈕
+      // 倒數結束後啟用「開始休息」按鈕
       setButtons({ break: false });
       EL.timerDisplay.classList.add('pulse');
       setTimeout(() => EL.timerDisplay.classList.remove('pulse'), 400);
-      const overtime = Math.floor((now - STATE.endTime) / 1000);
-      updateTimerDisplay(-overtime);
+      updateTimerDisplay(-Math.floor((now - STATE.endTime) / 1000));
     }
   } else if (STATE.mode === 'work-overtime') {
-    const overtime = Math.floor((now - STATE.endTime) / 1000);
-    updateTimerDisplay(-overtime);
+    updateTimerDisplay(-Math.floor((now - STATE.endTime) / 1000));
   } else if (STATE.mode === 'break') {
     if (remaining > 0) {
-      const elapsed = STATE.breakTotalSeconds - remaining;
       updateTimerDisplay(remaining);
-      updateProgressBar(elapsed, STATE.breakTotalSeconds, 'break');
+      updateProgressBar(STATE.breakTotalSeconds - remaining, STATE.breakTotalSeconds, 'break');
     } else {
       clearTimer();
       playBeep('break-done');
@@ -287,7 +432,7 @@ function tick() {
   }
 }
 
-/* ── 8-2 暫停 / 繼續 ── */
+/* ── 暫停 / 繼續 ── */
 function pauseTimer() {
   if (!['work', 'work-overtime', 'break'].includes(STATE.mode)) return;
   clearTimer();
@@ -298,38 +443,34 @@ function pauseTimer() {
   EL.timerDisplay.classList.add('paused');
   setStatus('⏸ 已暫停');
   EL.btnPause.textContent = '▶ 繼續';
-  setButtons({ start: true, endRound: false, reset: false, break: STATE.pausedMode !== 'break' });
+  setButtons({ start:true, endRound:false, reset:false, break: STATE.pausedMode !== 'break' });
 }
-
 function resumeTimer() {
   if (STATE.mode !== 'paused') return;
-  // 暫停期間計入累計暫停時間
   if (STATE.lastPauseStart !== null) {
     STATE.totalPausedMs += Date.now() - STATE.lastPauseStart;
     STATE.lastPauseStart = null;
   }
-  // 以剩餘毫秒重設 endTime，恢復正確倒數
   STATE.endTime = Date.now() + STATE.pauseRemaining;
   STATE.mode = STATE.pausedMode;
   STATE.pausedMode = null;
   EL.timerDisplay.classList.remove('paused');
   EL.btnPause.textContent = '⏸ 暫停';
-
-  const statusMsg = STATE.mode === 'work-overtime'
-    ? '⚠️ 工作時間已結束，超時進行中...'
+  const s = STATE.mode === 'work-overtime' ? '⚠️ 工作時間已結束，超時進行中...'
     : STATE.mode === 'break' ? '☕ 休息中...' : '工作中...';
-  setStatus(statusMsg);
+  setStatus(s);
   STATE.intervalId = setInterval(tick, 500);
-  setButtons({ start: true, pause: false, endRound: STATE.mode === 'break', reset: false, break: STATE.mode !== 'break' });
+  setButtons({ start:true, pause:false, endRound: STATE.mode === 'break', reset:false, break: STATE.mode !== 'break' });
 }
 
-/* ── 8-3 結束本輪（中途） ── */
+/* ── 結束本輪（中途） ── */
 function triggerEndEarly(action) {
   if (STATE.mode === 'idle') { if (action === 'reset') doReset(); return; }
   STATE.pendingAction = action;
   clearTimer();
   EL.timerDisplay.classList.remove('paused');
   EL.endReasonInput.value = '';
+  resetEndModal();
   showModal(EL.modalEndReason);
 }
 
@@ -341,15 +482,19 @@ function confirmEndEarly() {
     setTimeout(() => { EL.endReasonInput.style.borderColor = ''; }, 1500);
     return;
   }
+  const result      = getChipValue(EL.resultChips) || 'incomplete';
+  const focus       = getStarValue(EL.focusStars) || 5;
+  const distractions = getMultiChipValues(EL.distractionChips, EL.distractionOther);
+
   hideModal(EL.modalEndReason);
-  saveRecord({ status: 'incomplete', endReason: reason });
-  // 結束本輪後清空任務欄位，避免下輪殘留
+  saveRecord({ status: result, endReason: reason, focus, distractions });
+  // 結束本輪後清空「做什麼」和「為什麼」；備註保留（方便跨輪重用）
   clearTaskFields();
   resetToIdle();
   STATE.pendingAction = null;
 }
 
-/* ── 8-4 重設 ── */
+/* ── 重設 ── */
 function handleReset() {
   if (STATE.mode === 'idle') { doReset(); return; }
   triggerEndEarly('reset');
@@ -364,8 +509,8 @@ function doReset() {
   setStatus('準備開始');
   EL.btnPause.textContent = '⏸ 暫停';
   EL.timerDisplay.classList.remove('paused');
-  setButtons({ start: false, pause: true, endRound: true, reset: false, break: true });
-  EL.workMinutes.disabled = false;
+  setButtons({ start:false, pause:true, endRound:true, reset:false, break:true });
+  EL.workMinutes.disabled  = false;
   EL.breakMinutes.disabled = false;
 }
 function resetToIdle() {
@@ -379,23 +524,23 @@ function resetToIdle() {
   setStatus('準備開始');
   EL.btnPause.textContent = '⏸ 暫停';
   EL.timerDisplay.classList.remove('paused');
-  setButtons({ start: false, pause: true, endRound: true, reset: false, break: true });
-  EL.workMinutes.disabled = false;
+  setButtons({ start:false, pause:true, endRound:true, reset:false, break:true });
+  EL.workMinutes.disabled  = false;
   EL.breakMinutes.disabled = false;
 }
 
-/* ── 清空任務輸入欄位 ──
-   結束本輪 / 開始休息時都清空「做什麼」和「為什麼」；
-   備註（taskNote）故意保留，讓使用者可重複使用補充資訊。 */
+/* ── 清空任務欄位 ──
+   結束本輪 / 開始休息後清空「做什麼」和「為什麼」，
+   避免進入下一輪時殘留上一輪資料。
+   備註（taskNote）刻意保留，讓使用者可帶入下一輪繼續使用。 */
 function clearTaskFields() {
-  EL.taskName.value = '';
+  EL.taskName.value   = '';
   EL.taskReason.value = '';
 }
 
-/* ── 8-5 開始休息 ──
-   修正：原本在 work-overtime 模式時按鈕為 disabled，
-   現在 tick 進入 overtime 時已主動呼叫 setButtons({ break:false }) 啟用。
-   這裡的 guard 確保只有工作中 / 超時 / 暫停時才能觸發。 */
+/* ── 開始休息 ──
+   修正：tick 進入 overtime 模式時已主動 setButtons({ break:false }) 啟用按鈕，
+   此函式只需確認 mode 合法即可觸發。 */
 function handleStartBreak() {
   const okModes = ['work', 'work-overtime', 'paused'];
   if (!okModes.includes(STATE.mode)) return;
@@ -412,25 +557,31 @@ function handleStartBreak() {
     STATE.pausedMode = null;
   }
 
-  saveRecord({ status: 'done', endReason: '' });
-  // 工作完成後清空任務欄位，避免進入下一輪時殘留
-  clearTaskFields();
-
+  // 顯示休息建議 + 評分 Modal
   EL.breakSuggestion.textContent = getRandomBreakSuggestion();
+  resetDoneModal();
   showModal(EL.modalBreakSuggest);
-  setButtons({ start: true, pause: true, endRound: true, reset: false, break: true });
+  setButtons({ start:true, pause:true, endRound:true, reset:false, break:true });
 }
 
 function startBreakTimer() {
+  // 讀取 done modal 的評分後存入紀錄
+  const result      = getChipValue(EL.doneResultChips) || 'done';
+  const focus       = getStarValue(EL.doneStars) || 5;
+  const distractions = getMultiChipValues(EL.doneDistractionChips, EL.doneDistractionOther);
+
   hideModal(EL.modalBreakSuggest);
+  saveRecord({ status: result, endReason: '', focus, distractions });
+  // 工作完成後清空任務欄位，避免進入下一輪殘留上一輪資料
+  clearTaskFields();
+
   STATE.mode = 'break';
   STATE.endTime = Date.now() + STATE.breakTotalSeconds * 1000;
-
   setBadgeMode('break');
   updateTimerDisplay(STATE.breakTotalSeconds);
   updateProgressBar(0, STATE.breakTotalSeconds, 'break');
   setStatus('☕ 休息中...');
-  setButtons({ start: true, pause: false, endRound: true, reset: true, break: true });
+  setButtons({ start:true, pause:false, endRound:true, reset:true, break:true });
   document.body.className = 'mode-break';
   STATE.intervalId = setInterval(tick, 500);
 }
@@ -438,26 +589,35 @@ function startBreakTimer() {
 /* ============================================================
    紀錄邏輯
    ============================================================ */
-function saveRecord({ status, endReason }) {
+function saveRecord({ status, endReason, focus = 5, distractions = [] }) {
+  const now = new Date();
   const actualSec = STATE.workStartTime
     ? Math.round((Date.now() - STATE.workStartTime.getTime() - STATE.totalPausedMs) / 1000)
     : 0;
 
   const record = {
-    id: Date.now(),
-    timestamp: getNowString(),
-    taskName: EL.taskName.value.trim() || '（未填寫）',
-    taskReason: EL.taskReason.value.trim() || '（未填寫）',
-    taskNote: EL.taskNote.value.trim(),
-    plannedSec: STATE.workTotalSeconds,
+    id:           Date.now(),
+    timestamp:    getNowString(),
+    startTime:    STATE.workStartTime ? STATE.workStartTime.toLocaleTimeString('zh-TW', { hour:'2-digit', minute:'2-digit', hour12:false }) : '',
+    endTime:      now.toLocaleTimeString('zh-TW', { hour:'2-digit', minute:'2-digit', hour12:false }),
+    weekday:      getWeekday(),
+    category:     EL.taskCategory.value || '',
+    project:      EL.taskProject.value.trim(),
+    taskName:     EL.taskName.value.trim() || '（未填寫）',
+    taskReason:   EL.taskReason.value.trim() || '（未填寫）',
+    taskNote:     EL.taskNote.value.trim(),
+    plannedSec:   STATE.workTotalSeconds,
     actualSec,
-    status,
+    status,          // 'done' | 'partial' | 'incomplete'
     endReason,
+    focus,           // 1-5
+    distractions,    // string[]
     synced: false,
   };
   STATE.records.unshift(record);
   saveToStorage();
   renderHistory();
+  updateSummary();
 }
 
 function renderHistory() {
@@ -465,27 +625,44 @@ function renderHistory() {
     EL.historyList.innerHTML = '<p class="empty-hint">尚無紀錄，完成第一輪後會顯示在這裡。</p>';
     return;
   }
-  EL.historyList.innerHTML = STATE.records.map(r => `
-    <div class="record-card ${r.status === 'incomplete' ? 'incomplete' : ''}">
+
+  const statusMap = { done:'✅ 完成', partial:'🔶 部分完成', incomplete:'❌ 未完成' };
+  const statusClass = { done:'done', partial:'partial', incomplete:'incomplete' };
+
+  EL.historyList.innerHTML = STATE.records.map(r => {
+    const timeRange = (r.startTime && r.endTime) ? `${r.startTime}–${r.endTime}` : r.timestamp;
+
+    // 標籤列
+    const catTag  = r.category ? `<span class="record-tag cat">${escapeHTML(r.category)}</span>` : '';
+    const projTag = r.project  ? `<span class="record-tag proj">${escapeHTML(r.project)}</span>`  : '';
+    const focusTag = r.focus   ? `<span class="record-tag focus">專注 ${r.focus}/5</span>` : '';
+    const distrTag = r.distractions && r.distractions.length
+      ? `<span class="record-tag">${escapeHTML(r.distractions.slice(0,2).join('、'))}${r.distractions.length > 2 ? '…' : ''}</span>`
+      : '';
+
+    const endReasonHtml = r.endReason
+      ? `<span><span class="meta-label">結束原因：</span>${escapeHTML(r.endReason)}</span>` : '';
+    const noteHtml = r.taskNote
+      ? `<span><span class="meta-label">備註：</span>${escapeHTML(r.taskNote)}</span>` : '';
+    const reasonHtml = r.taskReason && r.taskReason !== '（未填寫）'
+      ? `<span><span class="meta-label">為什麼：</span>${escapeHTML(r.taskReason)}</span>` : '';
+
+    return `
+    <div class="record-card ${statusClass[r.status] || 'incomplete'}">
       <div class="record-card-header">
         <span class="record-card-title">${escapeHTML(r.taskName)}</span>
-        <span class="record-status ${r.status === 'done' ? 'done' : 'incomplete'}">
-          ${r.status === 'done' ? '✅ 已完成' : '❌ 未完成'}
-        </span>
-        <span class="sync-badge ${r.synced ? 'synced' : 'not-synced'}">
-          ${r.synced ? '☁ 已同步' : '○ 未同步'}
-        </span>
+        <span class="record-status ${statusClass[r.status] || 'incomplete'}">${statusMap[r.status] || r.status}</span>
+        <span class="sync-badge ${r.synced ? 'synced' : 'not-synced'}">${r.synced ? '☁ 已同步' : '○ 未同步'}</span>
       </div>
+      <div class="record-tags">${catTag}${projTag}${focusTag}${distrTag}</div>
       <div class="record-meta">
-        <span><span class="meta-label">時間：</span>${r.timestamp}</span>
-        <span><span class="meta-label">預設長度：</span>${formatDuration(r.plannedSec)}</span>
-        <span><span class="meta-label">實際工作：</span>${formatDuration(r.actualSec)}</span>
-        <span><span class="meta-label">為什麼做：</span>${escapeHTML(r.taskReason)}</span>
-        ${r.endReason ? `<span><span class="meta-label">結束原因：</span>${escapeHTML(r.endReason)}</span>` : ''}
-        ${r.taskNote ? `<span><span class="meta-label">備註：</span>${escapeHTML(r.taskNote)}</span>` : ''}
+        <span><span class="meta-label">時間：</span>${timeRange}</span>
+        <span><span class="meta-label">預設：</span>${formatDuration(r.plannedSec)}</span>
+        <span><span class="meta-label">實際：</span>${formatDuration(r.actualSec)}</span>
+        ${reasonHtml}${endReasonHtml}${noteHtml}
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 
 /* ============================================================
@@ -499,10 +676,7 @@ function loadFromStorage() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) STATE.records = JSON.parse(raw);
-  } catch (e) {
-    console.warn('localStorage 讀取失敗：', e);
-    STATE.records = [];
-  }
+  } catch (e) { console.warn('localStorage 讀取失敗：', e); STATE.records = []; }
 }
 
 /* ============================================================
@@ -528,7 +702,6 @@ function initEventListeners() {
   EL.btnCancelEnd.addEventListener('click', () => {
     hideModal(EL.modalEndReason);
     STATE.pendingAction = null;
-    // 恢復計時：重設 endTime 以補回 Modal 顯示期間流失的時間
     if (['work', 'work-overtime', 'break'].includes(STATE.mode)) {
       STATE.endTime = Date.now() + STATE.pauseRemaining;
       STATE.intervalId = setInterval(tick, 500);
@@ -536,6 +709,10 @@ function initEventListeners() {
         : STATE.mode === 'break' ? '☕ 休息中...' : '工作中...';
       setStatus(s);
     }
+  });
+
+  EL.endReasonInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); confirmEndEarly(); }
   });
 
   EL.btnModalStartBreak.addEventListener('click', startBreakTimer);
@@ -550,6 +727,7 @@ function initEventListeners() {
       STATE.records = [];
       saveToStorage();
       renderHistory();
+      updateSummary();
     }
   });
 
@@ -560,16 +738,24 @@ function initEventListeners() {
     }
   });
 
-  EL.endReasonInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); confirmEndEarly(); }
-  });
+  EL.estimatedRounds.addEventListener('input', updateSummary);
 
-  // 番茄圖示點擊 → 觸發同步
+  // 番茄圖示 → 密碼同步
   EL.btnLogo.addEventListener('click', handleLogoSync);
 
   // 登入 Modal
   EL.btnGoogleLogin.addEventListener('click', handleGoogleLogin);
   EL.btnCancelLogin.addEventListener('click', () => hideModal(EL.modalLogin));
+
+  // 評分元件初始化（中途結束 Modal）
+  initResultChips(EL.resultChips, 'pendingResult');
+  initDistractionChips(EL.distractionChips, EL.distractionOther);
+  initStars(EL.focusStars, EL.focusHint, 'pendingFocus');
+
+  // 評分元件初始化（工作完成 Modal）
+  initResultChips(EL.doneResultChips, 'pendingResult');
+  initDistractionChips(EL.doneDistractionChips, EL.doneDistractionOther);
+  initStars(EL.doneStars, EL.doneHint, 'pendingFocus');
 }
 
 /* ============================================================
@@ -583,9 +769,7 @@ function initFirebase() {
       currentUser = user;
       EL.syncState.textContent = user ? user.email : '';
     });
-  } catch (err) {
-    console.error('Firebase 初始化失敗：', err);
-  }
+  } catch (err) { console.error('Firebase 初始化失敗：', err); }
 }
 
 async function handleGoogleLogin() {
@@ -594,7 +778,6 @@ async function handleGoogleLogin() {
     const provider = new firebase.auth.GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
     await firebaseAuth.signInWithPopup(provider);
-    // 登入成功後直接觸發同步
     await runSync();
   } catch (err) {
     console.error('Google 登入失敗：', err);
@@ -603,42 +786,33 @@ async function handleGoogleLogin() {
 }
 
 /* ============================================================
-   同步邏輯
+   同步邏輯（密碼驗證）
    ============================================================ */
 
 // 番茄圖示點擊進入點
-// 改成密碼驗證，不再需要 Google 登入
+// 改成密碼驗證，不需要 Google 登入
 async function handleLogoSync() {
   const unsynced = STATE.records.filter(r => !r.synced);
   if (unsynced.length === 0) {
     setSyncResult('✅ 所有紀錄都已同步', false);
     return;
   }
-  // 請使用者輸入密碼（用 prompt，不需要額外 Modal）
-  const password = prompt('請輸入同步密碼：');
-  if (password === null) return; // 使用者按取消
-  if (!password.trim()) {
-    setSyncResult('❌ 密碼不可為空', true);
-    return;
-  }
+  const password = prompt(`有 ${unsynced.length} 筆未同步紀錄，請輸入同步密碼：`);
+  if (password === null) return;
+  if (!password.trim()) { setSyncResult('❌ 密碼不可為空', true); return; }
   sessionStorage.setItem('sync_password', password.trim());
   await runSync();
 }
 
 async function runSync() {
   const unsynced = STATE.records.filter(r => !r.synced);
-  if (unsynced.length === 0) {
-    setSyncResult('✅ 所有紀錄都已同步', false);
-    return;
-  }
+  if (unsynced.length === 0) { setSyncResult('✅ 所有紀錄都已同步', false); return; }
 
-  // 同步中：番茄圖示旋轉、按鈕禁用，防止重複點擊
   EL.btnLogo.disabled = true;
   EL.btnLogo.classList.add('syncing');
   setSyncResult(`正在同步 ${unsynced.length} 筆紀錄...`, false);
 
-  let successIds = [];
-  let failCount = 0;
+  let successIds = [], failCount = 0;
 
   for (const record of unsynced) {
     const result = await syncOneRecord(record);
@@ -650,12 +824,13 @@ async function runSync() {
     }
   }
 
-  // 同步成功的紀錄直接從 STATE 和 localStorage 移除，不留在畫面上
+  // 同步成功的紀錄直接從 STATE 和 localStorage 移除
   // 原因：已寫入 Google Sheet 的資料不需再佔用本機空間，也避免重複同步
   if (successIds.length > 0) {
     STATE.records = STATE.records.filter(r => !successIds.includes(r.id));
     saveToStorage();
     renderHistory();
+    updateSummary();
   }
 
   EL.btnLogo.disabled = false;
@@ -668,43 +843,37 @@ async function runSync() {
   }
 }
 
-// 同步單筆：用 Image 請求繞過 CORS（GAS 不支援跨域，圖片請求不受 CORS 限制）
-// 使用密碼驗證而非 Firebase idToken，原因：
-//   Firebase idToken 是 Firebase 格式，GAS 後端用 Google tokeninfo API 無法驗證。
-//   密碼驗證不依賴任何第三方 SDK，簡單可靠。
+// 同步單筆：用 Image 請求繞過 CORS
+// 密碼驗證：不依賴 Firebase token，簡單可靠
 async function syncOneRecord(record) {
   return new Promise((resolve) => {
     try {
-      const payload = {
-        timestamp: record.timestamp || '',
-        task: record.taskName || '',
-        reason: record.taskReason || '',
-        plannedMinutes: Math.round((record.plannedSec || 0) / 60),
-        actualMinutes: Math.round((record.actualSec || 0) / 60),
-        status: record.status || 'incomplete',
-        stopReason: record.endReason || '',
-        note: record.taskNote || '',
-      };
-
-      // 密碼從 sessionStorage 取得（runSync 呼叫前已存入）
       const password = sessionStorage.getItem('sync_password') || '';
+      const payload = {
+        timestamp:      record.timestamp  || '',
+        task:           record.taskName   || '',
+        reason:         record.taskReason || '',
+        plannedMinutes: Math.round((record.plannedSec || 0) / 60),
+        actualMinutes:  Math.round((record.actualSec  || 0) / 60),
+        status:         (record.status === 'partial') ? 'incomplete' : (record.status || 'incomplete'),
+        stopReason:     record.endReason  || '',
+        note:           [
+          record.taskNote || '',
+          record.category ? `分類：${record.category}` : '',
+          record.project  ? `專案：${record.project}` : '',
+          record.focus    ? `專注度：${record.focus}/5` : '',
+          record.distractions && record.distractions.length ? `干擾：${record.distractions.join('、')}` : '',
+        ].filter(Boolean).join(' | '),
+      };
 
       const url = APPS_SCRIPT_URL
         + '?password=' + encodeURIComponent(password)
-        + '&record=' + encodeURIComponent(JSON.stringify(payload));
+        + '&record='   + encodeURIComponent(JSON.stringify(payload));
 
-      // Image 請求繞過 CORS：GAS 會執行寫入，但前端無法讀取回應
-      // 以 2 秒逾時判定：若 GAS 回傳任何內容（即使是錯誤圖）都算送達
+      const timer = setTimeout(() => resolve({ success: true }), 3500);
       const img = new Image();
-      const timer = setTimeout(() => {
-        resolve({ success: true }); // 逾時仍視為送出
-      }, 3000);
-      img.onload = img.onerror = () => {
-        clearTimeout(timer);
-        resolve({ success: true });
-      };
+      img.onload = img.onerror = () => { clearTimeout(timer); resolve({ success: true }); };
       img.src = url;
-
     } catch (err) {
       resolve({ success: false, error: err.message || String(err) });
     }
@@ -724,8 +893,9 @@ function init() {
   setBadgeMode('idle');
   updateTimerDisplay(getWorkSeconds());
   updateProgressBar(0, getWorkSeconds(), 'work');
-  setButtons({ start: false, pause: true, endRound: true, reset: false, break: true });
+  setButtons({ start:false, pause:true, endRound:true, reset:false, break:true });
   setStatus('準備開始');
+  updateSummary();
 }
 
 document.addEventListener('DOMContentLoaded', init);
