@@ -857,13 +857,12 @@ async function syncOneRecord(record) {
         actualMinutes:  Math.round((record.actualSec  || 0) / 60),
         status:         (record.status === 'partial') ? 'incomplete' : (record.status || 'incomplete'),
         stopReason:     record.endReason  || '',
-        note:           [
-          record.taskNote || '',
-          record.category ? `分類：${record.category}` : '',
-          record.project  ? `專案：${record.project}` : '',
-          record.focus    ? `專注度：${record.focus}/5` : '',
-          record.distractions && record.distractions.length ? `干擾：${record.distractions.join('、')}` : '',
-        ].filter(Boolean).join(' | '),
+        note:           record.taskNote   || '',
+        category:       record.category   || '',
+        project:        record.project    || '',
+        focus:          record.focus      || 0,
+        distractions:   record.distractions && record.distractions.length
+                          ? record.distractions.join('、') : '',
       };
 
       const url = APPS_SCRIPT_URL
