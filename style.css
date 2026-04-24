@@ -488,6 +488,21 @@ html, body {
 .sync-badge.synced     { color: var(--break-green); opacity: 0.8; }
 .sync-badge.not-synced { color: var(--text-muted); }
 
+.btn-delete-record {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  line-height: 1;
+  padding: 2px 5px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: color var(--transition), background var(--transition);
+  flex-shrink: 0;
+}
+.btn-delete-record:hover { color: #e85d3a; background: var(--tomato-dim); }
+
 .record-meta {
   font-size: 0.74rem;
   color: var(--text-muted);

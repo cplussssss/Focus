@@ -694,12 +694,17 @@ function renderHistory() {
     const reasonHtml = r.taskReason && r.taskReason !== '（未填寫）'
       ? `<span><span class="meta-label">為什麼：</span>${escapeHTML(r.taskReason)}</span>` : '';
 
+    const deleteBtn = !r.synced
+      ? `<button type="button" class="btn-delete-record" data-id="${r.id}" title="刪除此筆紀錄">✕</button>`
+      : '';
+
     return `
     <div class="record-card ${statusClass[r.status] || 'incomplete'}">
       <div class="record-card-header">
         <span class="record-card-title">${escapeHTML(r.taskName)}</span>
         <span class="record-status ${statusClass[r.status] || 'incomplete'}">${statusMap[r.status] || r.status}</span>
         <span class="sync-badge ${r.synced ? 'synced' : 'not-synced'}">${r.synced ? '☁ 已同步' : '○ 未同步'}</span>
+        ${deleteBtn}
       </div>
       <div class="record-tags">${catTag}${projTag}${focusTag}${distrTag}</div>
       <div class="record-meta">
@@ -776,6 +781,17 @@ function initEventListeners() {
       renderHistory();
       updateSummary();
     }
+  });
+
+  // 單筆刪除：用事件委派，點到 .btn-delete-record 才觸發
+  EL.historyList.addEventListener('click', (e) => {
+    const btn = e.target.closest('.btn-delete-record');
+    if (!btn) return;
+    const id = Number(btn.dataset.id);
+    STATE.records = STATE.records.filter(r => r.id !== id);
+    saveToStorage();
+    renderHistory();
+    updateSummary();
   });
 
   EL.workMinutes.addEventListener('input', () => {
