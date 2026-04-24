@@ -202,9 +202,51 @@ function getWeekday() {
 }
 
 /* ============================================================
+   頁籤標題 & 閃爍
+   ============================================================ */
+let _tabFlashId  = null;
+let _tabFlashOn  = false;
+const TAB_ORIGINAL = document.title;
+
+// 每次計時更新時同步頁籤標題
+function updateTabTitle(timeStr) {
+  if (_tabFlashId !== null) return; // 閃爍中不覆蓋
+  const prefix = {
+    'work':          '⏱',
+    'work-overtime': '⚠️',
+    'break':         '☕',
+    'paused':        '⏸',
+  }[STATE.mode] || '';
+  document.title = prefix ? `${prefix} ${timeStr} — 番茄` : TAB_ORIGINAL;
+}
+
+// 時間到時閃爍頁籤：在 alertText 和正常標題之間交替
+function startTabFlash(alertText) {
+  stopTabFlash();
+  _tabFlashOn = true;
+  document.title = alertText;
+  _tabFlashId = setInterval(() => {
+    _tabFlashOn = !_tabFlashOn;
+    document.title = _tabFlashOn ? alertText : TAB_ORIGINAL;
+  }, 800);
+}
+
+function stopTabFlash() {
+  if (_tabFlashId !== null) {
+    clearInterval(_tabFlashId);
+    _tabFlashId = null;
+  }
+  document.title = TAB_ORIGINAL;
+}
+
+/* ============================================================
    UI 更新
    ============================================================ */
-function updateTimerDisplay(seconds) { EL.timerDisplay.textContent = formatTime(seconds); }
+function updateTimerDisplay(seconds) {
+  const str = formatTime(seconds);
+  EL.timerDisplay.textContent = str;
+  updateTabTitle(str);
+}
 
 function updateProgressBar(elapsed, total, type) {
   let pct = total > 0 ? (elapsed / total) * 100 : 0;
@@ -411,11 +453,11 @@ function tick() {
       setStatus('⚠️ 工作時間已結束，超時進行中...');
       updateProgressBar(100, 100, 'overtime');
       playBeep('work-done');
-      // 倒數結束後啟用「開始休息」按鈕
       setButtons({ break: false });
       EL.timerDisplay.classList.add('pulse');
       setTimeout(() => EL.timerDisplay.classList.remove('pulse'), 400);
       updateTimerDisplay(-Math.floor((now - STATE.endTime) / 1000));
+      startTabFlash('⏰ 時間到！');
     }
   } else if (STATE.mode === 'work-overtime') {
     updateTimerDisplay(-Math.floor((now - STATE.endTime) / 1000));
@@ -428,6 +470,7 @@ function tick() {
       playBeep('break-done');
       setStatus('✅ 休息結束！準備下一輪？');
       showModal(EL.modalBreakDone);
+      startTabFlash('🍅 休息結束！');
     }
   }
 }
@@ -444,6 +487,8 @@ function pauseTimer() {
   setStatus('⏸ 已暫停');
   EL.btnPause.textContent = '▶ 繼續';
   setButtons({ start: true, endRound: false, reset: false, break: STATE.pausedMode !== 'break' });
+  stopTabFlash();
+  updateTabTitle(EL.timerDisplay.textContent);
 }
 function resumeTimer() {
   if (STATE.mode !== 'paused') return;
@@ -501,6 +546,7 @@ function handleReset() {
 }
 function doReset() {
   clearTimer();
+  stopTabFlash();
   STATE.mode = 'idle';
   const workSec = getWorkSeconds();
   updateTimerDisplay(workSec);
@@ -515,6 +561,7 @@ function doReset() {
 }
 function resetToIdle() {
   clearTimer();
+  stopTabFlash();
   STATE.mode = 'idle';
   document.body.className = '';
   const workSec = getWorkSeconds();
