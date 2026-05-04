@@ -448,16 +448,9 @@ function tick() {
       updateTimerDisplay(remaining);
       updateProgressBar(STATE.workTotalSeconds - remaining, STATE.workTotalSeconds, 'work');
     } else {
-      STATE.mode = 'work-overtime';
-      setBadgeMode('overtime');
-      setStatus('⚠️ 工作時間已結束，超時進行中...');
-      updateProgressBar(100, 100, 'overtime');
+      clearTimer();
       playBeep('work-done');
-      setButtons({ break: false });
-      EL.timerDisplay.classList.add('pulse');
-      setTimeout(() => EL.timerDisplay.classList.remove('pulse'), 400);
-      updateTimerDisplay(-Math.floor((now - STATE.endTime) / 1000));
-      startTabFlash('⏰ 時間到！');
+      handleStartBreak();
     }
   } else if (STATE.mode === 'work-overtime') {
     updateTimerDisplay(-Math.floor((now - STATE.endTime) / 1000));
@@ -612,6 +605,7 @@ function handleStartBreak() {
 }
 
 function startBreakTimer() {
+  stopTabFlash();
   // 讀取 done modal 的評分後存入紀錄
   const result = getChipValue(EL.doneResultChips) || 'done';
   const focus = getStarValue(EL.doneStars) || 5;
@@ -744,6 +738,7 @@ function initEventListeners() {
   EL.btnEndRound.addEventListener('click', () => {
     if (STATE.mode === 'idle') return;
     if (STATE.mode === 'break') { clearTimer(); resetToIdle(); return; }
+    if (STATE.mode === 'paused' && STATE.pausedMode === 'break') { clearTimer(); stopTabFlash(); resetToIdle(); return; }
     triggerEndEarly('endRound');
   });
 
