@@ -130,6 +130,24 @@ function initElements() {
     btnGoogleLogin: document.getElementById('btnGoogleLogin'),
     btnCancelLogin: document.getElementById('btnCancelLogin'),
     btnMyRecords:   document.getElementById('btnMyRecords'),  // ★ 新增
+    
+    // 帳號設定 Modal
+    modalAccount:    document.getElementById('modalAccount'),
+    btnAccount:      document.getElementById('btnAccount'),
+    btnLoginHeader:  document.getElementById('btnLoginHeader'),
+    btnCloseAccount: document.getElementById('btnCloseAccount'),
+    btnLogout:       document.getElementById('btnLogout'),
+    btnSaveUsername: document.getElementById('btnSaveUsername'),
+    usernameInput:   document.getElementById('usernameInput'),
+    usernameHint:    document.getElementById('usernameHint'),
+    togglePublic:    document.getElementById('togglePublic'),
+    publicLabel:     document.getElementById('publicLabel'),
+    shareUrlRow:     document.getElementById('shareUrlRow'),
+    shareUrlText:    document.getElementById('shareUrlText'),
+    btnCopyUrl:      document.getElementById('btnCopyUrl'),
+    accountEmail:    document.getElementById('accountEmail'),
+    accountAvatar:   document.getElementById('accountAvatar'),
+    accountUid:      document.getElementById('accountUid'),
   };
 }
 
@@ -658,9 +676,12 @@ function saveRecord({ status, endReason, focus = 5, distractions = [] }) {
     synced: false,
   };
   STATE.records.unshift(record);
-  saveToStorage();
-  renderHistory();
-  updateSummary();
+    saveToStorage();
+    renderHistory();
+    updateSummary();
+    if (currentUser && firestoreDb) {
+      saveRecordToFirestore(record).catch(e => console.warn('Firestore 寫入失敗：', e));
+}
   
 }
 
@@ -733,6 +754,35 @@ function loadFromStorage() {
    事件綁定
    ============================================================ */
 function initEventListeners() {
+  // 登入按鈕
+  EL.btnLoginHeader.addEventListener('click', () => showModal(EL.modalLogin));
+
+  // 帳號設定按鈕
+  EL.btnAccount.addEventListener('click', openAccountModal);
+
+  // 關閉帳號設定
+  EL.btnCloseAccount.addEventListener('click', () => hideModal(EL.modalAccount));
+
+  // 儲存用戶名稱
+  EL.btnSaveUsername.addEventListener('click', handleSaveUsername);
+
+  // 公開切換
+  EL.togglePublic.addEventListener('change', handleTogglePublic);
+
+  // 複製分享連結
+  EL.btnCopyUrl.addEventListener('click', () => {
+    navigator.clipboard?.writeText(EL.shareUrlText.textContent).then(() => {
+      EL.btnCopyUrl.textContent = '已複製！';
+      setTimeout(() => { EL.btnCopyUrl.textContent = '複製'; }, 2000);
+    });
+  });
+
+  // 登出
+  EL.btnLogout.addEventListener('click', async () => {
+    await firebaseAuth.signOut();
+    hideModal(EL.modalAccount);
+  });
+
   EL.btnStart.addEventListener('click', () => { if (STATE.mode === 'idle') startWork(); });
 
   EL.btnPause.addEventListener('click', () => {
@@ -805,6 +855,26 @@ function initEventListeners() {
   // 番茄圖示 → 密碼同步
   EL.btnLogo.addEventListener('click', handleLogoSync);
 
+  // 登入按鈕（header）
+  EL.btnLoginHeader.addEventListener('click', () => showModal(EL.modalLogin));
+
+  // 帳號設定
+  EL.btnAccount.addEventListener('click', openAccountModal);
+  EL.btnCloseAccount.addEventListener('click', () => hideModal(EL.modalAccount));
+  EL.btnSaveUsername.addEventListener('click', handleSaveUsername);
+  EL.togglePublic.addEventListener('change', handleTogglePublic);
+  EL.btnCopyUrl.addEventListener('click', () => {
+  navigator.clipboard?.writeText(EL.shareUrlText.textContent).then(() => {
+    EL.btnCopyUrl.textContent = '已複製！';
+    setTimeout(() => { EL.btnCopyUrl.textContent = '複製'; }, 2000);
+  });
+});
+EL.btnLogout.addEventListener('click', async () => {
+  await firebaseAuth.signOut();
+  hideModal(EL.modalAccount);
+});
+EL.btnMyRecords.addEventListener('click', handleMyRecords);
+
   // 登入 Modal
   EL.btnGoogleLogin.addEventListener('click', handleGoogleLogin);
   EL.btnCancelLogin.addEventListener('click', () => hideModal(EL.modalLogin));
@@ -833,24 +903,25 @@ function initFirebase() {
       currentUser = user;
       if (user) {
         EL.syncState.textContent = user.email;
-        // 顯示「我的紀錄」按鈕
-        if (EL.btnMyRecords) {
-          EL.btnMyRecords.hidden = false;
-          EL.btnMyRecords.onclick = handleMyRecords;
-        }
-        // 確保用戶文件存在
+        if (EL.btnMyRecords)   EL.btnMyRecords.hidden   = false;
+        if (EL.btnAccount)     EL.btnAccount.hidden     = false;
+        if (EL.btnLoginHeader) EL.btnLoginHeader.hidden = true;
+
         await firestoreDb.collection('users').doc(user.uid).set({
           email:       user.email,
           displayName: user.displayName || '',
+          photoURL:    user.photoURL    || '',
           updatedAt:   firebase.firestore.FieldValue.serverTimestamp()
         }, { merge: true });
-        // 載入雲端紀錄
+
         await loadFromFirestore();
       } else {
         EL.syncState.textContent = '';
-        if (EL.btnMyRecords) EL.btnMyRecords.hidden = true;
+        if (EL.btnMyRecords)   EL.btnMyRecords.hidden   = true;
+        if (EL.btnAccount)     EL.btnAccount.hidden     = true;
+        if (EL.btnLoginHeader) EL.btnLoginHeader.hidden = false;
       }
-    });
+});
   } catch (err) { console.error('Firebase 初始化失敗：', err); }
 }
 
@@ -876,6 +947,19 @@ async function saveRecordToFirestore(record) {
                         ? record.distractions.join('、') : '',
       createdAt:      firebase.firestore.FieldValue.serverTimestamp()
     });
+}
+
+async function handleMyRecords() {
+  if (!currentUser || !firestoreDb) return;
+  const userDoc  = await firestoreDb.collection('users').doc(currentUser.uid).get();
+  const username = userDoc.exists ? userDoc.data().username : null;
+  if (!username) {
+    setSyncResult('請先在帳號設定中設定用戶名稱', true);
+    openAccountModal();
+    return;
+  }
+  const url = `${location.origin}${location.pathname.replace('index.html', '')}profile.html?user=${username}`;
+  window.open(url, '_blank');
 }
 
 /* ── Firestore：從雲端載入紀錄合併到本機 ── */
@@ -927,22 +1011,17 @@ async function loadFromFirestore() {
 /* ── 「我的紀錄」按鈕：切換公開/私密並產生分享連結 ── */
 async function handleMyRecords() {
   if (!currentUser || !firestoreDb) return;
-  const userRef = firestoreDb.collection('users').doc(currentUser.uid);
-  const doc = await userRef.get();
-  const isPublic = doc.exists ? (doc.data().isPublic || false) : false;
-  const newPublic = !isPublic;
+  const userDoc  = await firestoreDb.collection('users').doc(currentUser.uid).get();
+  const username = userDoc.exists ? userDoc.data().username : null;
 
-  await userRef.update({ isPublic: newPublic });
-
-  if (newPublic) {
-    const shareUrl = `${location.origin}${location.pathname}?user=${currentUser.uid}`;
-    navigator.clipboard?.writeText(shareUrl).catch(() => {});
-    setSyncResult(`🌐 已設為公開！分享連結已複製：${shareUrl}`, false);
-    if (EL.btnMyRecords) EL.btnMyRecords.textContent = '🌐 公開中（點擊關閉）';
-  } else {
-    setSyncResult('🔒 已設為私密', false);
-    if (EL.btnMyRecords) EL.btnMyRecords.textContent = '我的紀錄';
+  if (!username) {
+    setSyncResult('請先在帳號設定中設定用戶名稱', true);
+    openAccountModal();
+    return;
   }
+
+  const url = `${location.origin}${location.pathname.replace('index.html', '')}profile.html?user=${username}`;
+  window.open(url, '_blank');
 }
 
 /* ── 查看他人公開紀錄（?user=UID） ── */
@@ -1145,6 +1224,128 @@ async function saveRecordToFirestore(record) {
     });
 }
 
+/* ── 開啟帳號設定 Modal ── */
+async function openAccountModal() {
+  if (!currentUser) return;
+
+  // 填入基本資訊
+  EL.accountEmail.textContent = currentUser.email;
+  if (currentUser.photoURL) {
+    EL.accountAvatar.src     = currentUser.photoURL;
+    EL.accountAvatar.hidden  = false;
+  }
+
+  // 讀取現有設定
+  const userDoc = await firestoreDb.collection('users').doc(currentUser.uid).get();
+  const data    = userDoc.exists ? userDoc.data() : {};
+
+  // 用戶名稱
+  EL.usernameInput.value = data.username || '';
+
+  // 公開狀態
+  const isPublic = data.isPublic || false;
+  EL.togglePublic.checked = isPublic;
+  updatePublicUI(isPublic, data.username || '');
+
+  showModal(EL.modalAccount);
+}
+
+/* ── 更新公開狀態 UI ── */
+function updatePublicUI(isPublic, username) {
+  EL.publicLabel.textContent = isPublic
+    ? '公開（所有人可以透過分享連結查看）'
+    : '私密（只有你自己可以看）';
+
+  if (isPublic && username) {
+    const url = `${location.origin}${location.pathname.replace('index.html', '')}profile.html?user=${username}`;
+    EL.shareUrlText.textContent = url;
+    EL.shareUrlRow.hidden = false;
+  } else {
+    EL.shareUrlRow.hidden = true;
+  }
+}
+
+/* ── 儲存用戶名稱 ── */
+async function handleSaveUsername() {
+  const raw      = EL.usernameInput.value.trim().toLowerCase();
+  const valid    = /^[a-zA-Z0-9_]{3,20}$/.test(raw);
+
+  if (!valid) {
+    EL.usernameHint.textContent = '⚠ 只能使用英文、數字、底線，長度 3–20 字';
+    EL.usernameHint.style.color = '#e85d3a';
+    return;
+  }
+
+  EL.btnSaveUsername.disabled  = true;
+  EL.usernameHint.textContent  = '檢查中...';
+  EL.usernameHint.style.color  = 'var(--text-muted)';
+
+  try {
+    // 讀取目前已有的用戶名稱（若有則先刪除舊的）
+    const userDoc     = await firestoreDb.collection('users').doc(currentUser.uid).get();
+    const oldUsername = userDoc.exists ? (userDoc.data().username || '') : '';
+
+    // 檢查新名稱是否已被使用
+    if (raw !== oldUsername) {
+      const existing = await firestoreDb.collection('usernames').doc(raw).get();
+      if (existing.exists) {
+        EL.usernameHint.textContent = '❌ 此名稱已被使用，請換一個';
+        EL.usernameHint.style.color = '#e85d3a';
+        EL.btnSaveUsername.disabled = false;
+        return;
+      }
+
+      // 用 batch 同時寫入（原子操作，避免部分失敗）
+      const batch = firestoreDb.batch();
+
+      // 刪除舊名稱索引
+      if (oldUsername) {
+        batch.delete(firestoreDb.collection('usernames').doc(oldUsername));
+      }
+
+      // 新增新名稱索引
+      batch.set(firestoreDb.collection('usernames').doc(raw), {
+        uid:       currentUser.uid,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      // 更新用戶資料
+      batch.update(firestoreDb.collection('users').doc(currentUser.uid), {
+        username: raw
+      });
+
+      await batch.commit();
+    }
+
+    EL.usernameHint.textContent = '✅ 已儲存';
+    EL.usernameHint.style.color = 'var(--break-green)';
+
+    // 更新公開 UI（顯示新的分享連結）
+    const isPublic = EL.togglePublic.checked;
+    updatePublicUI(isPublic, raw);
+
+  } catch (err) {
+    EL.usernameHint.textContent = '❌ 儲存失敗：' + err.message;
+    EL.usernameHint.style.color = '#e85d3a';
+  }
+
+  EL.btnSaveUsername.disabled = false;
+}
+
+/* ── 切換公開/私密 ── */
+async function handleTogglePublic() {
+  if (!currentUser) return;
+  const isPublic = EL.togglePublic.checked;
+
+  const userDoc = await firestoreDb.collection('users').doc(currentUser.uid).get();
+  const username = userDoc.exists ? (userDoc.data().username || '') : '';
+
+  await firestoreDb.collection('users').doc(currentUser.uid)
+    .update({ isPublic });
+
+  updatePublicUI(isPublic, username);
+}
+
 // 從 Firestore 載入紀錄，合併到本機（避免重複）
 async function loadFromFirestore() {
   if (!currentUser || !firestoreDb) return;
@@ -1195,26 +1396,6 @@ async function loadFromFirestore() {
     }
   } catch (err) {
     console.warn('從 Firestore 載入失敗：', err);
-  }
-}
-
-// 切換公開/私密
-async function handleTogglePublic() {
-  if (!currentUser || !firestoreDb) return;
-  const userRef = firestoreDb.collection('users').doc(currentUser.uid);
-  const doc = await userRef.get();
-  const currentPublic = doc.exists ? (doc.data().isPublic || false) : false;
-  const newPublic = !currentPublic;
-
-  await userRef.update({ isPublic: newPublic });
-
-  const shareUrl = `${location.origin}${location.pathname}?user=${currentUser.uid}`;
-  if (newPublic) {
-    setSyncResult(`🌐 已設為公開！分享連結：${shareUrl}`, false);
-    // 複製到剪貼簿
-    navigator.clipboard?.writeText(shareUrl).catch(() => {});
-  } else {
-    setSyncResult('🔒 已設為私密', false);
   }
 }
 

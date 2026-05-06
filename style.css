@@ -738,3 +738,147 @@ html, body {
   border-color: var(--tomato);
   color: var(--tomato-light);
 }
+
+/* ── 帳號設定 Modal ── */
+.account-user-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--bg-input);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+.account-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.account-email {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.account-uid {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+.username-input-row {
+  display: flex;
+  gap: 8px;
+}
+.username-input-row input { flex: 1; }
+.username-hint {
+  font-size: 0.8rem;
+  margin-top: 4px;
+  min-height: 1.2em;
+  display: block;
+}
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+}
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+}
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: var(--border);
+  border-radius: 99px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  left: 3px;
+  top: 3px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+.toggle-switch input:checked + .toggle-slider { background: var(--tomato); }
+.toggle-switch input:checked + .toggle-slider::before { transform: translateX(20px); }
+
+.share-url-row {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: var(--bg-input);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+.share-url-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+.share-url-text {
+  font-size: 0.78rem;
+  font-family: var(--font-mono);
+  color: var(--tomato-light);
+  word-break: break-all;
+  flex: 1;
+}
+
+/* 帳號設定齒輪按鈕 */
+.btn-account {
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-account:hover {
+  border-color: var(--text-muted);
+  color: var(--text-primary);
+}
+
+/* 登入按鈕 */
+.btn-login-header {
+  padding: 4px 12px;
+  border-radius: 99px;
+  border: 1px solid var(--tomato);
+  background: transparent;
+  color: var(--tomato-light);
+  font-size: 0.78rem;
+  font-family: var(--font-ui);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.btn-login-header:hover { background: var(--tomato-dim); }
+
+/* 我的紀錄按鈕 */
+.btn-my-records {
+  padding: 4px 12px;
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-family: var(--font-ui);
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.btn-my-records:hover {
+  border-color: var(--tomato);
+  color: var(--tomato-light);
+}

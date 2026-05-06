@@ -22,6 +22,8 @@
         <h1>番茄鐘</h1>
         <span class="sync-state" id="syncState"></span>
         <button type="button" class="btn-my-records" id="btnMyRecords" hidden>我的紀錄</button>
+        <button type="button" class="btn-account" id="btnAccount" hidden>⚙</button>
+        <button type="button" class="btn-login-header" id="btnLoginHeader">登入</button>
       </header>
 
       <div class="timer-block">
@@ -276,6 +278,56 @@
           使用 Google 帳號登入
         </button>
         <button type="button" class="btn btn-secondary" id="btnCancelLogin">取消</button>
+      </div>
+    </div>
+  </div>
+  <!-- ══ Modal：帳號設定 ══ -->
+  <div class="modal-overlay" id="modalAccount" hidden>
+    <div class="modal-box">
+      <h3>⚙️ 帳號設定</h3>
+
+      <div class="account-user-row">
+        <img id="accountAvatar" src="" alt="" class="account-avatar" />
+        <div>
+          <div id="accountEmail" class="account-email"></div>
+          <div id="accountUid" class="account-uid"></div>
+        </div>
+      </div>
+
+      <div class="input-group" style="margin-top:16px">
+        <label for="usernameInput">用戶名稱（僅限英文、數字、底線，3–20字）</label>
+        <div class="username-input-row">
+          <input type="text" id="usernameInput"
+                placeholder="例：alice_study"
+                maxlength="20"
+                pattern="[a-zA-Z0-9_]+" />
+          <button type="button" class="btn btn-primary btn-sm" id="btnSaveUsername">儲存</button>
+        </div>
+        <span class="username-hint" id="usernameHint"></span>
+      </div>
+
+      <div class="input-group" style="margin-top:16px">
+        <label>公開設定</label>
+        <div class="toggle-row">
+          <label class="toggle-switch">
+            <input type="checkbox" id="togglePublic" />
+            <span class="toggle-slider"></span>
+          </label>
+          <span id="publicLabel">私密（只有你自己可以看）</span>
+        </div>
+      </div>
+
+      <div id="shareUrlRow" class="share-url-row" hidden>
+        <span class="meta-label">分享連結</span>
+        <div class="share-url-box">
+          <span id="shareUrlText" class="share-url-text"></span>
+          <button type="button" class="btn btn-secondary btn-sm" id="btnCopyUrl">複製</button>
+        </div>
+      </div>
+
+      <div class="modal-btn-row" style="margin-top:20px">
+        <button type="button" class="btn btn-secondary" id="btnCloseAccount">關閉</button>
+        <button type="button" class="btn btn-danger-sm" id="btnLogout">登出</button>
       </div>
     </div>
   </div>
