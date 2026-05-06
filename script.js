@@ -678,8 +678,14 @@ function saveRecord({ status, endReason, focus = 5, distractions = [] }) {
     renderHistory();
     updateSummary();
     if (currentUser && firestoreDb) {
-      saveRecordToFirestore(record).catch(e => console.warn('Firestore 寫入失敗：', e));
-}
+      saveRecordToFirestore(record)
+        .then(() => {
+          record.synced = true;
+          saveToStorage();
+          renderHistory();
+        })
+        .catch(e => console.warn('Firestore 寫入失敗：', e));
+    }
   
 }
 
@@ -910,6 +916,7 @@ function initFirebase() {
         }, { merge: true });
 
         await loadFromFirestore();
+        await syncUnsyncedRecords();
       } else {
         EL.syncState.textContent = '';
         if (EL.btnMyRecords)   EL.btnMyRecords.hidden   = true;
@@ -942,6 +949,25 @@ async function saveRecordToFirestore(record) {
                         ? record.distractions.join('、') : '',
       createdAt:      firebase.firestore.FieldValue.serverTimestamp()
     });
+}
+
+async function syncUnsyncedRecords() {
+  const unsynced = STATE.records.filter(r => !r.synced);
+  if (unsynced.length === 0) return;
+  let changed = false;
+  for (const record of unsynced) {
+    try {
+      await saveRecordToFirestore(record);
+      record.synced = true;
+      changed = true;
+    } catch (e) {
+      console.warn('補同步失敗：', e);
+    }
+  }
+  if (changed) {
+    saveToStorage();
+    renderHistory();
+  }
 }
 
 async function handleMyRecords() {
