@@ -92,23 +92,13 @@ html, body {
   margin-bottom: 14px;
 }
 
-.logo-btn {
+.logo-icon {
   font-size: 1.75rem;
   line-height: 1;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 3px;
-  border-radius: var(--radius-sm);
-  transition: transform var(--transition), filter var(--transition);
+  flex-shrink: 0;
   -webkit-user-select: none;
   user-select: none;
-  flex-shrink: 0;
 }
-.logo-btn:hover  { transform: scale(1.14); }
-.logo-btn:active { transform: scale(0.92); }
-.logo-btn.syncing { animation: spin 0.9s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
 
 .app-header h1 {
   font-size: 1.25rem;

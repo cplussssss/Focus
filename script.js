@@ -85,8 +85,6 @@ function initElements() {
     btnReset: document.getElementById('btnReset'),
     btnBreak: document.getElementById('btnBreak'),
     btnClearHistory: document.getElementById('btnClearHistory'),
-    btnLogo: document.getElementById('btnLogo'),
-
     historyList: document.getElementById('historyList'),
     syncState: document.getElementById('syncState'),
     syncResult: document.getElementById('syncResult'),
@@ -852,9 +850,6 @@ function initEventListeners() {
 
   EL.estimatedRounds.addEventListener('input', updateSummary);
 
-  // 番茄圖示 → 密碼同步
-  EL.btnLogo.addEventListener('click', handleLogoSync);
-
   // 登入按鈕（header）
   EL.btnLoginHeader.addEventListener('click', () => showModal(EL.modalLogin));
 
@@ -1071,70 +1066,6 @@ async function handleGoogleLogin() {
   } catch (err) {
     console.error('Google 登入失敗：', err);
     setSyncResult('登入失敗：' + (err.message || err.code), true);
-  }
-}
-
-/* ============================================================
-   同步邏輯（密碼驗證）
-   ============================================================ */
-
-// 番茄圖示點擊進入點
-// 改成密碼驗證，不需要 Google 登入
-async function handleLogoSync() {
-  const unsynced = STATE.records.filter(r => !r.synced);
-  if (unsynced.length === 0) {
-    setSyncResult('✅ 所有紀錄都已同步', false);
-    return;
-  }
-  const password = prompt(`有 ${unsynced.length} 筆未同步紀錄，請輸入同步密碼：`);
-  if (password === null) return;
-  if (!password.trim()) { setSyncResult('❌ 密碼不可為空', true); return; }
-  sessionStorage.setItem('sync_password', password.trim());
-  await runSync();
-}
-
-async function runSync() {
-  const unsynced = STATE.records.filter(r => !r.synced);
-  if (unsynced.length === 0) { setSyncResult('✅ 所有紀錄都已同步', false); return; }
-
-  EL.btnLogo.disabled = true;
-  EL.btnLogo.classList.add('syncing');
-  setSyncResult(`正在同步 ${unsynced.length} 筆紀錄...`, false);
-
-  let successIds = [], failCount = 0;
-
-  for (const record of unsynced) {
-    const result = await syncOneRecord(record);
-    if (result.success) {
-      successIds.push(record.id);
-    } else {
-      failCount++;
-      console.error('同步失敗：', result.error, record);
-    }
-  }
-
-  // 同步成功的紀錄直接從 STATE 和 localStorage 移除
-  // 原因：已寫入 Google Sheet 的資料不需再佔用本機空間，也避免重複同步
-  if (successIds.length > 0) {
-    STATE.records = STATE.records.filter(r => !successIds.includes(r.id));
-    saveToStorage();
-    renderHistory();
-    updateSummary();
-    // ★ 新增：如果已登入，同時寫入 Firestore
-    if (currentUser && firestoreDb) {
-      saveRecordToFirestore(record).catch(err =>
-        console.warn('Firestore 寫入失敗（不影響本機）：', err)
-  );
-}
-  }
-
-  EL.btnLogo.disabled = false;
-  EL.btnLogo.classList.remove('syncing');
-
-  if (failCount === 0) {
-    setSyncResult(`✅ 成功同步 ${successIds.length} 筆`, false);
-  } else {
-    setSyncResult(`⚠️ 成功 ${successIds.length} 筆，失敗 ${failCount} 筆（見 console）`, true);
   }
 }
 
