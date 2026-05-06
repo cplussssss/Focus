@@ -129,6 +129,7 @@ function initElements() {
     modalLogin: document.getElementById('modalLogin'),
     btnGoogleLogin: document.getElementById('btnGoogleLogin'),
     btnCancelLogin: document.getElementById('btnCancelLogin'),
+    btnMyRecords:   document.getElementById('btnMyRecords'),  // ★ 新增
   };
 }
 
@@ -660,6 +661,7 @@ function saveRecord({ status, endReason, focus = 5, distractions = [] }) {
   saveToStorage();
   renderHistory();
   updateSummary();
+  
 }
 
 function renderHistory(overrideRecords) {
@@ -825,33 +827,157 @@ function initFirebase() {
   try {
     firebase.initializeApp(FIREBASE_CONFIG);
     firebaseAuth = firebase.auth();
-    firestoreDb  = firebase.firestore();   // ★ 初始化 Firestore
+    firestoreDb  = firebase.firestore();
 
     firebaseAuth.onAuthStateChanged(async (user) => {
       currentUser = user;
       if (user) {
         EL.syncState.textContent = user.email;
-        EL.syncState.style.cursor = 'pointer';
-        EL.syncState.title = '點擊可切換公開/私密';
-        EL.syncState.onclick = handleTogglePublic;
-
+        // 顯示「我的紀錄」按鈕
+        if (EL.btnMyRecords) {
+          EL.btnMyRecords.hidden = false;
+          EL.btnMyRecords.onclick = handleMyRecords;
+        }
         // 確保用戶文件存在
         await firestoreDb.collection('users').doc(user.uid).set({
           email:       user.email,
           displayName: user.displayName || '',
-          photoURL:    user.photoURL    || '',
           updatedAt:   firebase.firestore.FieldValue.serverTimestamp()
         }, { merge: true });
-
-        // 載入雲端紀錄（合併到本機）
+        // 載入雲端紀錄
         await loadFromFirestore();
-
       } else {
         EL.syncState.textContent = '';
-        EL.syncState.onclick = null;
+        if (EL.btnMyRecords) EL.btnMyRecords.hidden = true;
       }
     });
   } catch (err) { console.error('Firebase 初始化失敗：', err); }
+}
+
+/* ── Firestore：寫入單筆紀錄 ── */
+async function saveRecordToFirestore(record) {
+  if (!currentUser || !firestoreDb) return;
+  await firestoreDb
+    .collection('users').doc(currentUser.uid)
+    .collection('records').doc(String(record.id))
+    .set({
+      timestamp:      record.timestamp  || '',
+      task:           record.taskName   || '',
+      reason:         record.taskReason || '',
+      plannedMinutes: Math.round((record.plannedSec || 0) / 60),
+      actualMinutes:  Math.round((record.actualSec  || 0) / 60),
+      status:         record.status     || 'incomplete',
+      stopReason:     record.endReason  || '',
+      note:           record.taskNote   || '',
+      category:       record.category   || '',
+      project:        record.project    || '',
+      focus:          record.focus      || 0,
+      distractions:   Array.isArray(record.distractions)
+                        ? record.distractions.join('、') : '',
+      createdAt:      firebase.firestore.FieldValue.serverTimestamp()
+    });
+}
+
+/* ── Firestore：從雲端載入紀錄合併到本機 ── */
+async function loadFromFirestore() {
+  if (!currentUser || !firestoreDb) return;
+  try {
+    const snap = await firestoreDb
+      .collection('users').doc(currentUser.uid)
+      .collection('records')
+      .orderBy('createdAt', 'desc')
+      .limit(200).get();
+    if (snap.empty) return;
+
+    const localIds = new Set(STATE.records.map(r => String(r.id)));
+    let added = 0;
+    snap.docs.forEach(doc => {
+      if (localIds.has(doc.id)) return;
+      const d = doc.data();
+      STATE.records.push({
+        id:          Number(doc.id) || doc.id,
+        timestamp:   d.timestamp   || '',
+        taskName:    d.task        || '',
+        taskReason:  d.reason      || '',
+        taskNote:    d.note        || '',
+        plannedSec:  (d.plannedMinutes || 0) * 60,
+        actualSec:   (d.actualMinutes  || 0) * 60,
+        status:      d.status      || 'incomplete',
+        endReason:   d.stopReason  || '',
+        category:    d.category    || '',
+        project:     d.project     || '',
+        focus:       d.focus       || 0,
+        distractions: d.distractions
+          ? d.distractions.split('、').filter(Boolean) : [],
+        synced: true,
+      });
+      added++;
+    });
+    if (added > 0) {
+      STATE.records.sort((a, b) =>
+        String(b.timestamp).localeCompare(String(a.timestamp)));
+      saveToStorage();
+      renderHistory();
+      updateSummary();
+      setSyncResult(`☁ 從雲端載入 ${added} 筆紀錄`, false);
+    }
+  } catch (err) { console.warn('Firestore 載入失敗：', err); }
+}
+
+/* ── 「我的紀錄」按鈕：切換公開/私密並產生分享連結 ── */
+async function handleMyRecords() {
+  if (!currentUser || !firestoreDb) return;
+  const userRef = firestoreDb.collection('users').doc(currentUser.uid);
+  const doc = await userRef.get();
+  const isPublic = doc.exists ? (doc.data().isPublic || false) : false;
+  const newPublic = !isPublic;
+
+  await userRef.update({ isPublic: newPublic });
+
+  if (newPublic) {
+    const shareUrl = `${location.origin}${location.pathname}?user=${currentUser.uid}`;
+    navigator.clipboard?.writeText(shareUrl).catch(() => {});
+    setSyncResult(`🌐 已設為公開！分享連結已複製：${shareUrl}`, false);
+    if (EL.btnMyRecords) EL.btnMyRecords.textContent = '🌐 公開中（點擊關閉）';
+  } else {
+    setSyncResult('🔒 已設為私密', false);
+    if (EL.btnMyRecords) EL.btnMyRecords.textContent = '我的紀錄';
+  }
+}
+
+/* ── 查看他人公開紀錄（?user=UID） ── */
+async function loadPublicUserRecords(userId) {
+  if (!firestoreDb) { setTimeout(() => loadPublicUserRecords(userId), 800); return; }
+  try {
+    const userDoc = await firestoreDb.collection('users').doc(userId).get();
+    if (!userDoc.exists || !userDoc.data().isPublic) {
+      setSyncResult('此用戶的紀錄未公開或不存在', true); return;
+    }
+    const name = userDoc.data().displayName || userDoc.data().email || '匿名用戶';
+    const snap = await firestoreDb
+      .collection('users').doc(userId)
+      .collection('records')
+      .orderBy('createdAt', 'desc').limit(200).get();
+
+    const publicRecords = snap.docs.map(doc => {
+      const d = doc.data();
+      return {
+        id: doc.id, timestamp: d.timestamp || '',
+        taskName: d.task || '', taskReason: d.reason || '',
+        taskNote: d.note || '',
+        plannedSec: (d.plannedMinutes || 0) * 60,
+        actualSec:  (d.actualMinutes  || 0) * 60,
+        status: d.status || 'incomplete', endReason: d.stopReason || '',
+        category: d.category || '', project: d.project || '',
+        focus: d.focus || 0,
+        distractions: d.distractions ? d.distractions.split('、').filter(Boolean) : [],
+        synced: true,
+      };
+    });
+
+    setSyncResult(`👤 正在查看 ${name} 的公開紀錄（共 ${publicRecords.length} 筆）`, false);
+    renderHistory(publicRecords);
+  } catch (err) { setSyncResult('載入失敗：' + err.message, true); }
 }
 
 async function handleGoogleLogin() {

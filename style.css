@@ -720,3 +720,21 @@ html, body {
   .settings-section { grid-template-columns: 1fr 1fr; }
   .task-row-inline  { flex-direction: column; }
 }
+
+/* 我的紀錄按鈕 */
+.btn-my-records {
+  padding: 4px 12px;
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-family: var(--font-ui);
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.btn-my-records:hover {
+  border-color: var(--tomato);
+  color: var(--tomato-light);
+}
