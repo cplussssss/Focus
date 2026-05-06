@@ -55,6 +55,7 @@ const STATE = {
 
 let firebaseAuth = null;
 let currentUser = null;
+let firestoreDb  = null;
 
 /* ============================================================
    DOM 快取
@@ -661,8 +662,9 @@ function saveRecord({ status, endReason, focus = 5, distractions = [] }) {
   updateSummary();
 }
 
-function renderHistory() {
-  if (STATE.records.length === 0) {
+function renderHistory(overrideRecords) {
+  const records = overrideRecords || STATE.records;
+  if (records.length === 0) {
     EL.historyList.innerHTML = '<p class="empty-hint">尚無紀錄，完成第一輪後會顯示在這裡。</p>';
     return;
   }
@@ -670,7 +672,7 @@ function renderHistory() {
   const statusMap = { done: '✅ 完成', partial: '🔶 部分完成', incomplete: '❌ 未完成' };
   const statusClass = { done: 'done', partial: 'partial', incomplete: 'incomplete' };
 
-  EL.historyList.innerHTML = STATE.records.map(r => {
+  EL.historyList.innerHTML = records.map(r => {
     const timeRange = (r.startTime && r.endTime) ? `${r.startTime}–${r.endTime}` : r.timestamp;
 
     // 標籤列
@@ -823,9 +825,31 @@ function initFirebase() {
   try {
     firebase.initializeApp(FIREBASE_CONFIG);
     firebaseAuth = firebase.auth();
-    firebaseAuth.onAuthStateChanged((user) => {
+    firestoreDb  = firebase.firestore();   // ★ 初始化 Firestore
+
+    firebaseAuth.onAuthStateChanged(async (user) => {
       currentUser = user;
-      EL.syncState.textContent = user ? user.email : '';
+      if (user) {
+        EL.syncState.textContent = user.email;
+        EL.syncState.style.cursor = 'pointer';
+        EL.syncState.title = '點擊可切換公開/私密';
+        EL.syncState.onclick = handleTogglePublic;
+
+        // 確保用戶文件存在
+        await firestoreDb.collection('users').doc(user.uid).set({
+          email:       user.email,
+          displayName: user.displayName || '',
+          photoURL:    user.photoURL    || '',
+          updatedAt:   firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+
+        // 載入雲端紀錄（合併到本機）
+        await loadFromFirestore();
+
+      } else {
+        EL.syncState.textContent = '';
+        EL.syncState.onclick = null;
+      }
     });
   } catch (err) { console.error('Firebase 初始化失敗：', err); }
 }
@@ -834,9 +858,11 @@ async function handleGoogleLogin() {
   try {
     hideModal(EL.modalLogin);
     const provider = new firebase.auth.GoogleAuthProvider();
+    provider.addScope('email');
+    provider.addScope('profile');
     provider.setCustomParameters({ prompt: 'select_account' });
     await firebaseAuth.signInWithPopup(provider);
-    await runSync();
+    // onAuthStateChanged 會自動處理後續
   } catch (err) {
     console.error('Google 登入失敗：', err);
     setSyncResult('登入失敗：' + (err.message || err.code), true);
@@ -889,6 +915,12 @@ async function runSync() {
     saveToStorage();
     renderHistory();
     updateSummary();
+    // ★ 新增：如果已登入，同時寫入 Firestore
+    if (currentUser && firestoreDb) {
+      saveRecordToFirestore(record).catch(err =>
+        console.warn('Firestore 寫入失敗（不影響本機）：', err)
+  );
+}
   }
 
   EL.btnLogo.disabled = false;
@@ -901,40 +933,163 @@ async function runSync() {
   }
 }
 
+// 查看他人的公開紀錄
+async function loadPublicUserRecords(userId) {
+  if (!firestoreDb) {
+    // 等 Firebase 初始化完成
+    setTimeout(() => loadPublicUserRecords(userId), 800);
+    return;
+  }
+  try {
+    const userDoc = await firestoreDb.collection('users').doc(userId).get();
+    if (!userDoc.exists || !userDoc.data().isPublic) {
+      setSyncResult('此用戶的紀錄未公開或不存在', true);
+      return;
+    }
+    const name = userDoc.data().displayName || userDoc.data().email || '匿名用戶';
+
+    const snapshot = await firestoreDb
+      .collection('users').doc(userId)
+      .collection('records')
+      .orderBy('createdAt', 'desc')
+      .limit(200)
+      .get();
+
+    // 暫時替換顯示（不影響本機資料）
+    const publicRecords = snapshot.docs.map(doc => {
+      const d = doc.data();
+      return {
+        id:          doc.id,
+        timestamp:   d.timestamp   || '',
+        taskName:    d.task        || '',
+        taskReason:  d.reason      || '',
+        taskNote:    d.note        || '',
+        plannedSec:  (d.plannedMinutes || 0) * 60,
+        actualSec:   (d.actualMinutes  || 0) * 60,
+        status:      d.status      || 'incomplete',
+        endReason:   d.stopReason  || '',
+        category:    d.category    || '',
+        project:     d.project     || '',
+        focus:       d.focus       || 0,
+        distractions: d.distractions
+          ? d.distractions.split('、').filter(Boolean) : [],
+        synced: true,
+      };
+    });
+
+    // 在頁面頂部顯示提示
+    setSyncResult(`👤 正在查看 ${name} 的公開紀錄（共 ${publicRecords.length} 筆）`, false);
+
+    // 暫時顯示公開紀錄（不存入 STATE）
+    renderHistory(publicRecords);
+
+  } catch (err) {
+    setSyncResult('載入公開紀錄失敗：' + err.message, true);
+  }
+}
+
 // 同步單筆：用 Image 請求繞過 CORS
 // 密碼驗證：不依賴 Firebase token，簡單可靠
-async function syncOneRecord(record) {
-  return new Promise((resolve) => {
-    try {
-      const password = sessionStorage.getItem('sync_password') || '';
-      const payload = {
-        timestamp: record.timestamp || '',
-        task: record.taskName || '',
-        reason: record.taskReason || '',
-        plannedMinutes: Math.round((record.plannedSec || 0) / 60),
-        actualMinutes: Math.round((record.actualSec || 0) / 60),
-        status: (record.status === 'partial') ? 'incomplete' : (record.status || 'incomplete'),
-        stopReason: record.endReason || '',
-        note: record.taskNote || '',
-        category: record.category || '',
-        project: record.project || '',
-        focus: record.focus || 0,
-        distractions: record.distractions && record.distractions.length
-          ? record.distractions.join('、') : '',
-      };
+/* ============================================================
+   Firestore 相關函式
+   ============================================================ */
 
-      const url = APPS_SCRIPT_URL
-        + '?password=' + encodeURIComponent(password)
-        + '&record=' + encodeURIComponent(JSON.stringify(payload));
+// 寫入單筆紀錄到 Firestore
+async function saveRecordToFirestore(record) {
+  if (!currentUser || !firestoreDb) return;
+  await firestoreDb
+    .collection('users').doc(currentUser.uid)
+    .collection('records').doc(String(record.id))
+    .set({
+      timestamp:      record.timestamp     || '',
+      task:           record.taskName      || '',
+      reason:         record.taskReason    || '',
+      plannedMinutes: Math.round((record.plannedSec  || 0) / 60),
+      actualMinutes:  Math.round((record.actualSec   || 0) / 60),
+      status:         record.status        || 'incomplete',
+      stopReason:     record.endReason     || '',
+      note:           record.taskNote      || '',
+      category:       record.category      || '',
+      project:        record.project       || '',
+      focus:          record.focus         || 0,
+      distractions:   Array.isArray(record.distractions)
+                        ? record.distractions.join('、') : '',
+      synced:         true,
+      createdAt:      firebase.firestore.FieldValue.serverTimestamp()
+    });
+}
 
-      const timer = setTimeout(() => resolve({ success: true }), 3500);
-      const img = new Image();
-      img.onload = img.onerror = () => { clearTimeout(timer); resolve({ success: true }); };
-      img.src = url;
-    } catch (err) {
-      resolve({ success: false, error: err.message || String(err) });
+// 從 Firestore 載入紀錄，合併到本機（避免重複）
+async function loadFromFirestore() {
+  if (!currentUser || !firestoreDb) return;
+  try {
+    const snapshot = await firestoreDb
+      .collection('users').doc(currentUser.uid)
+      .collection('records')
+      .orderBy('createdAt', 'desc')
+      .limit(200)
+      .get();
+
+    if (snapshot.empty) return;
+
+    const localIds = new Set(STATE.records.map(r => String(r.id)));
+    let added = 0;
+
+    snapshot.docs.forEach(doc => {
+      if (localIds.has(doc.id)) return; // 已有，跳過
+      const d = doc.data();
+      // 還原成本機格式
+      STATE.records.push({
+        id:          Number(doc.id) || doc.id,
+        timestamp:   d.timestamp   || '',
+        taskName:    d.task        || '',
+        taskReason:  d.reason      || '',
+        taskNote:    d.note        || '',
+        plannedSec:  (d.plannedMinutes || 0) * 60,
+        actualSec:   (d.actualMinutes  || 0) * 60,
+        status:      d.status      || 'incomplete',
+        endReason:   d.stopReason  || '',
+        category:    d.category    || '',
+        project:     d.project     || '',
+        focus:       d.focus       || 0,
+        distractions: d.distractions
+          ? d.distractions.split('、').filter(Boolean) : [],
+        synced: true,
+      });
+      added++;
+    });
+
+    if (added > 0) {
+      // 依時間排序（最新在前）
+      STATE.records.sort((a, b) => String(b.timestamp).localeCompare(String(a.timestamp)));
+      saveToStorage();
+      renderHistory();
+      updateSummary();
+      setSyncResult(`✅ 從雲端載入 ${added} 筆紀錄`, false);
     }
-  });
+  } catch (err) {
+    console.warn('從 Firestore 載入失敗：', err);
+  }
+}
+
+// 切換公開/私密
+async function handleTogglePublic() {
+  if (!currentUser || !firestoreDb) return;
+  const userRef = firestoreDb.collection('users').doc(currentUser.uid);
+  const doc = await userRef.get();
+  const currentPublic = doc.exists ? (doc.data().isPublic || false) : false;
+  const newPublic = !currentPublic;
+
+  await userRef.update({ isPublic: newPublic });
+
+  const shareUrl = `${location.origin}${location.pathname}?user=${currentUser.uid}`;
+  if (newPublic) {
+    setSyncResult(`🌐 已設為公開！分享連結：${shareUrl}`, false);
+    // 複製到剪貼簿
+    navigator.clipboard?.writeText(shareUrl).catch(() => {});
+  } else {
+    setSyncResult('🔒 已設為私密', false);
+  }
 }
 
 /* ============================================================
@@ -953,6 +1108,9 @@ function init() {
   setButtons({ start: false, pause: true, endRound: true, reset: false, break: true });
   setStatus('準備開始');
   updateSummary();
+  // ★ 支援分享連結：?user=某人UID
+  const viewUserId = new URLSearchParams(location.search).get('user');
+  if (viewUserId) loadPublicUserRecords(viewUserId);
 }
 
 document.addEventListener('DOMContentLoaded', init);
