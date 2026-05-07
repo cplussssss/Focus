@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍅</text></svg>" />
+  <title>我的學習儀表板</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .dashboard-wrapper {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 24px 16px 64px;
+    }
+
+    .dash-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      margin-bottom: 20px;
+      transition: color 0.2s;
+    }
+    .dash-back:hover { color: var(--text-primary); }
+
+    .dash-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .dash-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--border);
+    }
+    .dash-username {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    /* 通用卡片 */
+    .dash-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+    }
+    .dash-card-title {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 12px;
+    }
+
+    /* 今日 + 連續天數 */
+    .dash-top-row {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .today-stats {
+      display: flex;
+      gap: 20px;
+      align-items: flex-end;
+    }
+    .today-stat { text-align: center; }
+    .today-stat-num {
+      font-family: var(--font-mono);
+      font-size: 2rem;
+      font-weight: 500;
+      color: var(--tomato-light);
+      line-height: 1;
+    }
+    .today-stat-label {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    .streak-num {
+      font-family: var(--font-mono);
+      font-size: 2.6rem;
+      font-weight: 500;
+      color: var(--tomato-light);
+      line-height: 1;
+    }
+    .streak-sub {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    /* AI 洞察 */
+    .dash-ai-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+      margin-bottom: 12px;
+    }
+    .dash-ai-title {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 10px;
+    }
+    #aiInsightText {
+      font-size: 0.9rem;
+      color: var(--text-primary);
+      line-height: 1.7;
+      min-height: 40px;
+    }
+    .ai-loading { color: var(--text-muted); }
+    .ai-error   { color: #e85d3a; font-size: 0.85rem; }
+    .ai-key-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .hf-key-input {
+      flex: 1;
+      padding: 8px 10px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--bg-input);
+      color: var(--text-primary);
+      font-size: 0.85rem;
+    }
+    .ai-key-hint {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+    .ai-key-hint a { color: var(--tomato-light); }
+    .ai-reset-btn {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      margin-left: 8px;
+      padding: 0;
+      text-decoration: underline;
+    }
+    .ai-reset-btn:hover { color: var(--text-primary); }
+
+    /* 本週圖 */
+    .week-chart-wrap {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+      margin-bottom: 12px;
+    }
+    .week-chart-title {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 12px;
+    }
+    .week-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+    }
+    .week-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .week-bar {
+      width: 100%;
+      aspect-ratio: 1;
+      border-radius: 6px;
+    }
+    .week-label {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+    .week-min {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    /* 分類 */
+    .cat-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+      margin-bottom: 12px;
+    }
+    .cat-section-title {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 12px;
+    }
+    .cat-row {
+      display: grid;
+      grid-template-columns: 56px 1fr 42px;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .cat-name {
+      font-size: 0.82rem;
+      color: var(--text-primary);
+      text-align: right;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .cat-bar-bg {
+      background: var(--bg-input);
+      border-radius: 4px;
+      height: 8px;
+      overflow: hidden;
+    }
+    .cat-bar-fill {
+      height: 100%;
+      background: var(--tomato-light);
+      border-radius: 4px;
+      transition: width 0.6s ease;
+    }
+    .cat-pct {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    /* 歷史 */
+    .history-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+    }
+    .history-section-title {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 12px;
+    }
+    .history-day-group { margin-bottom: 18px; }
+    .history-day-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 8px;
+    }
+    .history-day-total {
+      font-family: var(--font-mono);
+      color: var(--tomato-light);
+    }
+
+    @media (max-width: 520px) {
+      .dash-top-row { grid-template-columns: 1fr; }
+      .today-stats  { justify-content: space-around; }
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard-wrapper">
+
+    <a href="index.html" class="dash-back">← 回到番茄鐘</a>
+
+    <div class="dash-header">
+      <img id="dashAvatar" class="dash-avatar" src="" alt="" hidden />
+      <div class="dash-username" id="dashUserName">載入中...</div>
+    </div>
+
+    <!-- 今日進度 + 連續天數 -->
+    <div class="dash-top-row">
+      <div class="dash-card">
+        <div class="dash-card-title">今日進度</div>
+        <div class="today-stats">
+          <div class="today-stat">
+            <div class="today-stat-num" id="todayMinutes">—</div>
+            <div class="today-stat-label">專注分鐘</div>
+          </div>
+          <div class="today-stat">
+            <div class="today-stat-num" id="todayRounds">—</div>
+            <div class="today-stat-label">完成輪數</div>
+          </div>
+          <div class="today-stat">
+            <div class="today-stat-num" id="todayRate">—</div>
+            <div class="today-stat-label">完成率</div>
+          </div>
+        </div>
+      </div>
+      <div class="dash-card">
+        <div class="dash-card-title">🔥 連續天數</div>
+        <div class="streak-num" id="streakCount">—</div>
+        <div class="streak-sub">天連續有紀錄</div>
+      </div>
+    </div>
+
+    <!-- AI 洞察 -->
+    <div class="dash-ai-card">
+      <div class="dash-ai-title">🤖 AI 習慣洞察</div>
+      <div id="aiInsightText"><span class="ai-loading">載入中...</span></div>
+    </div>
+
+    <!-- 本週圖 -->
+    <div class="week-chart-wrap">
+      <div class="week-chart-title">本週每日專注</div>
+      <div class="week-grid" id="weeklyChart"></div>
+    </div>
+
+    <!-- 分類 -->
+    <div class="cat-section">
+      <div class="cat-section-title">任務分類分佈</div>
+      <div id="categoryList"></div>
+    </div>
+
+    <!-- 歷史紀錄 -->
+    <div class="history-section">
+      <div class="history-section-title">歷史紀錄</div>
+      <div id="dashHistoryList"></div>
+    </div>
+
+  </div>
+  <script src="dashboard.js"></script>
+</body>
+</html>

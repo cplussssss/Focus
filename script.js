@@ -935,6 +935,8 @@ async function saveRecordToFirestore(record) {
     .collection('records').doc(String(record.id))
     .set({
       timestamp:      record.timestamp  || '',
+      startTime:      record.startTime  || '',
+      endTime:        record.endTime    || '',
       task:           record.taskName   || '',
       reason:         record.taskReason || '',
       plannedMinutes: Math.round((record.plannedSec || 0) / 60),
@@ -971,15 +973,8 @@ async function syncUnsyncedRecords() {
 }
 
 async function handleMyRecords() {
-  if (!currentUser || !firestoreDb) return;
-  const userDoc  = await firestoreDb.collection('users').doc(currentUser.uid).get();
-  const username = userDoc.exists ? userDoc.data().username : null;
-  if (!username) {
-    setSyncResult('請先在帳號設定中設定用戶名稱', true);
-    openAccountModal();
-    return;
-  }
-  const url = `${location.origin}${location.pathname.replace('index.html', '')}profile.html?user=${username}`;
+  if (!currentUser) return;
+  const url = `${location.origin}${location.pathname.replace('index.html', '')}dashboard.html`;
   window.open(url, '_blank');
 }
 
@@ -1027,22 +1022,6 @@ async function loadFromFirestore() {
       setSyncResult(`☁ 從雲端載入 ${added} 筆紀錄`, false);
     }
   } catch (err) { console.warn('Firestore 載入失敗：', err); }
-}
-
-/* ── 「我的紀錄」按鈕：切換公開/私密並產生分享連結 ── */
-async function handleMyRecords() {
-  if (!currentUser || !firestoreDb) return;
-  const userDoc  = await firestoreDb.collection('users').doc(currentUser.uid).get();
-  const username = userDoc.exists ? userDoc.data().username : null;
-
-  if (!username) {
-    setSyncResult('請先在帳號設定中設定用戶名稱', true);
-    openAccountModal();
-    return;
-  }
-
-  const url = `${location.origin}${location.pathname.replace('index.html', '')}profile.html?user=${username}`;
-  window.open(url, '_blank');
 }
 
 /* ── 查看他人公開紀錄（?user=UID） ── */
