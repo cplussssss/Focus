@@ -1357,3 +1357,133 @@ function init() {
 }
 
 document.addEventListener('DOMContentLoaded', init);
+
+/* ============================================================
+   示範資料填入函式（只執行一次，執行後刪除）
+   使用方式：登入訪客帳號後，在瀏覽器 console 輸入 seedDemoData()
+   ============================================================ */
+async function seedDemoData() {
+  if (!currentUser || !firestoreDb) {
+    console.error('請先登入訪客帳號再執行');
+    return;
+  }
+
+  const DEMO_UID = currentUser.uid; // 自動抓當前登入的訪客帳號 UID
+
+  const demoRecords = [
+    {
+      timestamp: '2026/04/18 上午09:00:00',
+      task: '閱讀《深度工作力》第三章',
+      reason: '提升專注力理論基礎',
+      plannedMinutes: 25, actualMinutes: 25,
+      status: 'done', stopReason: '', note: '重點：刻意練習的四個原則',
+      category: '讀書', project: '自我成長', focus: 5,
+      distractions: '',
+      startTime: '09:00', endTime: '09:25', weekday: '五',
+    },
+    {
+      timestamp: '2026/04/18 上午09:30:00',
+      task: '寫讀書筆記',
+      reason: '內化剛讀完的內容',
+      plannedMinutes: 25, actualMinutes: 22,
+      status: 'done', stopReason: '', note: '',
+      category: '寫作', project: '自我成長', focus: 4,
+      distractions: '訊息通知',
+      startTime: '09:30', endTime: '09:52', weekday: '五',
+    },
+    {
+      timestamp: '2026/04/18 下午02:00:00',
+      task: '練習 LeetCode 題目',
+      reason: '準備技術面試',
+      plannedMinutes: 40, actualMinutes: 40,
+      status: 'done', stopReason: '', note: 'Binary Search 專題',
+      category: '程式', project: 'Side Project', focus: 5,
+      distractions: '',
+      startTime: '14:00', endTime: '14:40', weekday: '五',
+    },
+    {
+      timestamp: '2026/04/18 下午03:00:00',
+      task: '回覆工作信件',
+      reason: '清空收件匣',
+      plannedMinutes: 25, actualMinutes: 10,
+      status: 'incomplete', stopReason: '臨時有會議需要先參加', note: '',
+      category: '行政', project: '', focus: 3,
+      distractions: '臨時插單',
+      startTime: '15:00', endTime: '15:10', weekday: '五',
+    },
+    {
+      timestamp: '2026/04/19 上午10:00:00',
+      task: '研究 Firebase Firestore 架構',
+      reason: '這個番茄鐘 App 的後端需要',
+      plannedMinutes: 25, actualMinutes: 25,
+      status: 'done', stopReason: '', note: 'Security Rules 需要再研究',
+      category: '程式', project: 'Side Project', focus: 5,
+      distractions: '',
+      startTime: '10:00', endTime: '10:25', weekday: '六',
+    },
+    {
+      timestamp: '2026/04/19 上午10:30:00',
+      task: '撰寫 profile.html 頁面',
+      reason: '讓用戶可以分享自己的紀錄',
+      plannedMinutes: 25, actualMinutes: 28,
+      status: 'done', stopReason: '', note: '超時 3 分鐘，下次注意',
+      category: '程式', project: 'Side Project', focus: 4,
+      distractions: '想滑手機',
+      startTime: '10:30', endTime: '10:58', weekday: '六',
+    },
+    {
+      timestamp: '2026/04/20 上午09:00:00',
+      task: '英文單字複習',
+      reason: '每天維持 25 分鐘英文練習',
+      plannedMinutes: 25, actualMinutes: 25,
+      status: 'done', stopReason: '', note: 'Anki 複習 80 張',
+      category: '讀書', project: '英文', focus: 5,
+      distractions: '',
+      startTime: '09:00', endTime: '09:25', weekday: '一',
+    },
+    {
+      timestamp: '2026/04/20 上午09:30:00',
+      task: '英文聽力練習',
+      reason: '提升聽力理解速度',
+      plannedMinutes: 25, actualMinutes: 25,
+      status: 'done', stopReason: '', note: 'BBC 6 Minutes English',
+      category: '讀書', project: '英文', focus: 4,
+      distractions: '環境吵',
+      startTime: '09:30', endTime: '09:55', weekday: '一',
+    },
+  ];
+
+  console.log(`開始寫入 ${demoRecords.length} 筆示範資料...`);
+
+  // 先確保用戶文件存在
+  await firestoreDb.collection('users').doc(DEMO_UID).set({
+    email:       'demo@focus.app',
+    displayName: '示範帳號',
+    photoURL:    '',
+    isPublic:    true,   // 訪客帳號設為公開
+    username:    'demo',
+    updatedAt:   firebase.firestore.FieldValue.serverTimestamp()
+  }, { merge: true });
+
+  // 建立 username 索引
+  await firestoreDb.collection('usernames').doc('demo').set({
+    uid:       DEMO_UID,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+
+  // 批次寫入紀錄
+  const batch = firestoreDb.batch();
+  demoRecords.forEach((r, i) => {
+    const ref = firestoreDb
+      .collection('users').doc(DEMO_UID)
+      .collection('records').doc(`demo_${i + 1}`);
+    batch.set(ref, {
+      ...r,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  });
+
+  await batch.commit();
+  console.log('✅ 示範資料寫入完成！');
+  console.log(`訪客個人頁面：${location.origin}${location.pathname.replace('index.html', '')}profile.html?user=demo`);
+}
