@@ -4,31 +4,59 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍅</text></svg>" />
-  <title>番茄鐘 — 個人紀錄</title>
+  <title>番茄鐘 — 個人學習頁</title>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <link rel="stylesheet" href="style.css" />
   <style>
-    /* profile 頁面專用樣式 */
-    .profile-wrapper {
-      max-width: 760px;
-      margin: 0 auto;
-      padding: 32px 16px 64px;
+    /* ── Reset for this page (style.css locks html/body overflow) ── */
+    html, body {
+      height: auto !important;
+      overflow: auto !important;
     }
-    .profile-header {
+
+    /* ── Page wrapper ── */
+    .profile-page {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 24px 16px 64px;
+    }
+
+    /* ── Back link ── */
+    .profile-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      margin-bottom: 20px;
+      transition: color 0.2s;
+    }
+    .profile-back:hover { color: var(--text-primary); }
+
+    /* ── User card ── */
+    .profile-user-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      margin-bottom: 12px;
+    }
+    .profile-identity {
       display: flex;
       align-items: center;
       gap: 14px;
-      margin-bottom: 28px;
+      margin-bottom: 16px;
     }
     .profile-avatar {
       width: 56px;
       height: 56px;
       border-radius: 50%;
-      background: var(--bg-input);
-      border: 2px solid var(--border);
       object-fit: cover;
+      border: 2px solid var(--border);
+      flex-shrink: 0;
     }
     .profile-avatar-placeholder {
       width: 56px;
@@ -40,125 +68,366 @@
       align-items: center;
       justify-content: center;
       font-size: 1.6rem;
+      flex-shrink: 0;
     }
     .profile-name {
-      font-size: 1.4rem;
+      font-size: 1.2rem;
       font-weight: 700;
       color: var(--text-primary);
     }
-    .profile-meta {
+    .profile-username {
       font-size: 0.82rem;
       color: var(--text-muted);
       margin-top: 2px;
     }
-    .profile-back {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      text-decoration: none;
-      margin-bottom: 20px;
-      transition: color 0.2s;
-    }
-    .profile-back:hover { color: var(--text-primary); }
 
-    .profile-summary {
-      background: var(--bg-card);
-      border-radius: var(--radius-lg);
-      padding: 20px 24px;
-      margin-bottom: 24px;
-      border: 1px solid var(--border);
+    /* ── Stats row ── */
+    .profile-stats-row {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 16px;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
     }
-    .profile-stat { text-align: center; }
+    .profile-stat {
+      background: var(--bg-input);
+      border-radius: var(--radius-md);
+      padding: 10px 8px;
+      text-align: center;
+    }
     .profile-stat-num {
       font-family: var(--font-mono);
-      font-size: 1.6rem;
+      font-size: 1.4rem;
       font-weight: 500;
       color: var(--tomato-light);
       line-height: 1;
     }
     .profile-stat-label {
-      font-size: 0.75rem;
+      font-size: 0.68rem;
       color: var(--text-muted);
       margin-top: 4px;
     }
 
-    .profile-records {
+    /* ── Sections ── */
+    .profile-section {
       background: var(--bg-card);
-      border-radius: var(--radius-lg);
-      padding: 24px;
       border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+      margin-bottom: 12px;
     }
-    .profile-records h2 {
+    .section-title {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 14px;
+    }
+
+    /* ── Achievements ── */
+    .achievements-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+    }
+    .achievement-badge {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      padding: 10px 4px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+      text-align: center;
+      transition: border-color 0.2s;
+    }
+    .achievement-badge.unlocked {
+      background: var(--tomato-dim);
+      border-color: var(--tomato);
+    }
+    .achievement-badge.locked {
+      opacity: 0.35;
+      filter: grayscale(0.6);
+    }
+    .badge-icon  { font-size: 1.5rem; line-height: 1; }
+    .badge-name  { font-size: 0.62rem; color: var(--text-primary); font-weight: 600; line-height: 1.2; }
+    .badge-desc  { font-size: 0.58rem; color: var(--text-muted); line-height: 1.3; }
+
+    /* ── Month switcher ── */
+    .month-switcher {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .month-nav-btn {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      border-radius: var(--radius-sm);
+      width: 32px;
+      height: 32px;
+      cursor: pointer;
       font-size: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+    }
+    .month-nav-btn:hover:not(:disabled) { background: var(--border); }
+    .month-nav-btn:disabled { opacity: 0.3; cursor: default; }
+    .month-label {
+      font-size: 0.95rem;
       font-weight: 600;
-      margin-bottom: 16px;
       color: var(--text-primary);
     }
 
-    .loading-hint {
-      text-align: center;
-      color: var(--text-muted);
-      padding: 32px 0;
-      font-size: 0.9rem;
+    /* ── Heatmap calendar ── */
+    .heatmap-weekdays {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+      margin-bottom: 4px;
     }
-    .error-hint {
+    .hm-weekday {
       text-align: center;
-      color: #e85d3a;
-      padding: 32px 0;
-      font-size: 0.9rem;
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      padding: 2px 0;
+    }
+    .heatmap-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+    .hm-cell {
+      aspect-ratio: 1;
+      border-radius: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: default;
+      position: relative;
+    }
+    .hm-cell.hm-empty  { background: transparent; }
+    .hm-cell.hm-level-0 { background: var(--bg-input); }
+    .hm-cell.hm-level-1 { background: rgba(230, 90, 56, 0.25); }
+    .hm-cell.hm-level-2 { background: rgba(230, 90, 56, 0.50); }
+    .hm-cell.hm-level-3 { background: rgba(230, 90, 56, 0.78); }
+    .hm-cell.hm-level-4 { background: rgba(230, 90, 56, 1.00); }
+    .hm-day {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      line-height: 1;
+    }
+    .hm-cell.hm-level-3 .hm-day,
+    .hm-cell.hm-level-4 .hm-day { color: rgba(255,255,255,0.85); }
+    .hm-cell.hm-today {
+      outline: 2px solid var(--tomato);
+      outline-offset: -2px;
     }
 
-    @media (max-width: 480px) {
-      .profile-summary { grid-template-columns: repeat(2, 1fr); }
+    /* tooltip on hover */
+    .hm-cell[data-tip]:hover::after {
+      content: attr(data-tip);
+      position: absolute;
+      bottom: calc(100% + 6px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #111;
+      color: #eee;
+      font-size: 0.7rem;
+      white-space: nowrap;
+      padding: 3px 7px;
+      border-radius: 5px;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* achievements loading placeholder */
+    .achievements-loading {
+      grid-column: 1 / -1;
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      text-align: center;
+      padding: 8px 0;
+    }
+
+    /* heatmap legend */
+    .hm-legend {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 10px;
+      justify-content: flex-end;
+    }
+    .hm-legend-label { font-size: 0.65rem; color: var(--text-muted); }
+    .hm-legend-box {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+    }
+    .hm-legend-0 { background: var(--bg-input); }
+    .hm-legend-1 { background: rgba(230, 90, 56, 0.25); }
+    .hm-legend-2 { background: rgba(230, 90, 56, 0.50); }
+    .hm-legend-3 { background: rgba(230, 90, 56, 0.78); }
+    .hm-legend-4 { background: rgba(230, 90, 56, 1.00); }
+
+    /* ── Category bars ── */
+    .cat-row {
+      display: grid;
+      grid-template-columns: 60px 1fr 40px;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .cat-name {
+      font-size: 0.8rem;
+      color: var(--text-primary);
+      text-align: right;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .cat-bar-bg {
+      background: var(--bg-input);
+      border-radius: 4px;
+      height: 8px;
+      overflow: hidden;
+    }
+    .cat-bar-fill {
+      height: 100%;
+      background: var(--tomato-light);
+      border-radius: 4px;
+      transition: width 0.5s ease;
+    }
+    .cat-pct {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    /* ── Records list ── */
+    .record-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.82rem;
+    }
+    .record-row:last-child { border-bottom: none; }
+    .record-date  { color: var(--text-muted); font-family: var(--font-mono); width: 42px; flex-shrink: 0; }
+    .record-cat   { background: var(--bg-input); border-radius: 99px; padding: 2px 10px; font-size: 0.75rem; color: var(--text-label); flex-shrink: 0; }
+    .record-min   { color: var(--text-primary); font-family: var(--font-mono); margin-left: auto; flex-shrink: 0; }
+    .record-status { flex-shrink: 0; font-size: 0.85rem; }
+
+    /* ── Error / empty ── */
+    .error-msg  { color: #e85d3a; padding: 32px 0; text-align: center; font-size: 0.9rem; }
+    .empty-hint { color: var(--text-muted); text-align: center; padding: 24px 0; font-size: 0.85rem; }
+
+    /* ── RWD: tablet ── */
+    @media (max-width: 600px) {
+      .profile-page { padding: 16px 12px 48px; }
+      .profile-section { padding: 14px 14px; }
+      .profile-user-card { padding: 14px; }
+      .achievements-grid { grid-template-columns: repeat(5, 1fr); gap: 5px; }
+      .badge-icon { font-size: 1.3rem; }
+      .badge-name { font-size: 0.58rem; }
+      .badge-desc { display: none; }
+      .profile-stat-num { font-size: 1.2rem; }
+    }
+
+    /* ── RWD: mobile ── */
+    @media (max-width: 400px) {
+      .profile-stats-row { grid-template-columns: repeat(3, 1fr); gap: 5px; }
+      .profile-stat { padding: 8px 4px; }
+      .profile-stat-num { font-size: 1rem; }
+      .achievements-grid { grid-template-columns: repeat(5, 1fr); gap: 4px; }
+      .badge-icon { font-size: 1.1rem; }
+      .badge-name { font-size: 0.54rem; }
+      .hm-day { font-size: 0.55rem; }
+      .cat-row { grid-template-columns: 48px 1fr 34px; }
     }
   </style>
 </head>
 <body>
-  <div class="profile-wrapper">
+  <div class="profile-page">
 
-    <!-- 返回按鈕 -->
     <a href="index.html" class="profile-back">← 回到番茄鐘</a>
 
-    <!-- 用戶資訊區 -->
-    <div class="profile-header" id="profileHeader">
-      <div class="loading-hint">載入中...</div>
+    <!-- 用戶資訊 + 統計 -->
+    <div class="profile-user-card">
+      <div class="profile-identity" id="profileIdentity">
+        <div class="profile-avatar-placeholder">🍅</div>
+        <div>
+          <div class="profile-name">載入中...</div>
+        </div>
+      </div>
+      <div class="profile-stats-row">
+        <div class="profile-stat">
+          <div class="profile-stat-num" id="statStreak">—</div>
+          <div class="profile-stat-label">🔥 連續天</div>
+        </div>
+        <div class="profile-stat">
+          <div class="profile-stat-num" id="statMonthMin">—</div>
+          <div class="profile-stat-label">本月分鐘</div>
+        </div>
+        <div class="profile-stat">
+          <div class="profile-stat-num" id="statRate">—</div>
+          <div class="profile-stat-label">完成率</div>
+        </div>
+      </div>
     </div>
 
-    <!-- 統計摘要 -->
-    <div class="profile-summary" id="profileSummary" hidden>
-      <div class="profile-stat">
-        <div class="profile-stat-num" id="pTotalRounds">0</div>
-        <div class="profile-stat-label">總完成輪數</div>
-      </div>
-      <div class="profile-stat">
-        <div class="profile-stat-num" id="pTotalMinutes">0</div>
-        <div class="profile-stat-label">總專注分鐘</div>
-      </div>
-      <div class="profile-stat">
-        <div class="profile-stat-num" id="pDoneRate">—</div>
-        <div class="profile-stat-label">完成率</div>
-      </div>
-      <div class="profile-stat">
-        <div class="profile-stat-num" id="pAvgFocus">—</div>
-        <div class="profile-stat-label">平均專注度</div>
+    <!-- 成就 -->
+    <div class="profile-section">
+      <div class="section-title">成就徽章</div>
+      <div class="achievements-grid" id="achievementsGrid">
+        <div class="achievements-loading">載入中...</div>
       </div>
     </div>
 
-    <!-- 歷史紀錄 -->
-    <div class="profile-records">
-      <h2>📋 學習紀錄</h2>
-      <div id="profileHistoryList">
-        <div class="loading-hint">載入中...</div>
+    <!-- 月份熱力圖 -->
+    <div class="profile-section">
+      <div class="month-switcher">
+        <button type="button" class="month-nav-btn" id="btnPrevMonth">‹</button>
+        <span class="month-label" id="monthLabel"></span>
+        <button type="button" class="month-nav-btn" id="btnNextMonth">›</button>
       </div>
+      <div class="heatmap-weekdays">
+        <div class="hm-weekday">日</div>
+        <div class="hm-weekday">一</div>
+        <div class="hm-weekday">二</div>
+        <div class="hm-weekday">三</div>
+        <div class="hm-weekday">四</div>
+        <div class="hm-weekday">五</div>
+        <div class="hm-weekday">六</div>
+      </div>
+      <div class="heatmap-grid" id="heatmapGrid"></div>
+      <div class="hm-legend">
+        <span class="hm-legend-label">少</span>
+        <div class="hm-legend-box hm-legend-0"></div>
+        <div class="hm-legend-box hm-legend-1"></div>
+        <div class="hm-legend-box hm-legend-2"></div>
+        <div class="hm-legend-box hm-legend-3"></div>
+        <div class="hm-legend-box hm-legend-4"></div>
+        <span class="hm-legend-label">多</span>
+      </div>
+    </div>
+
+    <!-- 本月分類 -->
+    <div class="profile-section">
+      <div class="section-title" id="catSectionTitle">本月分類分佈</div>
+      <div id="profileCats"><div class="empty-hint">載入中...</div></div>
+    </div>
+
+    <!-- 本月紀錄 -->
+    <div class="profile-section">
+      <div class="section-title" id="recSectionTitle">本月紀錄</div>
+      <div id="profileRecords"><div class="empty-hint">載入中...</div></div>
     </div>
 
   </div>
-
   <script src="profile.js"></script>
 </body>
 </html>
