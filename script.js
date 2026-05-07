@@ -3,6 +3,7 @@
 /* ============================================================
    設定
    ============================================================ */
+const DEMO_EMAIL = 'demo@focus.app';
 const FIREBASE_CONFIG = {
   apiKey: 'AIzaSyDeAM6lR-NcH--3avA1fqnA620DX2ktsNM',
   authDomain: 'focus-e5f62.firebaseapp.com',
