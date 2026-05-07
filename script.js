@@ -1079,7 +1079,7 @@ async function handleGoogleLogin() {
 
 async function handleDemoLogin() {
   try {
-    await firebaseAuth.signInWithEmailAndPassword('demo@focus.app', '你設定的密碼');
+    await firebaseAuth.signInWithEmailAndPassword('demo@focus.app', 'demo@focus.app');
     hideModal(EL.modalLogin);
   } catch (err) {
     console.error('訪客登入失敗：', err);
