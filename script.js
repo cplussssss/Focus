@@ -64,6 +64,7 @@ let EL = {};
 
 function initElements() {
   EL = {
+    btnDemoLogin: document.getElementById('btnDemoLogin'),
     modeBadge: document.getElementById('modeBadge'),
     timerDisplay: document.getElementById('timerDisplay'),
     statusText: document.getElementById('statusText'),
@@ -758,6 +759,7 @@ function loadFromStorage() {
    事件綁定
    ============================================================ */
 function initEventListeners() {
+  EL.btnDemoLogin.addEventListener('click', handleDemoLogin);
   // 登入按鈕
   EL.btnLoginHeader.addEventListener('click', () => showModal(EL.modalLogin));
 
@@ -900,29 +902,30 @@ function initFirebase() {
     firebaseAuth = firebase.auth();
     firestoreDb  = firebase.firestore();
 
-    firebaseAuth.onAuthStateChanged(async (user) => {
-      currentUser = user;
-      if (user) {
-        EL.syncState.textContent = user.email;
-        if (EL.btnMyRecords)   EL.btnMyRecords.hidden   = false;
-        if (EL.btnAccount)     EL.btnAccount.hidden     = false;
-        if (EL.btnLoginHeader) EL.btnLoginHeader.hidden = true;
+  firebaseAuth.onAuthStateChanged(async (user) => {
+    currentUser = user;
+    if (user) {
+      hideModal(EL.modalLogin);   // ★ 登入後關掉 Modal
+      EL.syncState.textContent = user.email === DEMO_EMAIL ? '👀 訪客模式' : user.email;
+      if (EL.btnMyRecords)   EL.btnMyRecords.hidden   = user.email === DEMO_EMAIL;
+      if (EL.btnAccount)     EL.btnAccount.hidden     = false;
+      if (EL.btnLoginHeader) EL.btnLoginHeader.hidden = true;
 
-        await firestoreDb.collection('users').doc(user.uid).set({
-          email:       user.email,
-          displayName: user.displayName || '',
-          photoURL:    user.photoURL    || '',
-          updatedAt:   firebase.firestore.FieldValue.serverTimestamp()
-        }, { merge: true });
+      await firestoreDb.collection('users').doc(user.uid).set({
+        email:       user.email,
+        displayName: user.displayName || '',
+        photoURL:    user.photoURL    || '',
+        updatedAt:   firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
 
-        await loadFromFirestore();
-        await syncUnsyncedRecords();
-      } else {
-        EL.syncState.textContent = '';
-        if (EL.btnMyRecords)   EL.btnMyRecords.hidden   = true;
-        if (EL.btnAccount)     EL.btnAccount.hidden     = true;
-        if (EL.btnLoginHeader) EL.btnLoginHeader.hidden = false;
-      }
+      await loadFromFirestore();
+    } else {
+      EL.syncState.textContent = '';
+      if (EL.btnMyRecords)   EL.btnMyRecords.hidden   = true;
+      if (EL.btnAccount)     EL.btnAccount.hidden     = true;
+      if (EL.btnLoginHeader) EL.btnLoginHeader.hidden = false;
+      showModal(EL.modalLogin);   // ★ 未登入就強制顯示登入畫面
+    }
 });
   } catch (err) { console.error('Firebase 初始化失敗：', err); }
 }
@@ -1074,6 +1077,16 @@ async function handleGoogleLogin() {
   }
 }
 
+async function handleDemoLogin() {
+  try {
+    await firebaseAuth.signInWithEmailAndPassword('demo@focus.app', '你設定的密碼');
+    hideModal(EL.modalLogin);
+  } catch (err) {
+    console.error('訪客登入失敗：', err);
+    setSyncResult('訪客登入失敗：' + (err.message || err.code), true);
+  }
+}
+
 // 查看他人的公開紀錄
 async function loadPublicUserRecords(userId) {
   if (!firestoreDb) {
@@ -1137,6 +1150,11 @@ async function loadPublicUserRecords(userId) {
 
 // 寫入單筆紀錄到 Firestore
 async function saveRecordToFirestore(record) {
+  // ★ 訪客帳號 email，這個帳號的紀錄不會真的存入 Firestore
+  const DEMO_EMAIL = 'demo@focus.app';
+  if (currentUser && firestoreDb && currentUser.email !== DEMO_EMAIL) {
+  saveRecordToFirestore(record).catch(e => console.warn('Firestore 寫入失敗：', e));
+  }
   if (!currentUser || !firestoreDb) return;
   await firestoreDb
     .collection('users').doc(currentUser.uid)

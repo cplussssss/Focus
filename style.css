@@ -872,3 +872,22 @@ html, body {
   border-color: var(--tomato);
   color: var(--tomato-light);
 }
+
+.login-divider {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  position: relative;
+  margin: 4px 0;
+}
+.login-divider::before,
+.login-divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 42%;
+  height: 1px;
+  background: var(--border);
+}
+.login-divider::before { left: 0; }
+.login-divider::after  { right: 0; }
