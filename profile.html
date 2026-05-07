@@ -60,9 +60,9 @@
       overflow: hidden;
     }
 
-    /* 右欄：熱力圖（佔 40% 高度，內容過高時可捲動） */
+    /* 右欄：熱力圖（佔 50% 高度，內容過高時可捲動） */
     .profile-right-top {
-      flex: 4;
+      flex: 1;
       min-height: 0;
       overflow-y: auto;
       overflow-x: hidden;
@@ -73,9 +73,9 @@
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
     }
 
-    /* 右欄：數據圖表 / 紀錄列表（佔 60% 高度，獨立滾動） */
+    /* 右欄：數據圖表 / 紀錄列表（佔 50% 高度，獨立滾動） */
     .profile-right-records {
-      flex: 6;
+      flex: 1;
       min-height: 0;
       background: var(--bg-card);
       border: 1px solid var(--border);
@@ -326,8 +326,7 @@
       gap: 4px;
     }
     .hm-cell {
-      aspect-ratio: 1;
-      max-height: 48px;
+      height: 40px;
       border-radius: 5px;
       display: flex;
       flex-direction: column;
@@ -446,7 +445,7 @@
         overflow: visible;
         min-height: 0;
       }
-      .hm-cell { max-height: none; }
+      .hm-cell { height: auto; aspect-ratio: 1; }
       .records-scroll { overflow: visible; max-height: none; }
       .profile-stat-num { font-size: 1.25rem; }
       .badge-desc       { display: none; }
