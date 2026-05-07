@@ -342,6 +342,9 @@ function heatLevel(minutes) {
 }
 
 /* ── Monthly categories ── */
+/* Muted Morandi palette for donut segments */
+const DONUT_COLORS = ['#E07A5F', '#81B29A', '#F2CC8F', '#A8DADC', '#9B8BB4'];
+
 function renderMonthCategories() {
   const el   = document.getElementById('profileCats');
   const recs = recordsForMonth(selYear, selMonth);
@@ -357,17 +360,48 @@ function renderMonthCategories() {
     map[cat] = (map[cat] || 0) + (r.actualMinutes || 0);
   }
   const total = Object.values(map).reduce((s, v) => s + v, 0);
-  const sorted = Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  const categories = Object.entries(map)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([name, minutes]) => ({
+      name,
+      minutes,
+      pct: total > 0 ? Math.round(minutes / total * 100) : 0,
+    }));
 
-  el.innerHTML = sorted.map(([name, min]) => {
-    const pct = total > 0 ? Math.round(min / total * 100) : 0;
-    return `
-      <div class="cat-row">
-        <span class="cat-name">${escapeHTML(name)}</span>
-        <div class="cat-bar-bg"><div class="cat-bar-fill" style="width:${pct}%"></div></div>
-        <span class="cat-pct">${pct}%</span>
-      </div>`;
+  // SVG donut
+  const r = 34;
+  const C = 2 * Math.PI * r; // circumference ≈ 213.6
+  let startAngle = 0;
+  const segments = categories.map((cat, i) => {
+    const dash = (cat.minutes / total) * C;
+    const seg  = `<circle cx="50" cy="50" r="${r}" fill="none"
+      stroke="${DONUT_COLORS[i % DONUT_COLORS.length]}"
+      stroke-width="13"
+      stroke-dasharray="${dash.toFixed(2)} ${C.toFixed(2)}"
+      stroke-dashoffset="0"
+      transform="rotate(${startAngle.toFixed(2)} 50 50)" />`;
+    startAngle += (cat.minutes / total) * 360;
+    return seg;
   }).join('');
+
+  const legend = categories.map((cat, i) => `
+    <div class="donut-legend-item">
+      <span class="donut-legend-dot" style="background:${DONUT_COLORS[i % DONUT_COLORS.length]}"></span>
+      <span class="donut-legend-name">${escapeHTML(cat.name)}</span>
+      <span class="donut-legend-pct">${cat.pct}%</span>
+    </div>`).join('');
+
+  el.innerHTML = `
+    <div class="donut-wrap">
+      <div class="donut-svg-wrap">
+        <svg viewBox="0 0 100 100" class="donut-svg">
+          <circle cx="50" cy="50" r="${r}" fill="none" stroke="#3F3F46" stroke-width="13"/>
+          ${segments}
+        </svg>
+      </div>
+      <div class="donut-legend">${legend}</div>
+    </div>`;
 }
 
 /* ── Monthly records list ── */

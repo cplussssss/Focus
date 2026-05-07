@@ -11,10 +11,24 @@
   <link rel="stylesheet" href="style.css" />
   <style>
     /* ============================================================
-       版面：桌面左右分欄（繼承 style.css 的 100vh 鎖定）
-       手機：上下堆疊 + 頁面自由滾動
+       覆寫全域設計系統（僅作用於此頁）
        ============================================================ */
+    :root {
+      --bg-deep:      #18181B;
+      --bg-card:      #27272A;
+      --bg-input:     #3F3F46;
+      --border:       #3F3F46;
+      --tomato:       #E07A5F;
+      --tomato-light: #E07A5F;
+      --tomato-dim:   rgba(224, 122, 95, 0.12);
+      --text-primary: #F4F4F5;
+      --text-muted:   #A1A1AA;
+      --text-label:   #D4D4D8;
+    }
 
+    /* ============================================================
+       版面：桌面左右分欄（繼承 style.css 的 100vh 鎖定）
+       ============================================================ */
     .profile-layout {
       display: flex;
       height: 100vh;
@@ -46,13 +60,14 @@
       overflow: hidden;
     }
 
-    /* 右欄：熱力圖區（固定，不滾動） */
+    /* 右欄：熱力圖（固定，不滾動） */
     .profile-right-top {
       flex-shrink: 0;
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: var(--radius-lg);
-      padding: 14px 16px;
+      padding: 14px 18px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
     }
 
     /* 右欄：紀錄列表（獨立滾動） */
@@ -65,29 +80,31 @@
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
     }
     .records-header {
       flex-shrink: 0;
-      padding: 12px 16px 8px;
+      padding: 12px 18px 8px;
       border-bottom: 1px solid var(--border);
     }
+    .records-header-title { margin-bottom: 0; }
     .records-scroll {
       flex: 1;
       overflow-y: auto;
       overflow-x: hidden;
-      padding: 8px 16px 12px;
+      padding: 8px 18px 12px;
     }
     .records-scroll::-webkit-scrollbar { width: 3px; }
     .records-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
-    .records-header-title { margin-bottom: 0; }
 
-    /* ── 通用卡片（左欄用） ── */
+    /* ── 通用卡片 ── */
     .p-card {
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: var(--radius-lg);
       padding: 14px 16px;
       flex-shrink: 0;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
     }
     .p-card-title {
       font-size: 0.68rem;
@@ -97,7 +114,7 @@
       margin-bottom: 10px;
     }
 
-    /* ── 返回 + 用戶 ── */
+    /* ── 返回 + 身份 ── */
     .profile-header-row {
       display: flex;
       align-items: center;
@@ -112,8 +129,6 @@
       transition: color 0.2s;
     }
     .profile-back:hover { color: var(--text-primary); }
-
-    /* ── 身份卡 ── */
     .profile-identity {
       display: flex;
       align-items: center;
@@ -153,7 +168,7 @@
       margin-top: 2px;
     }
 
-    /* ── 統計列 ── */
+    /* ── 核心數據 ── */
     .profile-stats-row {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -161,81 +176,104 @@
       margin-top: 12px;
     }
     .profile-stat {
-      background: var(--bg-input);
+      background: rgba(255, 255, 255, 0.04);
       border-radius: var(--radius-md);
-      padding: 8px 4px;
+      padding: 10px 4px;
       text-align: center;
     }
     .profile-stat-num {
       font-family: var(--font-mono);
-      font-size: 1.3rem;
-      font-weight: 500;
+      font-size: 1.55rem;
+      font-weight: 700;
       color: var(--tomato-light);
       line-height: 1;
     }
     .profile-stat-label {
-      font-size: 0.65rem;
+      font-size: 0.72rem;
       color: var(--text-muted);
-      margin-top: 3px;
+      margin-top: 5px;
     }
 
-    /* ── 成就 ── */
+    /* ── 成就徽章：3 欄、無邊框 ── */
     .achievements-grid {
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 6px;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
     }
     .achievement-badge {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 4px;
-      padding: 8px 3px;
+      gap: 5px;
+      padding: 12px 6px;
       border-radius: var(--radius-md);
-      border: 1px solid var(--border);
       text-align: center;
     }
-    .achievement-badge.unlocked {
-      background: var(--tomato-dim);
-      border-color: var(--tomato);
+    .achievement-badge.unlocked { background: var(--tomato-dim); }
+    .achievement-badge.locked   { opacity: 0.28; background: rgba(255, 255, 255, 0.02); }
+    .badge-icon {
+      font-size: 1.4rem;
+      line-height: 1;
+      filter: saturate(0.85);
     }
-    .achievement-badge.locked { opacity: 0.32; filter: grayscale(0.5); }
-    .badge-icon { font-size: 1.3rem; line-height: 1; }
-    .badge-name { font-size: 0.58rem; color: var(--text-primary); font-weight: 600; line-height: 1.2; }
+    .badge-name { font-size: 0.6rem; color: var(--text-primary); font-weight: 600; line-height: 1.3; }
+    .badge-desc { font-size: 0.56rem; color: var(--text-muted); line-height: 1.3; }
+    .achievements-loading {
+      grid-column: 1 / -1;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      text-align: center;
+      padding: 6px 0;
+    }
 
-    /* ── 分類長條 ── */
-    .cat-row {
-      display: grid;
-      grid-template-columns: 54px 1fr 36px;
+    /* ── 環形圖（分類） ── */
+    .donut-wrap {
+      display: flex;
       align-items: center;
-      gap: 8px;
-      margin-bottom: 7px;
+      gap: 18px;
     }
-    .cat-row:last-child { margin-bottom: 0; }
-    .cat-name {
-      font-size: 0.78rem;
+    .donut-svg-wrap {
+      flex-shrink: 0;
+      width: 88px;
+      height: 88px;
+    }
+    .donut-svg {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+      overflow: visible;
+    }
+    .donut-legend {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+    .donut-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .donut-legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .donut-legend-name {
+      font-size: 0.76rem;
       color: var(--text-primary);
-      text-align: right;
-      white-space: nowrap;
+      flex: 1;
       overflow: hidden;
       text-overflow: ellipsis;
+      white-space: nowrap;
     }
-    .cat-bar-bg {
-      background: var(--bg-input);
-      border-radius: 4px;
-      height: 7px;
-      overflow: hidden;
-    }
-    .cat-bar-fill {
-      height: 100%;
-      background: var(--tomato-light);
-      border-radius: 4px;
-      transition: width 0.5s ease;
-    }
-    .cat-pct {
+    .donut-legend-pct {
       font-size: 0.72rem;
       color: var(--text-muted);
       font-family: var(--font-mono);
+      flex-shrink: 0;
     }
 
     /* ── 月份切換 ── */
@@ -246,7 +284,7 @@
       margin-bottom: 12px;
     }
     .month-nav-btn {
-      background: var(--bg-input);
+      background: rgba(255, 255, 255, 0.05);
       border: 1px solid var(--border);
       color: var(--text-primary);
       border-radius: var(--radius-sm);
@@ -267,7 +305,7 @@
       color: var(--text-primary);
     }
 
-    /* ── 熱力圖 ── */
+    /* ── 熱力圖日曆 ── */
     .heatmap-weekdays {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
@@ -276,7 +314,7 @@
     }
     .hm-weekday {
       text-align: center;
-      font-size: 0.62rem;
+      font-size: 0.6rem;
       color: var(--text-muted);
     }
     .heatmap-grid {
@@ -288,22 +326,48 @@
       aspect-ratio: 1;
       border-radius: 5px;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
       position: relative;
     }
-    .hm-cell.hm-empty   { background: transparent; }
-    .hm-cell.hm-level-0 { background: var(--bg-input); }
-    .hm-cell.hm-level-1 { background: rgba(230, 90, 56, 0.25); }
-    .hm-cell.hm-level-2 { background: rgba(230, 90, 56, 0.50); }
-    .hm-cell.hm-level-3 { background: rgba(230, 90, 56, 0.78); }
-    .hm-cell.hm-level-4 { background: rgba(230, 90, 56, 1.00); }
-    .hm-day { font-size: 0.6rem; color: var(--text-muted); font-family: var(--font-mono); }
-    .hm-cell.hm-level-3 .hm-day,
-    .hm-cell.hm-level-4 .hm-day { color: rgba(255,255,255,0.85); }
-    .hm-cell.hm-today { outline: 2px solid var(--tomato); outline-offset: -2px; }
+    .hm-cell.hm-empty { background: transparent; }
 
-    .hm-cell[data-tip]:hover::after {
+    /* 格子：邊框 + 透明度熱力 */
+    .hm-cell:not(.hm-empty) { border: 1px solid #3F3F46; }
+    .hm-cell.hm-level-0 { background: transparent; }
+    .hm-cell.hm-level-1 { background: rgba(224, 122, 95, 0.20); }
+    .hm-cell.hm-level-2 { background: rgba(224, 122, 95, 0.45); }
+    .hm-cell.hm-level-3 { background: rgba(224, 122, 95, 0.72); }
+    .hm-cell.hm-level-4 { background: rgba(224, 122, 95, 1.00); }
+
+    /* 日期數字 */
+    .hm-day {
+      font-size: 0.6rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      line-height: 1;
+    }
+    .hm-cell.hm-level-3 .hm-day,
+    .hm-cell.hm-level-4 .hm-day { color: rgba(255, 255, 255, 0.85); }
+
+    /* 今日：數字加粗 + 小圓點，不用外框 */
+    .hm-cell.hm-today .hm-day {
+      font-weight: 700;
+      color: var(--tomato-light);
+    }
+    .hm-cell.hm-today::after {
+      content: '';
+      display: block;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--tomato-light);
+      margin-top: 2px;
+    }
+
+    /* tooltip */
+    .hm-cell[data-tip]:hover::before {
       content: attr(data-tip);
       position: absolute;
       bottom: calc(100% + 5px);
@@ -311,7 +375,7 @@
       transform: translateX(-50%);
       background: #111;
       color: #eee;
-      font-size: 0.68rem;
+      font-size: 0.65rem;
       white-space: nowrap;
       padding: 3px 7px;
       border-radius: 5px;
@@ -327,13 +391,13 @@
       margin-top: 8px;
       justify-content: flex-end;
     }
-    .hm-legend-label { font-size: 0.62rem; color: var(--text-muted); }
-    .hm-legend-box   { width: 11px; height: 11px; border-radius: 3px; }
-    .hm-legend-0 { background: var(--bg-input); }
-    .hm-legend-1 { background: rgba(230, 90, 56, 0.25); }
-    .hm-legend-2 { background: rgba(230, 90, 56, 0.50); }
-    .hm-legend-3 { background: rgba(230, 90, 56, 0.78); }
-    .hm-legend-4 { background: rgba(230, 90, 56, 1.00); }
+    .hm-legend-label { font-size: 0.6rem; color: var(--text-muted); }
+    .hm-legend-box   { width: 11px; height: 11px; border-radius: 3px; border: 1px solid #3F3F46; }
+    .hm-legend-0 { background: transparent; }
+    .hm-legend-1 { background: rgba(224, 122, 95, 0.20); }
+    .hm-legend-2 { background: rgba(224, 122, 95, 0.45); }
+    .hm-legend-3 { background: rgba(224, 122, 95, 0.72); }
+    .hm-legend-4 { background: rgba(224, 122, 95, 1.00); }
 
     /* ── 紀錄列 ── */
     .record-row {
@@ -341,28 +405,21 @@
       align-items: center;
       gap: 8px;
       padding: 7px 0;
-      border-bottom: 1px solid var(--border);
+      border-bottom: 1px solid rgba(63, 63, 70, 0.6);
       font-size: 0.82rem;
     }
     .record-row:last-child { border-bottom: none; }
-    .record-date   { color: var(--text-muted); font-family: var(--font-mono); width: 38px; flex-shrink: 0; font-size: 0.78rem; }
-    .record-cat    { background: var(--bg-input); border-radius: 99px; padding: 2px 9px; font-size: 0.72rem; color: var(--text-label); flex-shrink: 0; }
-    .record-min    { color: var(--text-primary); font-family: var(--font-mono); margin-left: auto; flex-shrink: 0; font-size: 0.78rem; }
-    .record-status { flex-shrink: 0; font-size: 0.82rem; }
+    .record-date   { color: var(--text-muted); font-family: var(--font-mono); width: 38px; flex-shrink: 0; font-size: 0.76rem; }
+    .record-cat    { background: rgba(255,255,255,0.06); border-radius: 99px; padding: 2px 9px; font-size: 0.72rem; color: var(--text-label); flex-shrink: 0; }
+    .record-min    { color: var(--text-primary); font-family: var(--font-mono); margin-left: auto; flex-shrink: 0; font-size: 0.76rem; }
+    .record-status { flex-shrink: 0; font-size: 0.8rem; }
 
     /* ── Error / empty ── */
-    .error-msg  { color: #e85d3a; padding: 16px 0; font-size: 0.88rem; }
+    .error-msg  { color: #E07A5F; padding: 16px 0; font-size: 0.88rem; }
     .empty-hint { color: var(--text-muted); text-align: center; padding: 20px 0; font-size: 0.82rem; }
-    .achievements-loading {
-      grid-column: 1 / -1;
-      color: var(--text-muted);
-      font-size: 0.8rem;
-      text-align: center;
-      padding: 6px 0;
-    }
 
     /* ============================================================
-       手機版（≤ 700px）：上下堆疊，自由頁面滾動
+       手機版（≤ 700px）
        ============================================================ */
     @media (max-width: 700px) {
       html, body { height: auto !important; overflow: auto !important; }
@@ -374,35 +431,26 @@
         padding: 12px;
         gap: 10px;
       }
-      .profile-left {
-        width: 100%;
-        overflow: visible;
-      }
-      .profile-right {
-        overflow: visible;
-        gap: 10px;
-      }
+      .profile-left  { width: 100%; overflow: visible; }
+      .profile-right { overflow: visible; gap: 10px; }
       .profile-right-top { flex-shrink: 0; }
       .profile-right-records {
         overflow: visible;
         min-height: 0;
       }
-      .records-scroll {
-        overflow: visible;
-        max-height: none;
-      }
-      .profile-stat-num { font-size: 1.1rem; }
-      .badge-icon       { font-size: 1.1rem; }
-      .badge-name       { font-size: 0.55rem; }
+      .records-scroll { overflow: visible; max-height: none; }
+      .profile-stat-num { font-size: 1.25rem; }
+      .badge-desc       { display: none; }
     }
 
     /* 極小螢幕（≤ 360px） */
     @media (max-width: 360px) {
       .profile-layout { padding: 8px; gap: 8px; }
       .p-card { padding: 11px 12px; }
-      .profile-stat-num { font-size: 1rem; }
-      .achievements-grid { gap: 4px; }
+      .achievements-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+      .profile-stat-num { font-size: 1.05rem; }
       .hm-day { font-size: 0.5rem; }
+      .donut-svg-wrap { width: 72px; height: 72px; }
     }
   </style>
 </head>
@@ -412,12 +460,11 @@
     <!-- ══ 左欄 ══ -->
     <div class="profile-left">
 
-      <!-- 返回 -->
       <div class="profile-header-row">
         <a href="index.html" class="profile-back">← 番茄鐘</a>
       </div>
 
-      <!-- 身份 + 統計 -->
+      <!-- 身份 + 核心數據 -->
       <div class="p-card">
         <div class="profile-identity" id="profileIdentity">
           <div class="profile-avatar-placeholder">🍅</div>
@@ -441,7 +488,7 @@
         </div>
       </div>
 
-      <!-- 成就 -->
+      <!-- 成就徽章 -->
       <div class="p-card">
         <div class="p-card-title">成就徽章</div>
         <div class="achievements-grid" id="achievementsGrid">
@@ -449,7 +496,7 @@
         </div>
       </div>
 
-      <!-- 分類 -->
+      <!-- 分類環形圖 -->
       <div class="p-card">
         <div class="p-card-title" id="catSectionTitle">本月分類分佈</div>
         <div id="profileCats"><div class="empty-hint">載入中...</div></div>
@@ -460,7 +507,7 @@
     <!-- ══ 右欄 ══ -->
     <div class="profile-right">
 
-      <!-- 熱力圖（固定，不滾動） -->
+      <!-- 熱力圖（固定） -->
       <div class="profile-right-top">
         <div class="month-switcher">
           <button type="button" class="month-nav-btn" id="btnPrevMonth">‹</button>
@@ -500,8 +547,7 @@
 
     </div><!-- /.profile-right -->
 
-  </div><!-- /.profile-layout -->
-
+  </div>
   <script src="profile.js"></script>
 </body>
 </html>
