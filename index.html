@@ -102,6 +102,22 @@
 
       </section>
 
+      <!-- 開始前狀態 + AI 啟動建議 -->
+      <section class="state-section">
+        <div class="state-label">現在狀態如何？</div>
+        <div class="state-chips" id="stateChips">
+          <button type="button" class="state-chip" data-state="great">🔥 很好</button>
+          <button type="button" class="state-chip" data-state="good">😊 不錯</button>
+          <button type="button" class="state-chip" data-state="ok">😐 一般</button>
+          <button type="button" class="state-chip" data-state="tired">😴 有點累</button>
+          <button type="button" class="state-chip" data-state="exhausted">💤 很累</button>
+        </div>
+        <div class="start-tip" id="startTip" hidden>
+          <span class="start-tip-icon">💡</span>
+          <span class="start-tip-text" id="startTipText"></span>
+        </div>
+      </section>
+
       <!-- 控制按鈕 -->
       <section class="btn-section">
         <button type="button" class="btn btn-primary"   id="btnStart">▶ 開始</button>

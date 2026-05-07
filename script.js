@@ -125,6 +125,11 @@ function initElements() {
     modalBreakDone: document.getElementById('modalBreakDone'),
     btnModalNextRound: document.getElementById('btnModalNextRound'),
 
+    // 狀態選擇 + AI 建議
+    stateChips:   document.getElementById('stateChips'),
+    startTip:     document.getElementById('startTip'),
+    startTipText: document.getElementById('startTipText'),
+
     // Modal：登入
     modalLogin: document.getElementById('modalLogin'),
     btnGoogleLogin: document.getElementById('btnGoogleLogin'),
@@ -149,6 +154,58 @@ function initElements() {
     accountAvatar:   document.getElementById('accountAvatar'),
     accountUid:      document.getElementById('accountUid'),
   };
+}
+
+/* ============================================================
+   開始前狀態建議
+   ============================================================ */
+const STATE_TIPS = {
+  great: [
+    '狀態絕佳！直接衝最難的核心任務，趁這股能量把最高價值的工作解決掉。',
+    '能量滿點！把那個你一直拖延的硬骨頭排第一，別浪費這個黃金時段。',
+    '今天狀態很好，把最需要腦力的任務放在最前面，讓峰值狀態發揮最大效益。',
+  ],
+  good: [
+    '狀態不錯，直接開始主要任務即可，保持這個節奏就好。',
+    '精神不錯！選一個你真正想推進的任務，這個時段做有品質的工作正好。',
+    '狀態良好，選需要專注但不算最難的工作，穩穩推進就是今天的目標。',
+  ],
+  ok: [
+    '你現在狀態一般，建議先做 15 分鐘的輕任務暖機，不要一開始就挑最難的。',
+    '狀態普通，先選一個「低啟動門檻」的任務，讓自己慢慢進入狀態再說。',
+    '狀態一般時最容易拖延，建議先定好這輪只做一件小事，完成就是進步。',
+  ],
+  tired: [
+    '有點疲憊，只做一件最小可行的事就好，完成一個小動作也算勝利。',
+    '感覺有點累，試著做整理、回覆或閱讀這類不需要高強度腦力的任務。',
+    '能量偏低，把這輪當成「維持動能」的輕巡航，不用強迫自己全速衝。',
+  ],
+  exhausted: [
+    '感覺很累了，先問自己：現在最重要的一件事是什麼？只做那一件就好。',
+    '狀態很差時硬撐反而低效，建議先起來走動 2 分鐘再開始，或考慮短暫休息。',
+    '真的很累的話，選一件最簡單的任務讓大腦有點事做，別給自己太大壓力。',
+  ],
+};
+
+let _tipTimerId = null;
+
+function showStateTip(state) {
+  clearTimeout(_tipTimerId);
+  EL.startTip.hidden = true;
+  const tips = STATE_TIPS[state];
+  if (!tips) return;
+  _tipTimerId = setTimeout(() => {
+    EL.startTipText.textContent = tips[Math.floor(Math.random() * tips.length)];
+    EL.startTip.hidden = false;
+  }, 900);
+}
+
+function clearStateTip() {
+  clearTimeout(_tipTimerId);
+  EL.startTip.hidden = true;
+  if (EL.stateChips) {
+    EL.stateChips.querySelectorAll('.state-chip').forEach(b => b.classList.remove('active'));
+  }
 }
 
 /* ============================================================
@@ -448,6 +505,7 @@ function startWork() {
   STATE.mode = 'work';
   STATE.endTime = Date.now() + STATE.workTotalSeconds * 1000;
 
+  clearStateTip();
   setBadgeMode('work');
   updateTimerDisplay(STATE.workTotalSeconds);
   updateProgressBar(0, STATE.workTotalSeconds, 'work');
@@ -575,6 +633,7 @@ function doReset() {
 function resetToIdle() {
   clearTimer();
   stopTabFlash();
+  clearStateTip();
   STATE.mode = 'idle';
   document.body.className = '';
   const workSec = getWorkSeconds();
@@ -788,6 +847,15 @@ function initEventListeners() {
   EL.btnLogout.addEventListener('click', async () => {
     await firebaseAuth.signOut();
     hideModal(EL.modalAccount);
+  });
+
+  // 狀態 chip 點擊 → 顯示 AI 建議
+  EL.stateChips.querySelectorAll('.state-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      EL.stateChips.querySelectorAll('.state-chip').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      showStateTip(btn.dataset.state);
+    });
   });
 
   EL.btnStart.addEventListener('click', () => { if (STATE.mode === 'idle') startWork(); });
