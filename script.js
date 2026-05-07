@@ -4,6 +4,8 @@
    設定
    ============================================================ */
 const DEMO_EMAIL = 'demo@focus.app';
+// Cloudflare Worker URL（Gemini API 中間層）
+const GEMINI_WORKER_URL = 'https://focus.sijialai1473.workers.dev';
 const FIREBASE_CONFIG = {
   apiKey: 'AIzaSyDeAM6lR-NcH--3avA1fqnA620DX2ktsNM',
   authDomain: 'focus-e5f62.firebaseapp.com',
@@ -25,6 +27,7 @@ const FOCUS_LABELS = { 1: '很差', 2: '差', 3: '普通', 4: '不錯', 5: '很�
    全域狀態
    ============================================================ */
 const STATE = {
+  lastRecord: null,
   mode: 'idle',   // 'idle'|'work'|'work-overtime'|'break'|'paused'
   pausedMode: null,
 
@@ -114,6 +117,8 @@ function initElements() {
     // Modal：工作完成
     modalBreakSuggest: document.getElementById('modalBreakSuggest'),
     breakSuggestion: document.getElementById('breakSuggestion'),
+    aiFeedbackBlock:  document.getElementById('aiFeedbackBlock'),   
+    aiFeedbackText:   document.getElementById('aiFeedbackText'),   
     btnModalStartBreak: document.getElementById('btnModalStartBreak'),
     doneResultChips: document.getElementById('doneResultChips'),
     doneStars: document.getElementById('doneStars'),
@@ -661,6 +666,8 @@ function clearTaskFields() {
    修正：tick 進入 overtime 模式時已主動 setButtons({ break:false }) 啟用按鈕，
    此函式只需確認 mode 合法即可觸發。 */
 function handleStartBreak() {
+  if (EL.aiFeedbackBlock) EL.aiFeedbackBlock.hidden = true;
+
   const okModes = ['work', 'work-overtime', 'paused'];
   if (!okModes.includes(STATE.mode)) return;
 
@@ -680,6 +687,8 @@ function handleStartBreak() {
   EL.breakSuggestion.textContent = getRandomBreakSuggestion();
   resetDoneModal();
   showModal(EL.modalBreakSuggest);
+  // ★ 新增：觸發 AI 回饋（非同步，不擋住 Modal 顯示）
+  getAiFeedback(STATE.lastRecord || {});
   setButtons({ start: true, pause: true, endRound: true, reset: false, break: true });
 }
 
@@ -734,6 +743,7 @@ function saveRecord({ status, endReason, focus = 5, distractions = [] }) {
     distractions,    // string[]
     synced: false,
   };
+  STATE.lastRecord = record;  // ★ 暫存最新一筆，讓 getAiFeedback 可以取用
   STATE.records.unshift(record);
     saveToStorage();
     renderHistory();
@@ -1024,6 +1034,74 @@ async function saveRecordToFirestore(record) {
                         ? record.distractions.join('、') : '',
       createdAt:      firebase.firestore.FieldValue.serverTimestamp()
     });
+}
+
+/* ============================================================
+   AI 個人化回饋（Gemini via Cloudflare Worker）
+   ============================================================ */
+
+async function getAiFeedback(record) {
+  // 顯示載入狀態
+  EL.aiFeedbackBlock.hidden = false;
+  EL.aiFeedbackText.textContent = '分析中...';
+  EL.aiFeedbackText.classList.add('loading');
+
+  // 取得今日其他紀錄作為脈絡
+  const todayPrefix = getTodayPrefix();
+  const todayRecords = STATE.records.filter(r =>
+    r.timestamp && r.timestamp.startsWith(todayPrefix)
+  );
+
+  // 組成 Prompt
+  const focusLabel = { 5: '非常專注', 4: '蠻專注', 3: '普通', 2: '有點分心', 1: '很分心' };
+  const distStr = Array.isArray(record.distractions) && record.distractions.length
+    ? record.distractions.join('、')
+    : '無';
+
+  const prompt = `你是一個溫暖、簡短、不說教的學習夥伴。
+使用者剛完成一輪番茄鐘，根據以下資料給一句個人化的回饋（繁體中文，40字以內，不要用emoji，語氣像朋友）：
+
+本輪任務：${record.taskName || '未填寫'}
+任務分類：${record.category || '未分類'}
+預設時間：${Math.round((record.plannedSec || 0) / 60)} 分鐘
+實際時間：${Math.round((record.actualSec || 0) / 60)} 分鐘
+完成狀態：${record.status === 'done' ? '完成' : record.status === 'partial' ? '部分完成' : '未完成'}
+專注度：${focusLabel[record.focus] || '未評分'}
+干擾來源：${distStr}
+今天已完成輪數：${todayRecords.filter(r => r.status === 'done').length} 輪
+
+請根據這些資訊給一句有意義的回饋，不要只說「做得好」這種空泛的話。`;
+
+  try {
+    const response = await fetch(GEMINI_WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          maxOutputTokens: 100,
+          temperature: 0.8,
+        }
+      })
+    });
+
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    const data = await response.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+
+    if (text) {
+      EL.aiFeedbackText.textContent = text;
+      EL.aiFeedbackText.classList.remove('loading');
+    } else {
+      throw new Error('回應格式異常');
+    }
+
+  } catch (err) {
+    console.warn('AI 回饋失敗：', err);
+    // 失敗時靜默隱藏，不影響使用者操作
+    EL.aiFeedbackBlock.hidden = true;
+  }
 }
 
 async function syncUnsyncedRecords() {

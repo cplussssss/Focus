@@ -951,3 +951,30 @@ html, body {
   from { opacity: 0; transform: translateY(-4px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+/* AI 回饋區塊 */
+.ai-feedback-block {
+  margin-top: 14px;
+  padding: 12px 16px;
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: var(--radius-sm);
+  text-align: left;
+}
+.ai-feedback-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #818cf8;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+.ai-feedback-text {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+.ai-feedback-text.loading {
+  color: var(--text-muted);
+  font-style: italic;
+}
