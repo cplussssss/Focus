@@ -10,215 +10,212 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <link rel="stylesheet" href="style.css" />
   <style>
-    .dashboard-wrapper {
-      max-width: 760px;
-      margin: 0 auto;
-      padding: 24px 16px 64px;
-    }
-
-    .dash-back {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      text-decoration: none;
-      margin-bottom: 20px;
-      transition: color 0.2s;
-    }
-    .dash-back:hover { color: var(--text-primary); }
-
-    .dash-header {
+    /* ── 整體版面 ── */
+    .dash-layout {
       display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 24px;
-    }
-    .dash-avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 2px solid var(--border);
-    }
-    .dash-username {
-      font-size: 1rem;
-      font-weight: 600;
-      color: var(--text-primary);
+      height: 100vh;
+      gap: 16px;
+      padding: 16px;
+      overflow: hidden;
     }
 
-    /* 通用卡片 */
+    /* ── 左欄：固定寬度，不滾動 ── */
+    .dash-left {
+      width: 340px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+    .dash-left::-webkit-scrollbar { width: 3px; }
+    .dash-left::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+    /* ── 右欄：歷史紀錄，獨立滾動 ── */
+    .dash-right {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .dash-right-inner {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+    .dash-right-inner::-webkit-scrollbar { width: 3px; }
+    .dash-right-inner::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+    /* ── 通用卡片 ── */
     .dash-card {
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: var(--radius-lg);
-      padding: 18px 20px;
+      padding: 14px 16px;
     }
     .dash-card-title {
-      font-size: 0.72rem;
+      font-size: 0.68rem;
       color: var(--text-muted);
       text-transform: uppercase;
-      letter-spacing: 0.06em;
-      margin-bottom: 12px;
+      letter-spacing: 0.07em;
+      margin-bottom: 10px;
     }
 
-    /* 今日 + 連續天數 */
-    .dash-top-row {
-      display: grid;
-      grid-template-columns: 2fr 1fr;
-      gap: 12px;
-      margin-bottom: 12px;
-    }
-    .today-stats {
+    /* ── 頁首：返回 + 用戶 ── */
+    .dash-header {
       display: flex;
-      gap: 20px;
-      align-items: flex-end;
+      align-items: center;
+      gap: 10px;
+      padding-bottom: 4px;
+    }
+    .dash-back {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.2s;
+      white-space: nowrap;
+    }
+    .dash-back:hover { color: var(--text-primary); }
+    .dash-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--border);
+      flex-shrink: 0;
+    }
+    .dash-username {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* ── 今日進度 ── */
+    .today-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
     }
     .today-stat { text-align: center; }
     .today-stat-num {
       font-family: var(--font-mono);
-      font-size: 2rem;
+      font-size: 1.7rem;
       font-weight: 500;
       color: var(--tomato-light);
       line-height: 1;
     }
     .today-stat-label {
-      font-size: 0.72rem;
+      font-size: 0.67rem;
       color: var(--text-muted);
-      margin-top: 4px;
+      margin-top: 3px;
+    }
+
+    /* ── 連續天數 ── */
+    .streak-row {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
     }
     .streak-num {
       font-family: var(--font-mono);
-      font-size: 2.6rem;
+      font-size: 2.2rem;
       font-weight: 500;
       color: var(--tomato-light);
       line-height: 1;
     }
     .streak-sub {
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       color: var(--text-muted);
-      margin-top: 6px;
     }
 
-    /* AI 洞察 */
-    .dash-ai-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 18px 20px;
-      margin-bottom: 12px;
-    }
-    .dash-ai-title {
-      font-size: 0.72rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      margin-bottom: 10px;
-    }
+    /* ── AI 洞察 ── */
     #aiInsightText {
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       color: var(--text-primary);
       line-height: 1.7;
-      min-height: 40px;
+      min-height: 36px;
     }
     .ai-loading { color: var(--text-muted); }
-    .ai-error   { color: #e85d3a; font-size: 0.85rem; }
+    .ai-error   { color: #e85d3a; font-size: 0.82rem; }
     .ai-key-row {
       display: flex;
-      gap: 8px;
+      gap: 6px;
       margin-bottom: 6px;
     }
     .hf-key-input {
       flex: 1;
-      padding: 8px 10px;
+      padding: 7px 10px;
       border-radius: var(--radius-sm);
       border: 1px solid var(--border);
       background: var(--bg-input);
       color: var(--text-primary);
-      font-size: 0.85rem;
+      font-size: 0.82rem;
+      min-width: 0;
     }
     .ai-key-hint {
-      font-size: 0.78rem;
+      font-size: 0.74rem;
       color: var(--text-muted);
     }
     .ai-key-hint a { color: var(--tomato-light); }
     .ai-reset-btn {
-      font-size: 0.72rem;
+      display: block;
+      margin-top: 6px;
+      font-size: 0.7rem;
       color: var(--text-muted);
       background: none;
       border: none;
       cursor: pointer;
-      margin-left: 8px;
       padding: 0;
       text-decoration: underline;
     }
     .ai-reset-btn:hover { color: var(--text-primary); }
 
-    /* 本週圖 */
-    .week-chart-wrap {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 18px 20px;
-      margin-bottom: 12px;
-    }
-    .week-chart-title {
-      font-size: 0.72rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      margin-bottom: 12px;
-    }
+    /* ── 本週圖 ── */
     .week-grid {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
-      gap: 6px;
+      gap: 5px;
     }
     .week-col {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 4px;
+      gap: 3px;
     }
     .week-bar {
       width: 100%;
       aspect-ratio: 1;
-      border-radius: 6px;
+      border-radius: 5px;
     }
     .week-label {
-      font-size: 0.72rem;
+      font-size: 0.67rem;
       color: var(--text-muted);
     }
     .week-min {
-      font-size: 0.65rem;
+      font-size: 0.6rem;
       color: var(--text-muted);
       font-family: var(--font-mono);
     }
 
-    /* 分類 */
-    .cat-section {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 18px 20px;
-      margin-bottom: 12px;
-    }
-    .cat-section-title {
-      font-size: 0.72rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      margin-bottom: 12px;
-    }
+    /* ── 分類 ── */
     .cat-row {
       display: grid;
-      grid-template-columns: 56px 1fr 42px;
+      grid-template-columns: 52px 1fr 36px;
       align-items: center;
-      gap: 10px;
-      margin-bottom: 8px;
+      gap: 8px;
+      margin-bottom: 7px;
     }
     .cat-name {
-      font-size: 0.82rem;
+      font-size: 0.78rem;
       color: var(--text-primary);
       text-align: right;
       white-space: nowrap;
@@ -228,7 +225,7 @@
     .cat-bar-bg {
       background: var(--bg-input);
       border-radius: 4px;
-      height: 8px;
+      height: 7px;
       overflow: hidden;
     }
     .cat-bar-fill {
@@ -238,58 +235,76 @@
       transition: width 0.6s ease;
     }
     .cat-pct {
-      font-size: 0.78rem;
+      font-size: 0.72rem;
       color: var(--text-muted);
       font-family: var(--font-mono);
     }
 
-    /* 歷史 */
-    .history-section {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 18px 20px;
-    }
-    .history-section-title {
-      font-size: 0.72rem;
+    /* ── 右欄：歷史紀錄標題 ── */
+    .dash-right-header {
+      font-size: 0.68rem;
       color: var(--text-muted);
       text-transform: uppercase;
-      letter-spacing: 0.06em;
-      margin-bottom: 12px;
+      letter-spacing: 0.07em;
+      padding: 0 4px 10px;
+      flex-shrink: 0;
     }
-    .history-day-group { margin-bottom: 18px; }
+    .history-day-group { margin-bottom: 16px; }
     .history-day-header {
       display: flex;
       justify-content: space-between;
-      font-size: 0.82rem;
+      font-size: 0.78rem;
       color: var(--text-muted);
-      padding-bottom: 6px;
+      padding-bottom: 5px;
       border-bottom: 1px solid var(--border);
-      margin-bottom: 8px;
+      margin-bottom: 7px;
     }
     .history-day-total {
       font-family: var(--font-mono);
       color: var(--tomato-light);
     }
 
-    @media (max-width: 520px) {
-      .dash-top-row { grid-template-columns: 1fr; }
-      .today-stats  { justify-content: space-around; }
+    /* ── 手機版（≤ 700px）：改成上下排列 ── */
+    @media (max-width: 700px) {
+      html, body { overflow: auto; height: auto; }
+
+      .dash-layout {
+        flex-direction: column;
+        height: auto;
+        overflow: visible;
+        padding: 12px;
+        gap: 12px;
+      }
+      .dash-left {
+        width: 100%;
+        overflow: visible;
+      }
+      .dash-right {
+        overflow: visible;
+      }
+      .dash-right-inner {
+        overflow: visible;
+        max-height: none;
+      }
+      .today-stat-num { font-size: 1.4rem; }
+      .streak-num     { font-size: 1.8rem; }
     }
   </style>
 </head>
 <body>
-  <div class="dashboard-wrapper">
+  <div class="dash-layout">
 
-    <a href="index.html" class="dash-back">← 回到番茄鐘</a>
+    <!-- ══ 左欄 ══ -->
+    <div class="dash-left">
 
-    <div class="dash-header">
-      <img id="dashAvatar" class="dash-avatar" src="" alt="" hidden />
-      <div class="dash-username" id="dashUserName">載入中...</div>
-    </div>
+      <!-- 返回 + 用戶 -->
+      <div class="dash-header">
+        <a href="index.html" class="dash-back">← 番茄鐘</a>
+        <img id="dashAvatar" class="dash-avatar" src="" alt="" hidden />
+        <div class="dash-username" id="dashUserName">載入中...</div>
+      </div>
 
-    <!-- 今日進度 + 連續天數 -->
-    <div class="dash-top-row">
+      <!-- 今日進度 -->
       <div class="dash-card">
         <div class="dash-card-title">今日進度</div>
         <div class="today-stats">
@@ -307,38 +322,46 @@
           </div>
         </div>
       </div>
+
+      <!-- 連續天數 -->
       <div class="dash-card">
         <div class="dash-card-title">🔥 連續天數</div>
-        <div class="streak-num" id="streakCount">—</div>
-        <div class="streak-sub">天連續有紀錄</div>
+        <div class="streak-row">
+          <div class="streak-num" id="streakCount">—</div>
+          <div class="streak-sub">天連續有紀錄</div>
+        </div>
       </div>
-    </div>
 
-    <!-- AI 洞察 -->
-    <div class="dash-ai-card">
-      <div class="dash-ai-title">🤖 AI 習慣洞察</div>
-      <div id="aiInsightText"><span class="ai-loading">載入中...</span></div>
-    </div>
+      <!-- AI 洞察 -->
+      <div class="dash-card">
+        <div class="dash-card-title">🤖 AI 習慣洞察</div>
+        <div id="aiInsightText"><span class="ai-loading">載入中...</span></div>
+      </div>
 
-    <!-- 本週圖 -->
-    <div class="week-chart-wrap">
-      <div class="week-chart-title">本週每日專注</div>
-      <div class="week-grid" id="weeklyChart"></div>
-    </div>
+      <!-- 本週圖 -->
+      <div class="dash-card">
+        <div class="dash-card-title">本週每日專注</div>
+        <div class="week-grid" id="weeklyChart"></div>
+      </div>
 
-    <!-- 分類 -->
-    <div class="cat-section">
-      <div class="cat-section-title">任務分類分佈</div>
-      <div id="categoryList"></div>
-    </div>
+      <!-- 分類 -->
+      <div class="dash-card">
+        <div class="dash-card-title">任務分類分佈</div>
+        <div id="categoryList"></div>
+      </div>
 
-    <!-- 歷史紀錄 -->
-    <div class="history-section">
-      <div class="history-section-title">歷史紀錄</div>
-      <div id="dashHistoryList"></div>
-    </div>
+    </div><!-- /.dash-left -->
 
-  </div>
+    <!-- ══ 右欄：歷史紀錄 ══ -->
+    <div class="dash-right">
+      <div class="dash-right-header">📋 歷史紀錄</div>
+      <div class="dash-right-inner" id="dashHistoryList">
+        <p class="empty-hint">載入中...</p>
+      </div>
+    </div><!-- /.dash-right -->
+
+  </div><!-- /.dash-layout -->
+
   <script src="dashboard.js"></script>
 </body>
 </html>
