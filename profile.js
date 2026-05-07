@@ -125,6 +125,8 @@ async function main() {
     renderIdentity(userData, username);
     renderGlobalStats();
     renderAchievements();
+    renderWeekComparison();
+    renderTimeDistribution();
     renderMonth();
     initMonthNav();
 
@@ -280,9 +282,6 @@ function renderMonth() {
   updateMonthLabel();
   renderHeatmap();
   renderMonthCategories();
-  renderMonthRecords();
-
-  // Disable next-month button if already at current month
   document.getElementById('btnNextMonth').disabled =
     (selYear === NOW_YEAR && selMonth === NOW_MONTH);
 }
@@ -291,10 +290,8 @@ function updateMonthLabel() {
   const d = new Date(selYear, selMonth - 1, 1);
   document.getElementById('monthLabel').textContent =
     d.toLocaleDateString('zh-TW', { year: 'numeric', month: 'long' });
-
-  const title = `${selYear}年${selMonth}月`;
-  document.getElementById('catSectionTitle').textContent = title + ' 分類分佈';
-  document.getElementById('recSectionTitle').textContent = title + ' 紀錄';
+  document.getElementById('catSectionTitle').textContent =
+    `${selYear}年${selMonth}月 分類分佈`;
 }
 
 /* ── Heatmap ── */
@@ -404,31 +401,160 @@ function renderMonthCategories() {
     </div>`;
 }
 
-/* ── Monthly records list ── */
-function renderMonthRecords() {
-  const el   = document.getElementById('profileRecords');
-  const recs = recordsForMonth(selYear, selMonth);
+/* ============================================================
+   本週 vs 上週
+   ============================================================ */
+function calcWeekComparison() {
+  const now = new Date();
+  const todayISO = now.toISOString().slice(0, 10);
+  const dayOfWeek = now.getDay(); // 0=Sun
+  const daysFromMon = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
 
-  if (recs.length === 0) {
-    el.innerHTML = '<p class="empty-hint">本月無紀錄</p>';
+  const thisMonday = new Date(now);
+  thisMonday.setDate(now.getDate() - daysFromMon);
+  const thisMondayISO = thisMonday.toISOString().slice(0, 10);
+
+  const lastMonday = new Date(thisMonday);
+  lastMonday.setDate(thisMonday.getDate() - 7);
+  const lastMondayISO = lastMonday.toISOString().slice(0, 10);
+  const lastSunday = new Date(thisMonday);
+  lastSunday.setDate(thisMonday.getDate() - 1);
+  const lastSundayISO = lastSunday.toISOString().slice(0, 10);
+
+  const thisWeekDays = {}, lastWeekDays = {};
+  let thisWeekMin = 0, lastWeekMin = 0;
+
+  for (const r of allRecords) {
+    const iso = dateStr(r);
+    if (!iso) continue;
+    const min = r.actualMinutes || 0;
+    if (iso >= thisMondayISO && iso <= todayISO) {
+      thisWeekMin += min;
+      thisWeekDays[iso] = (thisWeekDays[iso] || 0) + min;
+    } else if (iso >= lastMondayISO && iso <= lastSundayISO) {
+      lastWeekMin += min;
+      lastWeekDays[iso] = (lastWeekDays[iso] || 0) + min;
+    }
+  }
+  return { thisWeekMin, lastWeekMin, thisWeekDays, lastWeekDays, thisMondayISO, lastMondayISO };
+}
+
+function renderWeekComparison() {
+  const el = document.getElementById('weekCompareContent');
+  const { thisWeekMin, lastWeekMin, thisWeekDays, lastWeekDays, thisMondayISO, lastMondayISO } =
+    calcWeekComparison();
+
+  const diff = thisWeekMin - lastWeekMin;
+  const pct  = lastWeekMin > 0 ? Math.round(Math.abs(diff) / lastWeekMin * 100) : null;
+  const arrow = diff > 0 ? '↑' : diff < 0 ? '↓' : '→';
+  const trendClass = diff > 0 ? 'trend-up' : diff < 0 ? 'trend-down' : 'trend-flat';
+  const trendStr   = pct !== null ? `${arrow} ${pct}%` : '—';
+  const detailStr  = lastWeekMin === 0
+    ? '上週無紀錄'
+    : diff === 0 ? '與上週持平'
+    : `比上週${diff > 0 ? '多' : '少'} ${Math.abs(diff)} 分`;
+
+  const DAY_LABELS = ['一', '二', '三', '四', '五', '六', '日'];
+  const allVals = [];
+  for (let i = 0; i < 7; i++) {
+    const td = new Date(thisMondayISO); td.setDate(td.getDate() + i);
+    const ld = new Date(lastMondayISO); ld.setDate(ld.getDate() + i);
+    allVals.push(thisWeekDays[td.toISOString().slice(0, 10)] || 0);
+    allVals.push(lastWeekDays[ld.toISOString().slice(0, 10)] || 0);
+  }
+  const maxVal = Math.max(1, ...allVals);
+
+  const bars = DAY_LABELS.map((label, i) => {
+    const td = new Date(thisMondayISO); td.setDate(td.getDate() + i);
+    const ld = new Date(lastMondayISO); ld.setDate(ld.getDate() + i);
+    const tMin = thisWeekDays[td.toISOString().slice(0, 10)] || 0;
+    const lMin = lastWeekDays[ld.toISOString().slice(0, 10)] || 0;
+    const tH   = Math.round((tMin / maxVal) * 100);
+    const lH   = Math.round((lMin / maxVal) * 100);
+    return `<div class="wc-day-col">
+      <div class="wc-bar-pair">
+        <div class="wc-bar-this" style="height:${tH}%"></div>
+        <div class="wc-bar-last" style="height:${lH}%"></div>
+      </div>
+      <div class="wc-day-label">${label}</div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="wc-numbers">
+      <div class="wc-num-block">
+        <div class="wc-big-num">${thisWeekMin}</div>
+        <div class="wc-num-label">本週（分）</div>
+      </div>
+      <div class="wc-mid">
+        <div class="wc-trend-badge ${trendClass}">${trendStr}</div>
+        <div class="wc-detail">${detailStr}</div>
+      </div>
+      <div class="wc-num-block wc-right">
+        <div class="wc-big-num wc-muted">${lastWeekMin}</div>
+        <div class="wc-num-label">上週（分）</div>
+      </div>
+    </div>
+    <div class="wc-chart">${bars}</div>
+    <div class="wc-legend">
+      <div class="wc-legend-item">
+        <div class="wc-legend-dot wc-dot-this"></div><span>本週</span>
+      </div>
+      <div class="wc-legend-item">
+        <div class="wc-legend-dot wc-dot-last"></div><span>上週</span>
+      </div>
+    </div>`;
+}
+
+/* ============================================================
+   常用時段
+   ============================================================ */
+function calcTimeDistribution() {
+  const buckets = [0, 0, 0, 0]; // 早晨, 下午, 晚上, 深夜
+  for (const r of allRecords) {
+    if (!r.createdAt?.toDate) continue;
+    const hour = r.createdAt.toDate().getHours();
+    const min  = r.actualMinutes || 0;
+    if      (hour >= 5  && hour < 12) buckets[0] += min;
+    else if (hour >= 12 && hour < 18) buckets[1] += min;
+    else if (hour >= 18 && hour < 23) buckets[2] += min;
+    else                               buckets[3] += min;
+  }
+  return buckets;
+}
+
+function renderTimeDistribution() {
+  const el = document.getElementById('timeDistContent');
+  const [morning, afternoon, evening, night] = calcTimeDistribution();
+  const total = morning + afternoon + evening + night;
+
+  if (total === 0) {
+    el.innerHTML = '<p class="empty-hint">尚無紀錄</p>';
     return;
   }
 
-  const statusIcon = { done: '✅', partial: '🔶', incomplete: '❌' };
+  const slots = [
+    { label: '早晨', icon: '🌅', range: '05–12', min: morning },
+    { label: '下午', icon: '☀️',  range: '12–18', min: afternoon },
+    { label: '晚上', icon: '🌙', range: '18–23', min: evening },
+    { label: '深夜', icon: '🌃', range: '其他',  min: night },
+  ];
+  const maxMin = Math.max(1, ...slots.map(s => s.min));
 
-  el.innerHTML = recs.map(r => {
-    const iso = dateStr(r) || '';
-    const dayLabel = iso ? `${Number(iso.slice(5, 7))}/${Number(iso.slice(8, 10))}` : '—';
-    const cat  = r.category || '未分類';
-    const min  = r.actualMinutes || 0;
-    const icon = statusIcon[r.status] || '—';
-    return `
-      <div class="record-row">
-        <span class="record-date">${escapeHTML(dayLabel)}</span>
-        <span class="record-cat">${escapeHTML(cat)}</span>
-        <span class="record-min">${min} 分</span>
-        <span class="record-status">${icon}</span>
-      </div>`;
+  el.innerHTML = slots.map(s => {
+    const pct      = Math.round(s.min / total * 100);
+    const barWidth = Math.round((s.min / maxMin) * 100);
+    return `<div class="td-row">
+      <div class="td-label">
+        <span class="td-icon">${s.icon}</span>
+        <span class="td-name">${s.label}</span>
+        <span class="td-range">${s.range}</span>
+      </div>
+      <div class="td-bar-bg">
+        <div class="td-bar-fill" style="width:${barWidth}%"></div>
+      </div>
+      <div class="td-pct">${pct}%</div>
+    </div>`;
   }).join('');
 }
 
