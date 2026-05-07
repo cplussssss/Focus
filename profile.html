@@ -10,161 +10,248 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <link rel="stylesheet" href="style.css" />
   <style>
-    /* ── Reset for this page (style.css locks html/body overflow) ── */
-    html, body {
-      height: auto !important;
-      overflow: auto !important;
+    /* ============================================================
+       版面：桌面左右分欄（繼承 style.css 的 100vh 鎖定）
+       手機：上下堆疊 + 頁面自由滾動
+       ============================================================ */
+
+    .profile-layout {
+      display: flex;
+      height: 100vh;
+      gap: 16px;
+      padding: 16px;
+      overflow: hidden;
     }
 
-    /* ── Page wrapper ── */
-    .profile-page {
-      max-width: 680px;
-      margin: 0 auto;
-      padding: 24px 16px 64px;
+    /* ── 左欄 ── */
+    .profile-left {
+      width: 320px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+    .profile-left::-webkit-scrollbar { width: 3px; }
+    .profile-left::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+    /* ── 右欄 ── */
+    .profile-right {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow: hidden;
     }
 
-    /* ── Back link ── */
-    .profile-back {
-      display: inline-flex;
+    /* 右欄：熱力圖區（固定，不滾動） */
+    .profile-right-top {
+      flex-shrink: 0;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 14px 16px;
+    }
+
+    /* 右欄：紀錄列表（獨立滾動） */
+    .profile-right-records {
+      flex: 1;
+      min-height: 0;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .records-header {
+      flex-shrink: 0;
+      padding: 12px 16px 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .records-scroll {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 8px 16px 12px;
+    }
+    .records-scroll::-webkit-scrollbar { width: 3px; }
+    .records-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+    .records-header-title { margin-bottom: 0; }
+
+    /* ── 通用卡片（左欄用） ── */
+    .p-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 14px 16px;
+      flex-shrink: 0;
+    }
+    .p-card-title {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 10px;
+    }
+
+    /* ── 返回 + 用戶 ── */
+    .profile-header-row {
+      display: flex;
       align-items: center;
-      gap: 5px;
-      font-size: 0.82rem;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .profile-back {
+      font-size: 0.8rem;
       color: var(--text-muted);
       text-decoration: none;
-      margin-bottom: 20px;
+      white-space: nowrap;
       transition: color 0.2s;
     }
     .profile-back:hover { color: var(--text-primary); }
 
-    /* ── User card ── */
-    .profile-user-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 20px;
-      margin-bottom: 12px;
-    }
+    /* ── 身份卡 ── */
     .profile-identity {
       display: flex;
       align-items: center;
-      gap: 14px;
-      margin-bottom: 16px;
+      gap: 12px;
     }
     .profile-avatar {
-      width: 56px;
-      height: 56px;
+      width: 44px;
+      height: 44px;
       border-radius: 50%;
       object-fit: cover;
       border: 2px solid var(--border);
       flex-shrink: 0;
     }
     .profile-avatar-placeholder {
-      width: 56px;
-      height: 56px;
+      width: 44px;
+      height: 44px;
       border-radius: 50%;
       background: var(--tomato-dim);
       border: 2px solid var(--tomato);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.6rem;
+      font-size: 1.4rem;
       flex-shrink: 0;
     }
     .profile-name {
-      font-size: 1.2rem;
+      font-size: 1rem;
       font-weight: 700;
       color: var(--text-primary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .profile-username {
-      font-size: 0.82rem;
+      font-size: 0.78rem;
       color: var(--text-muted);
       margin-top: 2px;
     }
 
-    /* ── Stats row ── */
+    /* ── 統計列 ── */
     .profile-stats-row {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
+      gap: 6px;
+      margin-top: 12px;
     }
     .profile-stat {
       background: var(--bg-input);
       border-radius: var(--radius-md);
-      padding: 10px 8px;
+      padding: 8px 4px;
       text-align: center;
     }
     .profile-stat-num {
       font-family: var(--font-mono);
-      font-size: 1.4rem;
+      font-size: 1.3rem;
       font-weight: 500;
       color: var(--tomato-light);
       line-height: 1;
     }
     .profile-stat-label {
-      font-size: 0.68rem;
+      font-size: 0.65rem;
       color: var(--text-muted);
-      margin-top: 4px;
+      margin-top: 3px;
     }
 
-    /* ── Sections ── */
-    .profile-section {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 18px 20px;
-      margin-bottom: 12px;
-    }
-    .section-title {
-      font-size: 0.7rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.07em;
-      margin-bottom: 14px;
-    }
-
-    /* ── Achievements ── */
+    /* ── 成就 ── */
     .achievements-grid {
       display: grid;
       grid-template-columns: repeat(5, 1fr);
-      gap: 8px;
+      gap: 6px;
     }
     .achievement-badge {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 5px;
-      padding: 10px 4px;
+      gap: 4px;
+      padding: 8px 3px;
       border-radius: var(--radius-md);
       border: 1px solid var(--border);
       text-align: center;
-      transition: border-color 0.2s;
     }
     .achievement-badge.unlocked {
       background: var(--tomato-dim);
       border-color: var(--tomato);
     }
-    .achievement-badge.locked {
-      opacity: 0.35;
-      filter: grayscale(0.6);
-    }
-    .badge-icon  { font-size: 1.5rem; line-height: 1; }
-    .badge-name  { font-size: 0.62rem; color: var(--text-primary); font-weight: 600; line-height: 1.2; }
-    .badge-desc  { font-size: 0.58rem; color: var(--text-muted); line-height: 1.3; }
+    .achievement-badge.locked { opacity: 0.32; filter: grayscale(0.5); }
+    .badge-icon { font-size: 1.3rem; line-height: 1; }
+    .badge-name { font-size: 0.58rem; color: var(--text-primary); font-weight: 600; line-height: 1.2; }
 
-    /* ── Month switcher ── */
+    /* ── 分類長條 ── */
+    .cat-row {
+      display: grid;
+      grid-template-columns: 54px 1fr 36px;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 7px;
+    }
+    .cat-row:last-child { margin-bottom: 0; }
+    .cat-name {
+      font-size: 0.78rem;
+      color: var(--text-primary);
+      text-align: right;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .cat-bar-bg {
+      background: var(--bg-input);
+      border-radius: 4px;
+      height: 7px;
+      overflow: hidden;
+    }
+    .cat-bar-fill {
+      height: 100%;
+      background: var(--tomato-light);
+      border-radius: 4px;
+      transition: width 0.5s ease;
+    }
+    .cat-pct {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    /* ── 月份切換 ── */
     .month-switcher {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
     }
     .month-nav-btn {
       background: var(--bg-input);
       border: 1px solid var(--border);
       color: var(--text-primary);
       border-radius: var(--radius-sm);
-      width: 32px;
-      height: 32px;
+      width: 30px;
+      height: 30px;
       cursor: pointer;
       font-size: 1rem;
       display: flex;
@@ -175,12 +262,12 @@
     .month-nav-btn:hover:not(:disabled) { background: var(--border); }
     .month-nav-btn:disabled { opacity: 0.3; cursor: default; }
     .month-label {
-      font-size: 0.95rem;
+      font-size: 0.92rem;
       font-weight: 600;
       color: var(--text-primary);
     }
 
-    /* ── Heatmap calendar ── */
+    /* ── 熱力圖 ── */
     .heatmap-weekdays {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
@@ -189,9 +276,8 @@
     }
     .hm-weekday {
       text-align: center;
-      font-size: 0.65rem;
+      font-size: 0.62rem;
       color: var(--text-muted);
-      padding: 2px 0;
     }
     .heatmap-grid {
       display: grid;
@@ -204,38 +290,28 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      cursor: default;
       position: relative;
     }
-    .hm-cell.hm-empty  { background: transparent; }
+    .hm-cell.hm-empty   { background: transparent; }
     .hm-cell.hm-level-0 { background: var(--bg-input); }
     .hm-cell.hm-level-1 { background: rgba(230, 90, 56, 0.25); }
     .hm-cell.hm-level-2 { background: rgba(230, 90, 56, 0.50); }
     .hm-cell.hm-level-3 { background: rgba(230, 90, 56, 0.78); }
     .hm-cell.hm-level-4 { background: rgba(230, 90, 56, 1.00); }
-    .hm-day {
-      font-size: 0.65rem;
-      color: var(--text-muted);
-      font-family: var(--font-mono);
-      line-height: 1;
-    }
+    .hm-day { font-size: 0.6rem; color: var(--text-muted); font-family: var(--font-mono); }
     .hm-cell.hm-level-3 .hm-day,
     .hm-cell.hm-level-4 .hm-day { color: rgba(255,255,255,0.85); }
-    .hm-cell.hm-today {
-      outline: 2px solid var(--tomato);
-      outline-offset: -2px;
-    }
+    .hm-cell.hm-today { outline: 2px solid var(--tomato); outline-offset: -2px; }
 
-    /* tooltip on hover */
     .hm-cell[data-tip]:hover::after {
       content: attr(data-tip);
       position: absolute;
-      bottom: calc(100% + 6px);
+      bottom: calc(100% + 5px);
       left: 50%;
       transform: translateX(-50%);
       background: #111;
       color: #eee;
-      font-size: 0.7rem;
+      font-size: 0.68rem;
       white-space: nowrap;
       padding: 3px 7px;
       border-radius: 5px;
@@ -243,191 +319,189 @@
       z-index: 10;
     }
 
-    /* achievements loading placeholder */
-    .achievements-loading {
-      grid-column: 1 / -1;
-      color: var(--text-muted);
-      font-size: 0.82rem;
-      text-align: center;
-      padding: 8px 0;
-    }
-
-    /* heatmap legend */
+    /* 圖例 */
     .hm-legend {
       display: flex;
       align-items: center;
       gap: 4px;
-      margin-top: 10px;
+      margin-top: 8px;
       justify-content: flex-end;
     }
-    .hm-legend-label { font-size: 0.65rem; color: var(--text-muted); }
-    .hm-legend-box {
-      width: 12px;
-      height: 12px;
-      border-radius: 3px;
-    }
+    .hm-legend-label { font-size: 0.62rem; color: var(--text-muted); }
+    .hm-legend-box   { width: 11px; height: 11px; border-radius: 3px; }
     .hm-legend-0 { background: var(--bg-input); }
     .hm-legend-1 { background: rgba(230, 90, 56, 0.25); }
     .hm-legend-2 { background: rgba(230, 90, 56, 0.50); }
     .hm-legend-3 { background: rgba(230, 90, 56, 0.78); }
     .hm-legend-4 { background: rgba(230, 90, 56, 1.00); }
 
-    /* ── Category bars ── */
-    .cat-row {
-      display: grid;
-      grid-template-columns: 60px 1fr 40px;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 8px;
-    }
-    .cat-name {
-      font-size: 0.8rem;
-      color: var(--text-primary);
-      text-align: right;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .cat-bar-bg {
-      background: var(--bg-input);
-      border-radius: 4px;
-      height: 8px;
-      overflow: hidden;
-    }
-    .cat-bar-fill {
-      height: 100%;
-      background: var(--tomato-light);
-      border-radius: 4px;
-      transition: width 0.5s ease;
-    }
-    .cat-pct {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      font-family: var(--font-mono);
-    }
-
-    /* ── Records list ── */
+    /* ── 紀錄列 ── */
     .record-row {
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 8px 0;
+      gap: 8px;
+      padding: 7px 0;
       border-bottom: 1px solid var(--border);
       font-size: 0.82rem;
     }
     .record-row:last-child { border-bottom: none; }
-    .record-date  { color: var(--text-muted); font-family: var(--font-mono); width: 42px; flex-shrink: 0; }
-    .record-cat   { background: var(--bg-input); border-radius: 99px; padding: 2px 10px; font-size: 0.75rem; color: var(--text-label); flex-shrink: 0; }
-    .record-min   { color: var(--text-primary); font-family: var(--font-mono); margin-left: auto; flex-shrink: 0; }
-    .record-status { flex-shrink: 0; font-size: 0.85rem; }
+    .record-date   { color: var(--text-muted); font-family: var(--font-mono); width: 38px; flex-shrink: 0; font-size: 0.78rem; }
+    .record-cat    { background: var(--bg-input); border-radius: 99px; padding: 2px 9px; font-size: 0.72rem; color: var(--text-label); flex-shrink: 0; }
+    .record-min    { color: var(--text-primary); font-family: var(--font-mono); margin-left: auto; flex-shrink: 0; font-size: 0.78rem; }
+    .record-status { flex-shrink: 0; font-size: 0.82rem; }
 
     /* ── Error / empty ── */
-    .error-msg  { color: #e85d3a; padding: 32px 0; text-align: center; font-size: 0.9rem; }
-    .empty-hint { color: var(--text-muted); text-align: center; padding: 24px 0; font-size: 0.85rem; }
-
-    /* ── RWD: tablet ── */
-    @media (max-width: 600px) {
-      .profile-page { padding: 16px 12px 48px; }
-      .profile-section { padding: 14px 14px; }
-      .profile-user-card { padding: 14px; }
-      .achievements-grid { grid-template-columns: repeat(5, 1fr); gap: 5px; }
-      .badge-icon { font-size: 1.3rem; }
-      .badge-name { font-size: 0.58rem; }
-      .badge-desc { display: none; }
-      .profile-stat-num { font-size: 1.2rem; }
+    .error-msg  { color: #e85d3a; padding: 16px 0; font-size: 0.88rem; }
+    .empty-hint { color: var(--text-muted); text-align: center; padding: 20px 0; font-size: 0.82rem; }
+    .achievements-loading {
+      grid-column: 1 / -1;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      text-align: center;
+      padding: 6px 0;
     }
 
-    /* ── RWD: mobile ── */
-    @media (max-width: 400px) {
-      .profile-stats-row { grid-template-columns: repeat(3, 1fr); gap: 5px; }
-      .profile-stat { padding: 8px 4px; }
+    /* ============================================================
+       手機版（≤ 700px）：上下堆疊，自由頁面滾動
+       ============================================================ */
+    @media (max-width: 700px) {
+      html, body { height: auto !important; overflow: auto !important; }
+
+      .profile-layout {
+        flex-direction: column;
+        height: auto;
+        overflow: visible;
+        padding: 12px;
+        gap: 10px;
+      }
+      .profile-left {
+        width: 100%;
+        overflow: visible;
+      }
+      .profile-right {
+        overflow: visible;
+        gap: 10px;
+      }
+      .profile-right-top { flex-shrink: 0; }
+      .profile-right-records {
+        overflow: visible;
+        min-height: 0;
+      }
+      .records-scroll {
+        overflow: visible;
+        max-height: none;
+      }
+      .profile-stat-num { font-size: 1.1rem; }
+      .badge-icon       { font-size: 1.1rem; }
+      .badge-name       { font-size: 0.55rem; }
+    }
+
+    /* 極小螢幕（≤ 360px） */
+    @media (max-width: 360px) {
+      .profile-layout { padding: 8px; gap: 8px; }
+      .p-card { padding: 11px 12px; }
       .profile-stat-num { font-size: 1rem; }
-      .achievements-grid { grid-template-columns: repeat(5, 1fr); gap: 4px; }
-      .badge-icon { font-size: 1.1rem; }
-      .badge-name { font-size: 0.54rem; }
-      .hm-day { font-size: 0.55rem; }
-      .cat-row { grid-template-columns: 48px 1fr 34px; }
+      .achievements-grid { gap: 4px; }
+      .hm-day { font-size: 0.5rem; }
     }
   </style>
 </head>
 <body>
-  <div class="profile-page">
+  <div class="profile-layout">
 
-    <a href="index.html" class="profile-back">← 回到番茄鐘</a>
+    <!-- ══ 左欄 ══ -->
+    <div class="profile-left">
 
-    <!-- 用戶資訊 + 統計 -->
-    <div class="profile-user-card">
-      <div class="profile-identity" id="profileIdentity">
-        <div class="profile-avatar-placeholder">🍅</div>
-        <div>
-          <div class="profile-name">載入中...</div>
+      <!-- 返回 -->
+      <div class="profile-header-row">
+        <a href="index.html" class="profile-back">← 番茄鐘</a>
+      </div>
+
+      <!-- 身份 + 統計 -->
+      <div class="p-card">
+        <div class="profile-identity" id="profileIdentity">
+          <div class="profile-avatar-placeholder">🍅</div>
+          <div>
+            <div class="profile-name">載入中...</div>
+          </div>
+        </div>
+        <div class="profile-stats-row">
+          <div class="profile-stat">
+            <div class="profile-stat-num" id="statStreak">—</div>
+            <div class="profile-stat-label">🔥 連續天</div>
+          </div>
+          <div class="profile-stat">
+            <div class="profile-stat-num" id="statMonthMin">—</div>
+            <div class="profile-stat-label">本月分鐘</div>
+          </div>
+          <div class="profile-stat">
+            <div class="profile-stat-num" id="statRate">—</div>
+            <div class="profile-stat-label">完成率</div>
+          </div>
         </div>
       </div>
-      <div class="profile-stats-row">
-        <div class="profile-stat">
-          <div class="profile-stat-num" id="statStreak">—</div>
-          <div class="profile-stat-label">🔥 連續天</div>
-        </div>
-        <div class="profile-stat">
-          <div class="profile-stat-num" id="statMonthMin">—</div>
-          <div class="profile-stat-label">本月分鐘</div>
-        </div>
-        <div class="profile-stat">
-          <div class="profile-stat-num" id="statRate">—</div>
-          <div class="profile-stat-label">完成率</div>
+
+      <!-- 成就 -->
+      <div class="p-card">
+        <div class="p-card-title">成就徽章</div>
+        <div class="achievements-grid" id="achievementsGrid">
+          <div class="achievements-loading">載入中...</div>
         </div>
       </div>
-    </div>
 
-    <!-- 成就 -->
-    <div class="profile-section">
-      <div class="section-title">成就徽章</div>
-      <div class="achievements-grid" id="achievementsGrid">
-        <div class="achievements-loading">載入中...</div>
+      <!-- 分類 -->
+      <div class="p-card">
+        <div class="p-card-title" id="catSectionTitle">本月分類分佈</div>
+        <div id="profileCats"><div class="empty-hint">載入中...</div></div>
       </div>
-    </div>
 
-    <!-- 月份熱力圖 -->
-    <div class="profile-section">
-      <div class="month-switcher">
-        <button type="button" class="month-nav-btn" id="btnPrevMonth">‹</button>
-        <span class="month-label" id="monthLabel"></span>
-        <button type="button" class="month-nav-btn" id="btnNextMonth">›</button>
+    </div><!-- /.profile-left -->
+
+    <!-- ══ 右欄 ══ -->
+    <div class="profile-right">
+
+      <!-- 熱力圖（固定，不滾動） -->
+      <div class="profile-right-top">
+        <div class="month-switcher">
+          <button type="button" class="month-nav-btn" id="btnPrevMonth">‹</button>
+          <span class="month-label" id="monthLabel"></span>
+          <button type="button" class="month-nav-btn" id="btnNextMonth">›</button>
+        </div>
+        <div class="heatmap-weekdays">
+          <div class="hm-weekday">日</div>
+          <div class="hm-weekday">一</div>
+          <div class="hm-weekday">二</div>
+          <div class="hm-weekday">三</div>
+          <div class="hm-weekday">四</div>
+          <div class="hm-weekday">五</div>
+          <div class="hm-weekday">六</div>
+        </div>
+        <div class="heatmap-grid" id="heatmapGrid"></div>
+        <div class="hm-legend">
+          <span class="hm-legend-label">少</span>
+          <div class="hm-legend-box hm-legend-0"></div>
+          <div class="hm-legend-box hm-legend-1"></div>
+          <div class="hm-legend-box hm-legend-2"></div>
+          <div class="hm-legend-box hm-legend-3"></div>
+          <div class="hm-legend-box hm-legend-4"></div>
+          <span class="hm-legend-label">多</span>
+        </div>
       </div>
-      <div class="heatmap-weekdays">
-        <div class="hm-weekday">日</div>
-        <div class="hm-weekday">一</div>
-        <div class="hm-weekday">二</div>
-        <div class="hm-weekday">三</div>
-        <div class="hm-weekday">四</div>
-        <div class="hm-weekday">五</div>
-        <div class="hm-weekday">六</div>
+
+      <!-- 紀錄列表（獨立滾動） -->
+      <div class="profile-right-records">
+        <div class="records-header">
+          <div class="p-card-title records-header-title" id="recSectionTitle">本月紀錄</div>
+        </div>
+        <div class="records-scroll" id="profileRecords">
+          <div class="empty-hint">載入中...</div>
+        </div>
       </div>
-      <div class="heatmap-grid" id="heatmapGrid"></div>
-      <div class="hm-legend">
-        <span class="hm-legend-label">少</span>
-        <div class="hm-legend-box hm-legend-0"></div>
-        <div class="hm-legend-box hm-legend-1"></div>
-        <div class="hm-legend-box hm-legend-2"></div>
-        <div class="hm-legend-box hm-legend-3"></div>
-        <div class="hm-legend-box hm-legend-4"></div>
-        <span class="hm-legend-label">多</span>
-      </div>
-    </div>
 
-    <!-- 本月分類 -->
-    <div class="profile-section">
-      <div class="section-title" id="catSectionTitle">本月分類分佈</div>
-      <div id="profileCats"><div class="empty-hint">載入中...</div></div>
-    </div>
+    </div><!-- /.profile-right -->
 
-    <!-- 本月紀錄 -->
-    <div class="profile-section">
-      <div class="section-title" id="recSectionTitle">本月紀錄</div>
-      <div id="profileRecords"><div class="empty-hint">載入中...</div></div>
-    </div>
+  </div><!-- /.profile-layout -->
 
-  </div>
   <script src="profile.js"></script>
 </body>
 </html>
