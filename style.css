@@ -62,8 +62,8 @@
    ============================================================ */
 [data-theme="light"] {
   --bg-deep: #fffdf9;
-  --bg-card: #f5ede0;
-  --bg-input: #efe4d4;
+  --bg-card: #fdf6ee;
+  --bg-input: #f5ede0;
   --border: rgba(120, 80, 40, 0.12);
 
   --action: #c85e20;
