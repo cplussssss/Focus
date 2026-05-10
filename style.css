@@ -61,9 +61,9 @@
    淺色主題（暖米白系）
    ============================================================ */
 [data-theme="light"] {
-  --bg-deep: #fffdf9;
-  --bg-card: #fdf6ee;
-  --bg-input: #f5ede0;
+  --bg-deep: #f8f7f5;
+  --bg-card: #f0ece7;
+  --bg-input: #e8e2db;
   --border: rgba(120, 80, 40, 0.12);
 
   --action: #c85e20;
@@ -112,7 +112,7 @@
 }
 
 [data-theme="light"] .modal-overlay {
-  background: rgba(80, 40, 10, 0.45);
+  background: rgba(255, 254, 253, 0.45);
 }
 
 [data-theme="light"] .history-item {
