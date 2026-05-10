@@ -75,10 +75,10 @@ html, body {
   overflow: hidden;
 }
 
-/* 左欄：固定寬度，可垂直滾動（內容超出時） */
+/* 左欄：與右欄各佔一半，可垂直滾動（內容超出時） */
 .col-left {
-  width: 380px;
-  flex-shrink: 0;
+  flex: 1;
+  min-width: 0;
   overflow-y: auto;
   overflow-x: hidden;
   padding-right: 4px;
@@ -521,6 +521,26 @@ html, body {
   flex-shrink: 0;
 }
 .btn-delete-record:hover { color: #F87171; background: rgba(239,68,68,0.1); }
+
+.btn-edit-record {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  line-height: 1;
+  padding: 2px 5px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: color var(--transition), background var(--transition);
+  flex-shrink: 0;
+}
+.btn-edit-record:hover { color: var(--action-light); background: rgba(59,130,246,0.1); }
+
+.edit-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
 
 .record-meta {
   font-size: 0.74rem;
@@ -1007,4 +1027,144 @@ html, body {
 .ai-feedback-text.loading {
   color: var(--text-muted);
   font-style: italic;
+}
+
+/* ── 今日啟動 Modal ── */
+.modal-daily-goal {
+  max-width: 480px;
+}
+.modal-sub {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+/* 狀態選擇按鈕 */
+.energy-group {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+.energy-btn {
+  flex: 1;
+  padding: 8px 0;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-family: var(--font-ui);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.energy-btn.active {
+  border-color: var(--tomato);
+  color: var(--tomato-light);
+  background: var(--tomato-dim);
+}
+
+/* 任務卡片 */
+.daily-goal-task-list {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.task-card-btn {
+  width: 100%;
+  padding: 12px 14px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s;
+  font-family: var(--font-ui);
+}
+.task-card-btn:hover {
+  border-color: var(--tomato);
+}
+.task-card-name {
+  display: block;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.task-card-reason {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 3px;
+}
+
+/* Skeleton Loading */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.skeleton-card {
+  height: 58px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(
+    90deg,
+    var(--bg-input) 25%,
+    var(--border)   50%,
+    var(--bg-input) 75%
+  );
+  background-size: 800px 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+/* 跳過按鈕 */
+.btn-skip-goal {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 8px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-family: var(--font-ui);
+  cursor: pointer;
+  text-align: center;
+}
+.btn-skip-goal:hover { color: var(--text-primary); }
+
+/* 今日任務快捷區 */
+.task-shortcut-area {
+  margin-bottom: 12px;
+}
+.shortcut-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--text-label);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.shortcut-btn {
+  display: inline-block;
+  margin: 0 6px 6px 0;
+  padding: 5px 12px;
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  font-family: var(--font-ui);
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.shortcut-btn:hover {
+  border-color: var(--tomato);
+  color: var(--tomato-light);
+}
+
+/* 錯誤提示 */
+.goal-error {
+  color: var(--tomato);
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 16px 0;
 }

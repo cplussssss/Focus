@@ -51,6 +51,9 @@
         </div>
       </section>
 
+      <!-- 今日任務快捷區（登入後若已有目標則顯示） -->
+      <div class="task-shortcut-area" id="taskShortcutArea" hidden></div>
+
       <!-- 任務輸入區 -->
       <section class="task-section">
 
@@ -281,6 +284,90 @@
       <h3>休息結束！</h3>
       <p>準備好了嗎？可以開始下一輪工作了。</p>
       <button type="button" class="btn btn-primary" id="btnModalNextRound" style="width:100%">開始下一輪</button>
+    </div>
+  </div>
+
+  <!-- ══ Modal：今日啟動引導 ══ -->
+  <div class="modal-overlay" id="modalDailyGoal" hidden>
+    <div class="modal-box modal-daily-goal">
+
+      <h3>🎯 今天想完成什麼？</h3>
+      <p class="modal-sub">輸入一個大目標，AI 幫你拆成番茄鐘任務</p>
+
+      <div class="input-group">
+        <input type="text" id="dailyGoalInput"
+               placeholder="例：準備期末考統計學、完成設計報告初稿"
+               maxlength="50" />
+      </div>
+
+      <div class="field-label" style="margin-top:14px">你現在的狀態？</div>
+      <div class="energy-group">
+        <button type="button" class="energy-btn" data-energy="high">🔋 狀態好</button>
+        <button type="button" class="energy-btn active" data-energy="mid">😐 普通</button>
+        <button type="button" class="energy-btn" data-energy="low">😴 有點累</button>
+      </div>
+
+      <button type="button" class="btn btn-primary" id="btnSubmitGoal"
+              style="width:100%;margin-top:16px">
+        AI 幫我拆解任務 ✨
+      </button>
+
+      <!-- 任務卡片列表 / Skeleton -->
+      <div class="daily-goal-task-list" id="dailyGoalTaskList"></div>
+
+      <button type="button" class="btn-skip-goal" id="btnSkipGoal">
+        今天直接開始，不設目標
+      </button>
+
+    </div>
+  </div>
+
+  <!-- ══ Modal：編輯紀錄 ══ -->
+  <div class="modal-overlay" id="modalEditRecord" hidden>
+    <div class="modal-box">
+      <h3>✏️ 編輯紀錄</h3>
+      <div class="edit-fields">
+        <div class="task-row-inline">
+          <div class="input-group flex1">
+            <label for="editCategory">任務分類</label>
+            <select id="editCategory">
+              <option value="讀書">📚 讀書</option>
+              <option value="寫作">✍️ 寫作</option>
+              <option value="程式">💻 程式</option>
+              <option value="行政">📋 行政</option>
+              <option value="運動">🏃 運動</option>
+              <option value="生活">🏠 生活</option>
+              <option value="雜務">🗂 雜務</option>
+              <option value="自訂">✏️ 自訂</option>
+            </select>
+          </div>
+          <div class="input-group flex1">
+            <label for="editProject">專案 / 標籤</label>
+            <input type="text" id="editProject" placeholder="例：英文、Side Project" />
+          </div>
+        </div>
+        <div class="input-group">
+          <label for="editTaskName">這輪做什麼事情</label>
+          <input type="text" id="editTaskName" placeholder="例：寫報告第二章" />
+        </div>
+        <div class="input-group">
+          <label for="editTaskReason">為什麼要做這件事</label>
+          <input type="text" id="editTaskReason" placeholder="例：截止日是明天" />
+        </div>
+        <div class="input-group">
+          <label for="editTaskNote">備註（可選填）</label>
+          <input type="text" id="editTaskNote" placeholder="例：記得查參考文獻" />
+        </div>
+        <div class="input-group">
+          <label for="editActualMin">實際持續時間（分鐘）</label>
+          <input type="number" id="editActualMin" min="1" max="600" />
+        </div>
+      </div>
+      <input type="hidden" id="editRecordId" />
+      <div class="modal-btn-row" style="margin-top:16px">
+        <button type="button" class="btn btn-primary" id="btnConfirmEdit">儲存</button>
+        <button type="button" class="btn btn-secondary" id="btnCancelEdit">取消</button>
+      </div>
     </div>
   </div>
 

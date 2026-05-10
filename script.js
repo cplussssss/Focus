@@ -158,6 +158,26 @@ function initElements() {
     accountEmail:    document.getElementById('accountEmail'),
     accountAvatar:   document.getElementById('accountAvatar'),
     accountUid:      document.getElementById('accountUid'),
+
+    // 今日目標 Modal
+    modalDailyGoal:    document.getElementById('modalDailyGoal'),
+    dailyGoalInput:    document.getElementById('dailyGoalInput'),
+    btnSubmitGoal:     document.getElementById('btnSubmitGoal'),
+    btnSkipGoal:       document.getElementById('btnSkipGoal'),
+    dailyGoalTaskList: document.getElementById('dailyGoalTaskList'),
+    taskShortcutArea:  document.getElementById('taskShortcutArea'),
+
+    // 編輯紀錄 Modal
+    modalEditRecord: document.getElementById('modalEditRecord'),
+    editCategory:    document.getElementById('editCategory'),
+    editProject:     document.getElementById('editProject'),
+    editTaskName:    document.getElementById('editTaskName'),
+    editTaskReason:  document.getElementById('editTaskReason'),
+    editTaskNote:    document.getElementById('editTaskNote'),
+    editActualMin:   document.getElementById('editActualMin'),
+    editRecordId:    document.getElementById('editRecordId'),
+    btnConfirmEdit:  document.getElementById('btnConfirmEdit'),
+    btnCancelEdit:   document.getElementById('btnCancelEdit'),
   };
 }
 
@@ -792,13 +812,15 @@ function renderHistory(overrideRecords) {
       ? `<button type="button" class="btn-delete-record" data-id="${r.id}" title="刪除此筆紀錄">✕</button>`
       : '';
 
+    const editBtn = `<button type="button" class="btn-edit-record" data-id="${r.id}" title="編輯此筆紀錄">✎</button>`;
+
     return `
     <div class="record-card ${statusClass[r.status] || 'incomplete'}">
       <div class="record-card-header">
         <span class="record-card-title">${escapeHTML(r.taskName)}</span>
         <span class="record-status ${statusClass[r.status] || 'incomplete'}">${statusMap[r.status] || r.status}</span>
         <span class="sync-badge ${r.synced ? 'synced' : 'not-synced'}">${r.synced ? '☁ 已同步' : '○ 未同步'}</span>
-        ${deleteBtn}
+        ${editBtn}${deleteBtn}
       </div>
       <div class="record-tags">${catTag}${projTag}${focusTag}${distrTag}</div>
       <div class="record-meta">
@@ -809,6 +831,47 @@ function renderHistory(overrideRecords) {
       </div>
     </div>`;
   }).join('');
+}
+
+/* ============================================================
+   編輯紀錄
+   ============================================================ */
+function openEditModal(rawId) {
+  const id = Number(rawId) || rawId;
+  const record = STATE.records.find(r => String(r.id) === String(id));
+  if (!record) return;
+
+  EL.editRecordId.value = id;
+  EL.editCategory.value = record.category || '讀書';
+  EL.editProject.value = record.project || '';
+  EL.editTaskName.value = record.taskName !== '（未填寫）' ? (record.taskName || '') : '';
+  EL.editTaskReason.value = record.taskReason !== '（未填寫）' ? (record.taskReason || '') : '';
+  EL.editTaskNote.value = record.taskNote || '';
+  EL.editActualMin.value = Math.max(1, Math.round((record.actualSec || 0) / 60));
+  showModal(EL.modalEditRecord);
+}
+
+function confirmEdit() {
+  const rawId = EL.editRecordId.value;
+  const id = Number(rawId) || rawId;
+  const record = STATE.records.find(r => String(r.id) === String(id));
+  if (!record) { hideModal(EL.modalEditRecord); return; }
+
+  record.category  = EL.editCategory.value;
+  record.project   = EL.editProject.value.trim();
+  record.taskName  = EL.editTaskName.value.trim() || '（未填寫）';
+  record.taskReason = EL.editTaskReason.value.trim() || '（未填寫）';
+  record.taskNote  = EL.editTaskNote.value.trim();
+  record.actualSec = (parseInt(EL.editActualMin.value, 10) || 1) * 60;
+
+  saveToStorage();
+  renderHistory();
+  updateSummary();
+  hideModal(EL.modalEditRecord);
+
+  if (currentUser && firestoreDb && record.synced) {
+    saveRecordToFirestore(record).catch(e => console.warn('Firestore 更新失敗：', e));
+  }
 }
 
 /* ============================================================
@@ -917,16 +980,23 @@ function initEventListeners() {
     }
   });
 
-  // 單筆刪除：用事件委派，點到 .btn-delete-record 才觸發
+  // 單筆操作：事件委派，區分編輯 / 刪除
   EL.historyList.addEventListener('click', (e) => {
-    const btn = e.target.closest('.btn-delete-record');
-    if (!btn) return;
-    const id = Number(btn.dataset.id);
+    const editBtn = e.target.closest('.btn-edit-record');
+    if (editBtn) { openEditModal(editBtn.dataset.id); return; }
+
+    const deleteBtn = e.target.closest('.btn-delete-record');
+    if (!deleteBtn) return;
+    const id = Number(deleteBtn.dataset.id);
     STATE.records = STATE.records.filter(r => r.id !== id);
     saveToStorage();
     renderHistory();
     updateSummary();
   });
+
+  // 編輯紀錄 Modal
+  EL.btnConfirmEdit.addEventListener('click', confirmEdit);
+  EL.btnCancelEdit.addEventListener('click', () => hideModal(EL.modalEditRecord));
 
   EL.workMinutes.addEventListener('input', () => {
     if (STATE.mode === 'idle') {
@@ -970,6 +1040,21 @@ EL.btnMyRecords.addEventListener('click', handleMyRecords);
   initResultChips(EL.doneResultChips, 'pendingResult');
   initDistractionChips(EL.doneDistractionChips, EL.doneDistractionOther);
   initStars(EL.doneStars, EL.doneHint, 'pendingFocus');
+
+  // 今日目標 Modal
+  EL.btnSubmitGoal.addEventListener('click', submitDailyGoal);
+  EL.btnSkipGoal.addEventListener('click', () => hideModal(EL.modalDailyGoal));
+  EL.dailyGoalInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') submitDailyGoal();
+  });
+
+  // 能量狀態按鈕
+  document.querySelectorAll('.energy-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.energy-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
 }
 
 /* ============================================================
@@ -999,6 +1084,9 @@ function initFirebase() {
       // 清除本機舊資料，以 Firestore 為主
       STATE.records = [];
       await loadFromFirestore();
+      if (user.email !== DEMO_EMAIL) {
+        await checkDailyGoal();
+      }
     } else {
       EL.syncState.textContent = '';
       if (EL.btnMyRecords)   EL.btnMyRecords.hidden   = true;
@@ -1499,6 +1587,182 @@ async function loadFromFirestore() {
   } catch (err) {
     console.warn('從 Firestore 載入失敗：', err);
   }
+}
+
+/* ============================================================
+   今日啟動引導
+   ============================================================ */
+async function checkDailyGoal() {
+  if (!currentUser || !firestoreDb) return;
+
+  const today = new Date().toISOString().split('T')[0];
+  const docRef = firestoreDb
+    .collection('users').doc(currentUser.uid)
+    .collection('dailyGoals').doc(today);
+
+  const doc = await docRef.get();
+
+  if (!doc.exists) {
+    showModal(EL.modalDailyGoal);
+  } else {
+    renderTaskShortcuts(doc.data().tasks);
+  }
+}
+
+async function submitDailyGoal() {
+  const goal = EL.dailyGoalInput.value.trim();
+  if (!goal) {
+    EL.dailyGoalInput.focus();
+    return;
+  }
+
+  const energy = getSelectedEnergy();
+
+  showTaskSkeleton();
+  EL.btnSubmitGoal.disabled = true;
+
+  const recentRecords = STATE.records.slice(0, 10).map(r => ({
+    task: r.taskName,
+    category: r.category,
+    status: r.status,
+    actualMinutes: Math.round((r.actualSec || 0) / 60)
+  }));
+
+  const workMinutes = parseInt(EL.workMinutes.value) || 25;
+  const energyLabel = { high: '狀態很好', mid: '普通', low: '有點累' };
+
+  const today = new Date().toISOString().split('T')[0];
+  const todayDoneCount = STATE.records.filter(r => {
+    return r.timestamp && r.timestamp.includes(today.replace(/-/g, '/'));
+  }).length;
+
+  const prompt = `你是學習任務拆解助手。請幫使用者把今日大目標拆成番茄鐘任務。
+
+今日大目標：「${goal}」
+使用者當下狀態：${energyLabel[energy]}
+每輪工作時間：${workMinutes} 分鐘
+今天已完成輪數：${todayDoneCount} 輪
+
+近期歷史紀錄（最近10筆）：
+${JSON.stringify(recentRecords)}
+
+拆解規則：
+1. 每個任務必須能在 ${workMinutes} 分鐘內完成
+2. 任務名稱要具體，有明確的完成標準
+3. 狀態「有點累」時，任務要更小更容易開始
+4. 根據歷史紀錄推測使用者的進度，避免重複建議已完成的內容
+5. 產出 3~5 個任務
+
+只回傳 JSON 陣列，不要其他文字：
+[
+  {"task": "任務名稱（具體、可執行）", "reason": "為什麼這輪先做這個（15字以內）"},
+  ...
+]`;
+
+  try {
+    const response = await fetch(GEMINI_WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: 300, temperature: 0.7 }
+      })
+    });
+
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    const data = await response.json();
+    let raw = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+    raw = raw.replace(/```json|```/g, '').trim();
+    const tasks = JSON.parse(raw);
+
+    const docRef = firestoreDb
+      .collection('users').doc(currentUser.uid)
+      .collection('dailyGoals').doc(today);
+
+    await docRef.set({
+      goal,
+      energy,
+      tasks: tasks.map(t => ({ ...t, done: false })),
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    renderDailyTasks(tasks);
+
+  } catch (err) {
+    console.error('任務拆解失敗：', err);
+    hideTaskSkeleton();
+    EL.dailyGoalTaskList.innerHTML = '<p class="goal-error">拆解失敗，請重試</p>';
+  }
+
+  EL.btnSubmitGoal.disabled = false;
+}
+
+function renderDailyTasks(tasks) {
+  hideTaskSkeleton();
+  EL.dailyGoalTaskList.innerHTML = tasks.map((t, i) => `
+    <button type="button" class="task-card-btn" data-index="${i}"
+            data-task="${escapeHTML(t.task)}"
+            data-reason="${escapeHTML(t.reason)}">
+      <span class="task-card-name">${escapeHTML(t.task)}</span>
+      <span class="task-card-reason">${escapeHTML(t.reason)}</span>
+    </button>
+  `).join('');
+
+  EL.dailyGoalTaskList.querySelectorAll('.task-card-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      EL.taskName.value   = btn.dataset.task;
+      EL.taskReason.value = btn.dataset.reason;
+      hideModal(EL.modalDailyGoal);
+      const details = document.getElementById('taskExtraDetails');
+      if (details) details.open = true;
+    });
+  });
+}
+
+function renderTaskShortcuts(tasks) {
+  if (!EL.taskShortcutArea || !tasks?.length) return;
+
+  const remaining = tasks.filter(t => !t.done);
+  if (remaining.length === 0) {
+    EL.taskShortcutArea.hidden = true;
+    return;
+  }
+
+  EL.taskShortcutArea.hidden = false;
+  EL.taskShortcutArea.innerHTML = `
+    <div class="shortcut-label">今日任務</div>
+    ${remaining.map(t => `
+      <button type="button" class="shortcut-btn"
+              data-task="${escapeHTML(t.task)}"
+              data-reason="${escapeHTML(t.reason)}">
+        ${escapeHTML(t.task)}
+      </button>
+    `).join('')}
+  `;
+
+  EL.taskShortcutArea.querySelectorAll('.shortcut-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      EL.taskName.value   = btn.dataset.task;
+      EL.taskReason.value = btn.dataset.reason;
+    });
+  });
+}
+
+function showTaskSkeleton() {
+  EL.dailyGoalTaskList.innerHTML = `
+    <div class="skeleton-card"></div>
+    <div class="skeleton-card"></div>
+    <div class="skeleton-card"></div>
+  `;
+}
+function hideTaskSkeleton() {
+  EL.dailyGoalTaskList.innerHTML = '';
+}
+
+function getSelectedEnergy() {
+  const active = document.querySelector('.energy-btn.active');
+  return active ? active.dataset.energy : 'mid';
 }
 
 /* ============================================================
