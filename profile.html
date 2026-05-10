@@ -26,6 +26,19 @@
       --text-label:   #D4D4D8;
     }
 
+    [data-theme="light"] {
+      --bg-deep:      #f8f7f5;
+      --bg-card:      #f0ece7;
+      --bg-input:     #e8e2db;
+      --border:       rgba(120, 80, 40, 0.18);
+      --tomato:       #c85e20;
+      --tomato-light: #a84a14;
+      --tomato-dim:   rgba(200, 94, 32, 0.12);
+      --text-primary: #2a1a0e;
+      --text-muted:   #7a5038;
+      --text-label:   #a07850;
+    }
+
     /* ============================================================
        版面：桌面左右分欄（繼承 style.css 的 100vh 鎖定）
        ============================================================ */
@@ -238,6 +251,7 @@
       gap: 8px;
       flex-shrink: 0;
     }
+    .profile-header-row .btn-theme-toggle { margin-left: auto; }
     .profile-back {
       font-size: 0.8rem;
       color: var(--text-muted);
@@ -568,6 +582,7 @@
 
       <div class="profile-header-row">
         <a href="index.html" class="profile-back">← 番茄鐘</a>
+        <button type="button" class="btn-theme-toggle" id="btnThemeToggle" title="切換深/淺色">🌙</button>
       </div>
 
       <!-- 身份 + 核心數據 -->
@@ -656,6 +671,28 @@
     </div><!-- /.profile-right -->
 
   </div>
+  <script>
+    (function() {
+      var btn = document.getElementById('btnThemeToggle');
+      var saved = localStorage.getItem('theme') || 'dark';
+      if (saved === 'light') {
+        document.documentElement.setAttribute('data-theme', 'light');
+        if (btn) btn.textContent = '☀️';
+      }
+      if (btn) btn.addEventListener('click', function() {
+        var current = document.documentElement.getAttribute('data-theme');
+        if (current === 'light') {
+          document.documentElement.removeAttribute('data-theme');
+          btn.textContent = '🌙';
+          localStorage.setItem('theme', 'dark');
+        } else {
+          document.documentElement.setAttribute('data-theme', 'light');
+          btn.textContent = '☀️';
+          localStorage.setItem('theme', 'light');
+        }
+      });
+    })();
+  </script>
   <script src="profile.js"></script>
 </body>
 </html>
