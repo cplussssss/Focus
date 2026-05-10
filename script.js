@@ -1673,6 +1673,7 @@ ${JSON.stringify(recentRecords)}
 
     const data = await response.json();
     let raw = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+    if (!raw) throw new Error('API 回傳空內容');
     raw = raw.replace(/```json|```/g, '').trim();
     const tasks = JSON.parse(raw);
 
