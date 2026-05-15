@@ -129,6 +129,14 @@ function initElements() {
     // Modal：休息結束
     modalBreakDone: document.getElementById('modalBreakDone'),
     btnModalNextRound: document.getElementById('btnModalNextRound'),
+    btnModalStopRounds: document.getElementById('btnModalStopRounds'),
+    breakDoneCountdown: document.getElementById('breakDoneCountdown'),
+
+    // 跳過休息按鈕
+    btnSkipBreak: document.getElementById('btnSkipBreak'),
+
+    // 展開/收起介面按鈕
+    btnExpandUI: document.getElementById('btnExpandUI'),
 
     // 狀態選擇 + AI 建議
     stateChips:   document.getElementById('stateChips'),
@@ -511,6 +519,37 @@ function resetDoneModal() {
 function clearTimer() {
   if (STATE.intervalId !== null) { clearInterval(STATE.intervalId); STATE.intervalId = null; }
 }
+
+/* ── 休息結束後自動開始下一輪倒數 ── */
+let _breakDoneTimerId = null;
+
+function startBreakDoneCountdown() {
+  let secs = 5;
+  if (EL.breakDoneCountdown) EL.breakDoneCountdown.textContent = secs;
+  _breakDoneTimerId = setInterval(() => {
+    secs--;
+    if (secs <= 0) {
+      clearBreakDoneCountdown();
+      doStartNextRound();
+    } else {
+      if (EL.breakDoneCountdown) EL.breakDoneCountdown.textContent = secs;
+    }
+  }, 1000);
+}
+
+function clearBreakDoneCountdown() {
+  if (_breakDoneTimerId !== null) {
+    clearInterval(_breakDoneTimerId);
+    _breakDoneTimerId = null;
+  }
+}
+
+function doStartNextRound() {
+  clearBreakDoneCountdown();
+  hideModal(EL.modalBreakDone);
+  stopTabFlash();
+  startWork();
+}
 function getWorkSeconds() {
   const v = parseInt(EL.workMinutes.value, 10);
   return (isNaN(v) || v < 1) ? 25 * 60 : v * 60;
@@ -538,6 +577,11 @@ function startWork() {
   setButtons({ start: true, pause: false, endRound: false, reset: false, break: true });
   EL.workMinutes.disabled = true;
   EL.breakMinutes.disabled = true;
+
+  // 專注模式：計時中隱藏其他內容
+  document.body.className = 'timer-active';
+  if (EL.btnExpandUI) EL.btnExpandUI.textContent = '展開介面 ↓';
+
   STATE.intervalId = setInterval(tick, 500);
 }
 
@@ -567,6 +611,7 @@ function tick() {
       setStatus('✅ 休息結束！準備下一輪？');
       showModal(EL.modalBreakDone);
       startTabFlash('🍅 休息結束！');
+      startBreakDoneCountdown();
     }
   }
 }
@@ -643,7 +688,9 @@ function handleReset() {
 function doReset() {
   clearTimer();
   stopTabFlash();
+  clearBreakDoneCountdown();
   STATE.mode = 'idle';
+  document.body.className = '';
   const workSec = getWorkSeconds();
   updateTimerDisplay(workSec);
   updateProgressBar(0, workSec, 'work');
@@ -658,6 +705,7 @@ function doReset() {
 function resetToIdle() {
   clearTimer();
   stopTabFlash();
+  clearBreakDoneCountdown();
   clearStateTip();
   STATE.mode = 'idle';
   document.body.className = '';
@@ -731,8 +779,22 @@ function startBreakTimer() {
   updateProgressBar(0, STATE.breakTotalSeconds, 'break');
   setStatus('☕ 休息中...');
   setButtons({ start: true, pause: false, endRound: true, reset: true, break: true });
-  document.body.className = 'mode-break';
+  document.body.className = 'mode-break timer-active';
+  if (EL.btnExpandUI) EL.btnExpandUI.textContent = '展開介面 ↓';
   STATE.intervalId = setInterval(tick, 500);
+}
+
+/* ── 跳過休息，繼續工作 ── */
+function skipBreakContinueWork() {
+  stopTabFlash();
+  const result = getChipValue(EL.doneResultChips) || 'done';
+  const focus = getStarValue(EL.doneStars) || 5;
+  const distractions = getMultiChipValues(EL.doneDistractionChips, EL.doneDistractionOther);
+
+  hideModal(EL.modalBreakSuggest);
+  saveRecord({ status: result, endReason: '', focus, distractions });
+  // 保留任務欄位，讓使用者繼續相同任務
+  resetToIdle();
 }
 
 /* ============================================================
@@ -965,10 +1027,22 @@ function initEventListeners() {
   });
 
   EL.btnModalStartBreak.addEventListener('click', startBreakTimer);
-  EL.btnModalNextRound.addEventListener('click', () => {
+
+  EL.btnSkipBreak.addEventListener('click', skipBreakContinueWork);
+
+  EL.btnModalNextRound.addEventListener('click', doStartNextRound);
+
+  EL.btnModalStopRounds.addEventListener('click', () => {
+    clearBreakDoneCountdown();
     hideModal(EL.modalBreakDone);
-    document.body.className = '';
+    stopTabFlash();
     resetToIdle();
+  });
+
+  EL.btnExpandUI.addEventListener('click', () => {
+    document.body.classList.toggle('timer-expanded');
+    EL.btnExpandUI.textContent = document.body.classList.contains('timer-expanded')
+      ? '收起介面 ↑' : '展開介面 ↓';
   });
 
   EL.btnClearHistory.addEventListener('click', () => {
@@ -1725,22 +1799,38 @@ function renderTaskShortcuts(tasks) {
   if (!EL.taskShortcutArea || !tasks?.length) return;
 
   const remaining = tasks.filter(t => !t.done);
+  EL.taskShortcutArea.hidden = false;
+
   if (remaining.length === 0) {
-    EL.taskShortcutArea.hidden = true;
+    EL.taskShortcutArea.innerHTML = `
+      <div class="shortcut-all-done">
+        🎉 今日任務全完成！
+        <button type="button" class="shortcut-reset-btn">設定新目標</button>
+      </div>
+    `;
+    EL.taskShortcutArea.querySelector('.shortcut-reset-btn')
+      .addEventListener('click', openDailyGoalModal);
     return;
   }
 
-  EL.taskShortcutArea.hidden = false;
   EL.taskShortcutArea.innerHTML = `
-    <div class="shortcut-label">今日任務</div>
-    ${remaining.map(t => `
-      <button type="button" class="shortcut-btn"
-              data-task="${escapeHTML(t.task)}"
-              data-reason="${escapeHTML(t.reason)}">
-        ${escapeHTML(t.task)}
-      </button>
+    <div class="shortcut-label">今日任務
+      <button type="button" class="shortcut-reset-btn">重設目標</button>
+    </div>
+    ${remaining.map((t, i) => `
+      <div class="shortcut-row">
+        <button type="button" class="shortcut-btn"
+                data-task="${escapeHTML(t.task)}"
+                data-reason="${escapeHTML(t.reason)}">
+          ${escapeHTML(t.task)}
+        </button>
+        <button type="button" class="shortcut-done-btn" data-task="${escapeHTML(t.task)}" title="標記完成">✓</button>
+      </div>
     `).join('')}
   `;
+
+  EL.taskShortcutArea.querySelector('.shortcut-reset-btn')
+    .addEventListener('click', openDailyGoalModal);
 
   EL.taskShortcutArea.querySelectorAll('.shortcut-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -1748,6 +1838,33 @@ function renderTaskShortcuts(tasks) {
       EL.taskReason.value = btn.dataset.reason;
     });
   });
+
+  EL.taskShortcutArea.querySelectorAll('.shortcut-done-btn').forEach(btn => {
+    btn.addEventListener('click', () => markTaskDone(btn.dataset.task));
+  });
+}
+
+async function markTaskDone(taskName) {
+  if (!currentUser || !firestoreDb) return;
+  const today = new Date().toISOString().split('T')[0];
+  const docRef = firestoreDb
+    .collection('users').doc(currentUser.uid)
+    .collection('dailyGoals').doc(today);
+
+  const doc = await docRef.get();
+  if (!doc.exists) return;
+
+  const tasks = doc.data().tasks.map(t =>
+    t.task === taskName ? { ...t, done: true } : t
+  );
+  await docRef.update({ tasks });
+  renderTaskShortcuts(tasks);
+}
+
+function openDailyGoalModal() {
+  EL.dailyGoalInput.value = '';
+  EL.dailyGoalTaskList.innerHTML = '';
+  showModal(EL.modalDailyGoal);
 }
 
 function showTaskSkeleton() {

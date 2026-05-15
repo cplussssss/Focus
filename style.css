@@ -1681,10 +1681,190 @@ body {
   color: var(--tomato-light);
 }
 
+.shortcut-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.shortcut-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.shortcut-row .shortcut-btn {
+  margin-bottom: 0;
+  flex: 1;
+}
+
+.shortcut-done-btn {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-label);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.shortcut-done-btn:hover {
+  background: #4caf5022;
+  border-color: #4caf50;
+  color: #4caf50;
+}
+
+.shortcut-reset-btn {
+  font-size: 0.68rem;
+  padding: 2px 8px;
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-label);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.shortcut-reset-btn:hover {
+  border-color: var(--tomato);
+  color: var(--tomato);
+}
+
+.shortcut-all-done {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #4caf5015;
+  border: 1px solid #4caf5044;
+  font-size: 0.82rem;
+  color: var(--text-primary);
+}
+
 /* 錯誤提示 */
 .goal-error {
   color: var(--tomato);
   font-size: 0.85rem;
   text-align: center;
   padding: 16px 0;
+}
+
+/* ============================================================
+   專注模式（計時中）
+   ============================================================ */
+#btnExpandUI {
+  display: none;
+  margin-top: 14px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-family: var(--font-ui);
+  cursor: pointer;
+  padding: 5px 14px;
+  transition: color var(--transition), border-color var(--transition);
+}
+
+#btnExpandUI:hover {
+  color: var(--text-primary);
+  border-color: var(--text-muted);
+}
+
+body.timer-active #btnExpandUI {
+  display: inline-block;
+}
+
+body.timer-active .app-layout {
+  align-items: center;
+  justify-content: center;
+}
+
+body.timer-active .col-right {
+  display: none;
+}
+
+body.timer-active .col-left {
+  flex: none;
+  width: 100%;
+  max-width: 540px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: visible;
+  padding-right: 0;
+}
+
+body.timer-active .app-header,
+body.timer-active .settings-section,
+body.timer-active .task-shortcut-area,
+body.timer-active .task-section,
+body.timer-active .state-section,
+body.timer-active .sync-result {
+  display: none;
+}
+
+body.timer-active .timer-block {
+  text-align: center;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+body.timer-active .timer-display {
+  font-size: clamp(4.5rem, 18vw, 9rem);
+  margin-bottom: 10px;
+}
+
+body.timer-active .btn-section {
+  justify-content: center;
+  width: 100%;
+  max-width: 420px;
+}
+
+/* 展開介面後恢復完整顯示 */
+body.timer-active.timer-expanded .app-header { display: flex; }
+body.timer-active.timer-expanded .settings-section { display: grid; }
+body.timer-active.timer-expanded .task-section { display: flex; }
+body.timer-active.timer-expanded .state-section { display: block; }
+body.timer-active.timer-expanded .sync-result { display: block; }
+body.timer-active.timer-expanded .col-right { display: flex; }
+
+body.timer-active.timer-expanded .col-left {
+  flex: 1;
+  max-width: none;
+  align-items: stretch;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+body.timer-active.timer-expanded .timer-display {
+  font-size: clamp(2.6rem, 8vw, 4.4rem);
+}
+
+body.timer-active.timer-expanded .timer-block {
+  text-align: left;
+}
+
+body.timer-active.timer-expanded .btn-section {
+  justify-content: flex-start;
+}
+
+/* 休息結束倒數文字 */
+.break-done-auto {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+  font-family: var(--font-mono);
+}
+
+.break-done-auto span {
+  color: var(--break-green);
+  font-weight: 600;
 }

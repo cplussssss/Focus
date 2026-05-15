@@ -34,6 +34,7 @@
         <div class="progress-bar-bg">
           <div class="progress-bar-fill" id="progressBarFill"></div>
         </div>
+        <button type="button" class="timer-expand-btn" id="btnExpandUI">展開介面 ↓</button>
       </div>
 
       <!-- 設定列：工作 / 休息 / 預計輪數 -->
@@ -275,6 +276,7 @@
       <input type="text" id="doneDistractionOther" class="distraction-other" placeholder="請描述其他干擾…" hidden />
 
       <button type="button" class="btn btn-primary" id="btnModalStartBreak" style="margin-top:16px;width:100%">開始休息計時</button>
+      <button type="button" class="btn btn-secondary" id="btnSkipBreak" style="margin-top:8px;width:100%">先不休息，繼續工作</button>
     </div>
   </div>
 
@@ -284,7 +286,9 @@
       <div class="break-icon">🍅</div>
       <h3>休息結束！</h3>
       <p>準備好了嗎？可以開始下一輪工作了。</p>
-      <button type="button" class="btn btn-primary" id="btnModalNextRound" style="width:100%">開始下一輪</button>
+      <p class="break-done-auto"><span id="breakDoneCountdown">5</span> 秒後自動開始下一輪</p>
+      <button type="button" class="btn btn-primary" id="btnModalNextRound" style="width:100%;margin-bottom:8px">立即開始下一輪</button>
+      <button type="button" class="btn btn-secondary" id="btnModalStopRounds" style="width:100%">停止，回到待機</button>
     </div>
   </div>
 
