@@ -326,6 +326,7 @@ function updateTabTitle(timeStr) {
     'work-overtime': '⚠️',
     'break':         '☕',
     'paused':        '⏸',
+    'stopwatch':     '⏳',
   }[STATE.mode] || '';
   document.title = prefix ? `${prefix} ${timeStr} — 番茄` : TAB_ORIGINAL;
 }
@@ -368,14 +369,14 @@ function updateProgressBar(elapsed, total, type) {
 }
 
 function setBadgeMode(mode) {
-  const text = { work: '工作模式', break: '休息模式', overtime: '超時工作', idle: '準備中' };
+  const text = { work: '工作模式', break: '休息模式', overtime: '超時工作', idle: '準備中', stopwatch: '持續工作中' };
   EL.modeBadge.textContent = text[mode] || '';
   EL.modeBadge.className = 'mode-badge';
   if (mode === 'break') EL.modeBadge.classList.add('break-mode');
-  if (mode === 'overtime') EL.modeBadge.classList.add('overtime-mode');
+  if (mode === 'overtime' || mode === 'stopwatch') EL.modeBadge.classList.add('overtime-mode');
   EL.timerDisplay.className = 'timer-display';
   if (mode === 'break') EL.timerDisplay.classList.add('break-mode');
-  if (mode === 'overtime') EL.timerDisplay.classList.add('overtime-mode');
+  if (mode === 'overtime' || mode === 'stopwatch') EL.timerDisplay.classList.add('overtime-mode');
 }
 
 function setButtons(map) {
@@ -601,6 +602,9 @@ function tick() {
     }
   } else if (STATE.mode === 'work-overtime') {
     updateTimerDisplay(-Math.floor((now - STATE.endTime) / 1000));
+  } else if (STATE.mode === 'stopwatch') {
+    const elapsed = Math.floor((now - STATE.endTime) / 1000);
+    updateTimerDisplay(elapsed);
   } else if (STATE.mode === 'break') {
     if (remaining > 0) {
       updateTimerDisplay(remaining);
@@ -618,9 +622,12 @@ function tick() {
 
 /* ── 暫停 / 繼續 ── */
 function pauseTimer() {
-  if (!['work', 'work-overtime', 'break'].includes(STATE.mode)) return;
+  if (!['work', 'work-overtime', 'break', 'stopwatch'].includes(STATE.mode)) return;
   clearTimer();
-  STATE.pauseRemaining = Math.max(0, STATE.endTime - Date.now());
+  // stopwatch：endTime 是起點（過去），存負的已耗秒數讓 resume 公式通用
+  STATE.pauseRemaining = STATE.mode === 'stopwatch'
+    ? -(Date.now() - STATE.endTime)
+    : Math.max(0, STATE.endTime - Date.now());
   STATE.lastPauseStart = Date.now();
   STATE.pausedMode = STATE.mode;
   STATE.mode = 'paused';
@@ -643,10 +650,16 @@ function resumeTimer() {
   EL.timerDisplay.classList.remove('paused');
   EL.btnPause.textContent = '⏸ 暫停';
   const s = STATE.mode === 'work-overtime' ? '⚠️ 工作時間已結束，超時進行中...'
-    : STATE.mode === 'break' ? '☕ 休息中...' : '工作中...';
+    : STATE.mode === 'break' ? '☕ 休息中...'
+    : STATE.mode === 'stopwatch' ? '⏳ 持續工作中...'
+    : '工作中...';
   setStatus(s);
   STATE.intervalId = setInterval(tick, 500);
-  setButtons({ start: true, pause: false, endRound: STATE.mode === 'break', reset: false, break: STATE.mode !== 'break' });
+  if (STATE.mode === 'stopwatch') {
+    setButtons({ start: true, pause: false, endRound: false, reset: false, break: false });
+  } else {
+    setButtons({ start: true, pause: false, endRound: STATE.mode === 'break', reset: false, break: STATE.mode !== 'break' });
+  }
 }
 
 /* ── 結束本輪（中途） ── */
@@ -736,7 +749,7 @@ function clearTaskFields() {
 function handleStartBreak() {
   if (EL.aiFeedbackBlock) EL.aiFeedbackBlock.hidden = true;
 
-  const okModes = ['work', 'work-overtime', 'paused'];
+  const okModes = ['work', 'work-overtime', 'stopwatch', 'paused'];
   if (!okModes.includes(STATE.mode)) return;
 
   clearTimer();
@@ -784,7 +797,7 @@ function startBreakTimer() {
   STATE.intervalId = setInterval(tick, 500);
 }
 
-/* ── 跳過休息，繼續工作 ── */
+/* ── 跳過休息，以秒表模式繼續工作 ── */
 function skipBreakContinueWork() {
   stopTabFlash();
   const result = getChipValue(EL.doneResultChips) || 'done';
@@ -793,8 +806,25 @@ function skipBreakContinueWork() {
 
   hideModal(EL.modalBreakSuggest);
   saveRecord({ status: result, endReason: '', focus, distractions });
-  // 保留任務欄位，讓使用者繼續相同任務
-  resetToIdle();
+
+  // 啟動秒表模式：計時往上跑，顯示已持續工作多久
+  STATE.workStartTime = new Date();
+  STATE.totalPausedMs = 0;
+  STATE.lastPauseStart = null;
+  STATE.mode = 'stopwatch';
+  STATE.endTime = Date.now(); // elapsed = now - endTime（從 0 開始往上）
+
+  setBadgeMode('stopwatch');
+  updateTimerDisplay(0);
+  updateProgressBar(0, 1, 'work'); // 清空進度條
+  setStatus('⏳ 持續工作中，不計番茄鐘...');
+  setButtons({ start: true, pause: false, endRound: false, reset: false, break: false });
+
+  // 維持專注模式
+  document.body.className = 'timer-active';
+  if (EL.btnExpandUI) EL.btnExpandUI.textContent = '展開介面 ↓';
+
+  STATE.intervalId = setInterval(tick, 500);
 }
 
 /* ============================================================
