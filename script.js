@@ -1271,8 +1271,9 @@ async function getAiFeedback(record) {
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: {
-          maxOutputTokens: 100,
+          maxOutputTokens: 200,
           temperature: 0.8,
+          thinkingConfig: { thinkingBudget: 0 },
         }
       })
     });
