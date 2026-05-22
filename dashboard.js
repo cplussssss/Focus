@@ -276,9 +276,14 @@ async function loadAIInsights() {
 - 最常專注時段：${timeLabel}（${bestHour} 點附近）
 - 總紀錄數：${allRecords.length} 筆`;
 
+    const user = firebase.auth().currentUser;
+    const idToken = await user.getIdToken();
     const res = await fetch(GEMINI_WORKER_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${idToken}`
+      },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: { maxOutputTokens: 250, temperature: 0.7, thinkingConfig: { thinkingBudget: 0 } },
