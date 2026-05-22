@@ -900,9 +900,7 @@ function renderHistory(overrideRecords) {
     const reasonHtml = r.taskReason && r.taskReason !== '（未填寫）'
       ? `<span><span class="meta-label">為什麼：</span>${escapeHTML(r.taskReason)}</span>` : '';
 
-    const deleteBtn = !r.synced
-      ? `<button type="button" class="btn-delete-record" data-id="${r.id}" title="刪除此筆紀錄">✕</button>`
-      : '';
+    const deleteBtn = `<button type="button" class="btn-delete-record" data-id="${r.id}" title="刪除此筆紀錄">✕</button>`;
 
     const editBtn = `<button type="button" class="btn-edit-record" data-id="${r.id}" title="編輯此筆紀錄">✎</button>`;
 
@@ -1092,10 +1090,17 @@ function initEventListeners() {
     const deleteBtn = e.target.closest('.btn-delete-record');
     if (!deleteBtn) return;
     const id = Number(deleteBtn.dataset.id);
+    const target = STATE.records.find(r => r.id === id);
     STATE.records = STATE.records.filter(r => r.id !== id);
     saveToStorage();
     renderHistory();
     updateSummary();
+    if (target?.synced && currentUser && firestoreDb) {
+      firestoreDb.collection('users').doc(currentUser.uid)
+        .collection('records').doc(String(id))
+        .delete()
+        .catch(e => console.warn('Firestore 刪除失敗：', e));
+    }
   });
 
   // 編輯紀錄 Modal
@@ -1276,9 +1281,13 @@ async function getAiFeedback(record) {
 請根據這些資訊給一句有意義的回饋，不要只說「做得好」這種空泛的話。`;
 
   try {
+    const idToken = await currentUser.getIdToken();
     const response = await fetch(GEMINI_WORKER_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${idToken}`
+      },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: {
@@ -1776,9 +1785,13 @@ ${JSON.stringify(recentRecords)}
 ]`;
 
   try {
+    const idToken = await currentUser.getIdToken();
     const response = await fetch(GEMINI_WORKER_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${idToken}` 
+      },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: { maxOutputTokens: 1024, temperature: 0.7, thinkingConfig: { thinkingBudget: 0 } }
