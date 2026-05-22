@@ -9,7 +9,7 @@ const FIREBASE_CONFIG = {
   appId:             '1:1075734057431:web:add0bd3e6f1069ac317b92',
 };
 
-const HF_MODEL = 'Qwen/Qwen2.5-7B-Instruct';
+const GEMINI_WORKER_URL = 'https://focus.sijialai1473.workers.dev';
 
 const EL = {
   userName:       document.getElementById('dashUserName'),
@@ -253,48 +253,20 @@ function renderHistory() {
 }
 
 /* ============================================================
-   AI Insights（Hugging Face Inference API）
+   AI Insights（Gemini via Cloudflare Worker）
    ============================================================ */
 async function loadAIInsights() {
-  const key = localStorage.getItem('hf_api_key');
-  if (!key) {
-    renderKeyInput();
-    return;
-  }
-  await fetchInsights(key);
-}
-
-function renderKeyInput() {
-  EL.aiText.innerHTML = `
-    <div class="ai-key-row">
-      <input type="password" id="hfKeyInput" class="hf-key-input" placeholder="貼上你的 Hugging Face API Key" />
-      <button id="hfKeyBtn" class="btn btn-primary btn-sm">分析</button>
-    </div>
-    <p class="ai-key-hint">
-      Key 只存在你的瀏覽器，不會上傳。
-      <a href="https://huggingface.co/settings/tokens" target="_blank" rel="noopener">取得 Key →</a>
-    </p>`;
-
-  document.getElementById('hfKeyBtn').addEventListener('click', async () => {
-    const key = document.getElementById('hfKeyInput').value.trim();
-    if (!key) return;
-    localStorage.setItem('hf_api_key', key);
-    await fetchInsights(key);
-  });
-}
-
-async function fetchInsights(apiKey) {
   EL.aiText.innerHTML = '<span class="ai-loading">AI 分析中...</span>';
 
   try {
-    const today      = calcToday();
-    const streak     = calcStreak();
+    const today     = calcToday();
+    const streak    = calcStreak();
     const categories = calcCategories();
-    const weekly     = calcWeekly();
-    const weekTotal  = weekly.reduce((s, d) => s + d.minutes, 0);
-    const bestHour   = calcBestHour();
-    const timeLabel  = bestHour < 12 ? '上午' : bestHour < 18 ? '下午' : '晚上';
-    const topCat     = categories[0]?.name || '無';
+    const weekly    = calcWeekly();
+    const weekTotal = weekly.reduce((s, d) => s + d.minutes, 0);
+    const bestHour  = calcBestHour();
+    const timeLabel = bestHour < 12 ? '上午' : bestHour < 18 ? '下午' : '晚上';
+    const topCat    = categories[0]?.name || '無';
 
     const prompt = `你是一個習慣分析助理。請用繁體中文、像朋友一樣的語氣，用 2-3 句話分析以下學習數據，並給一個具體可執行的建議：
 - 連續專注天數：${streak} 天
@@ -304,50 +276,25 @@ async function fetchInsights(apiKey) {
 - 最常專注時段：${timeLabel}（${bestHour} 點附近）
 - 總紀錄數：${allRecords.length} 筆`;
 
-    const res = await fetch(
-      `https://api-inference.huggingface.co/models/${HF_MODEL}/v1/chat/completions`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model:       HF_MODEL,
-          messages:    [{ role: 'user', content: prompt }],
-          max_tokens:  250,
-          temperature: 0.7,
-        }),
-      }
-    );
+    const res = await fetch(GEMINI_WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: 250, temperature: 0.7, thinkingConfig: { thinkingBudget: 0 } },
+      }),
+    });
 
-    if (res.status === 401) {
-      localStorage.removeItem('hf_api_key');
-      EL.aiText.innerHTML = '<span class="ai-error">API Key 無效，請重新輸入。</span>';
-      renderKeyInput();
-      return;
-    }
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
     const data = await res.json();
-    const text = data.choices?.[0]?.message?.content?.trim() || '（無法取得洞察）';
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '（無法取得洞察）';
 
-    EL.aiText.innerHTML = `
-      <span>${escapeHTML(text)}</span>
-      <button class="ai-reset-btn" id="aiResetBtn">重新輸入 Key</button>`;
-    document.getElementById('aiResetBtn').addEventListener('click', () => {
-      localStorage.removeItem('hf_api_key');
-      renderKeyInput();
-    });
+    EL.aiText.innerHTML = `<span>${escapeHTML(text)}</span>`;
 
   } catch (err) {
     console.error(err);
-    EL.aiText.innerHTML = `<span class="ai-error">分析失敗：${escapeHTML(err.message)}</span>
-      <button class="ai-reset-btn" id="aiResetBtn">重新輸入 Key</button>`;
-    document.getElementById('aiResetBtn').addEventListener('click', () => {
-      localStorage.removeItem('hf_api_key');
-      renderKeyInput();
-    });
+    EL.aiText.innerHTML = `<span class="ai-error">分析失敗：${escapeHTML(err.message)}</span>`;
   }
 }
 
