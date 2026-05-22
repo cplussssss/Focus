@@ -288,7 +288,8 @@ async function loadAIInsights() {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
     const data = await res.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '（無法取得洞察）';
+    const raw  = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '（無法取得洞察）';
+    const text = raw.replace(/\*\*/g, '');
 
     EL.aiText.innerHTML = `<span>${escapeHTML(text)}</span>`;
 

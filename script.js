@@ -1292,7 +1292,7 @@ async function getAiFeedback(record) {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
     const data = await response.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim()?.replace(/\*\*/g, '');
 
     if (text) {
       EL.aiFeedbackText.textContent = text;
