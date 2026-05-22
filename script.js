@@ -1147,7 +1147,18 @@ EL.btnMyRecords.addEventListener('click', handleMyRecords);
 
   // 今日目標 Modal
   EL.btnSubmitGoal.addEventListener('click', submitDailyGoal);
-  EL.btnSkipGoal.addEventListener('click', () => hideModal(EL.modalDailyGoal));
+  EL.btnSkipGoal.addEventListener('click', async () => {
+    hideModal(EL.modalDailyGoal);
+    if (currentUser && firestoreDb) {
+      const today = new Date().toISOString().split('T')[0];
+      await firestoreDb
+        .collection('users').doc(currentUser.uid)
+        .collection('dailyGoals').doc(today)
+        .delete();
+    }
+    EL.taskShortcutArea.hidden = true;
+    EL.taskShortcutArea.innerHTML = '';
+  });
   EL.dailyGoalInput.addEventListener('keydown', e => {
     if (e.key === 'Enter') submitDailyGoal();
   });
