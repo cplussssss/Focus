@@ -59,7 +59,7 @@ const STATE = {
 
 let firebaseAuth = null;
 let currentUser = null;
-let firestoreDb  = null;
+let firestoreDb = null;
 
 /* ============================================================
    DOM 快取
@@ -117,8 +117,8 @@ function initElements() {
     // Modal：工作完成
     modalBreakSuggest: document.getElementById('modalBreakSuggest'),
     breakSuggestion: document.getElementById('breakSuggestion'),
-    aiFeedbackBlock:  document.getElementById('aiFeedbackBlock'),   
-    aiFeedbackText:   document.getElementById('aiFeedbackText'),   
+    aiFeedbackBlock: document.getElementById('aiFeedbackBlock'),
+    aiFeedbackText: document.getElementById('aiFeedbackText'),
     btnModalStartBreak: document.getElementById('btnModalStartBreak'),
     doneResultChips: document.getElementById('doneResultChips'),
     doneStars: document.getElementById('doneStars'),
@@ -139,53 +139,53 @@ function initElements() {
     btnExpandUI: document.getElementById('btnExpandUI'),
 
     // 狀態選擇 + AI 建議
-    stateChips:   document.getElementById('stateChips'),
-    startTip:     document.getElementById('startTip'),
+    stateChips: document.getElementById('stateChips'),
+    startTip: document.getElementById('startTip'),
     startTipText: document.getElementById('startTipText'),
 
     // Modal：登入
     modalLogin: document.getElementById('modalLogin'),
     btnGoogleLogin: document.getElementById('btnGoogleLogin'),
     btnCancelLogin: document.getElementById('btnCancelLogin'),
-    btnMyRecords:   document.getElementById('btnMyRecords'),  // ★ 新增
-    
+    btnMyRecords: document.getElementById('btnMyRecords'),  // ★ 新增
+
     // 帳號設定 Modal
-    modalAccount:    document.getElementById('modalAccount'),
-    btnAccount:      document.getElementById('btnAccount'),
-    btnLoginHeader:  document.getElementById('btnLoginHeader'),
+    modalAccount: document.getElementById('modalAccount'),
+    btnAccount: document.getElementById('btnAccount'),
+    btnLoginHeader: document.getElementById('btnLoginHeader'),
     btnCloseAccount: document.getElementById('btnCloseAccount'),
-    btnLogout:       document.getElementById('btnLogout'),
+    btnLogout: document.getElementById('btnLogout'),
     btnSaveUsername: document.getElementById('btnSaveUsername'),
-    usernameInput:   document.getElementById('usernameInput'),
-    usernameHint:    document.getElementById('usernameHint'),
-    togglePublic:    document.getElementById('togglePublic'),
-    publicLabel:     document.getElementById('publicLabel'),
-    shareUrlRow:     document.getElementById('shareUrlRow'),
-    shareUrlText:    document.getElementById('shareUrlText'),
-    btnCopyUrl:      document.getElementById('btnCopyUrl'),
-    accountEmail:    document.getElementById('accountEmail'),
-    accountAvatar:   document.getElementById('accountAvatar'),
-    accountUid:      document.getElementById('accountUid'),
+    usernameInput: document.getElementById('usernameInput'),
+    usernameHint: document.getElementById('usernameHint'),
+    togglePublic: document.getElementById('togglePublic'),
+    publicLabel: document.getElementById('publicLabel'),
+    shareUrlRow: document.getElementById('shareUrlRow'),
+    shareUrlText: document.getElementById('shareUrlText'),
+    btnCopyUrl: document.getElementById('btnCopyUrl'),
+    accountEmail: document.getElementById('accountEmail'),
+    accountAvatar: document.getElementById('accountAvatar'),
+    accountUid: document.getElementById('accountUid'),
 
     // 今日目標 Modal
-    modalDailyGoal:    document.getElementById('modalDailyGoal'),
-    dailyGoalInput:    document.getElementById('dailyGoalInput'),
-    btnSubmitGoal:     document.getElementById('btnSubmitGoal'),
-    btnSkipGoal:       document.getElementById('btnSkipGoal'),
+    modalDailyGoal: document.getElementById('modalDailyGoal'),
+    dailyGoalInput: document.getElementById('dailyGoalInput'),
+    btnSubmitGoal: document.getElementById('btnSubmitGoal'),
+    btnSkipGoal: document.getElementById('btnSkipGoal'),
     dailyGoalTaskList: document.getElementById('dailyGoalTaskList'),
-    taskShortcutArea:  document.getElementById('taskShortcutArea'),
+    taskShortcutArea: document.getElementById('taskShortcutArea'),
 
     // 編輯紀錄 Modal
     modalEditRecord: document.getElementById('modalEditRecord'),
-    editCategory:    document.getElementById('editCategory'),
-    editProject:     document.getElementById('editProject'),
-    editTaskName:    document.getElementById('editTaskName'),
-    editTaskReason:  document.getElementById('editTaskReason'),
-    editTaskNote:    document.getElementById('editTaskNote'),
-    editActualMin:   document.getElementById('editActualMin'),
-    editRecordId:    document.getElementById('editRecordId'),
-    btnConfirmEdit:  document.getElementById('btnConfirmEdit'),
-    btnCancelEdit:   document.getElementById('btnCancelEdit'),
+    editCategory: document.getElementById('editCategory'),
+    editProject: document.getElementById('editProject'),
+    editTaskName: document.getElementById('editTaskName'),
+    editTaskReason: document.getElementById('editTaskReason'),
+    editTaskNote: document.getElementById('editTaskNote'),
+    editActualMin: document.getElementById('editActualMin'),
+    editRecordId: document.getElementById('editRecordId'),
+    btnConfirmEdit: document.getElementById('btnConfirmEdit'),
+    btnCancelEdit: document.getElementById('btnCancelEdit'),
   };
 }
 
@@ -314,19 +314,19 @@ function getWeekday() {
 /* ============================================================
    頁籤標題 & 閃爍
    ============================================================ */
-let _tabFlashId  = null;
-let _tabFlashOn  = false;
+let _tabFlashId = null;
+let _tabFlashOn = false;
 const TAB_ORIGINAL = document.title;
 
 // 每次計時更新時同步頁籤標題
 function updateTabTitle(timeStr) {
   if (_tabFlashId !== null) return; // 閃爍中不覆蓋
   const prefix = {
-    'work':          '⏱',
+    'work': '⏱',
     'work-overtime': '⚠️',
-    'break':         '☕',
-    'paused':        '⏸',
-    'stopwatch':     '⏳',
+    'break': '☕',
+    'paused': '⏸',
+    'stopwatch': '⏳',
   }[STATE.mode] || '';
   document.title = prefix ? `${prefix} ${timeStr} — 番茄` : TAB_ORIGINAL;
 }
@@ -651,8 +651,8 @@ function resumeTimer() {
   EL.btnPause.textContent = '⏸ 暫停';
   const s = STATE.mode === 'work-overtime' ? '⚠️ 工作時間已結束，超時進行中...'
     : STATE.mode === 'break' ? '☕ 休息中...'
-    : STATE.mode === 'stopwatch' ? '⏳ 持續工作中...'
-    : '工作中...';
+      : STATE.mode === 'stopwatch' ? '⏳ 持續工作中...'
+        : '工作中...';
   setStatus(s);
   STATE.intervalId = setInterval(tick, 500);
   if (STATE.mode === 'stopwatch') {
@@ -857,19 +857,19 @@ function saveRecord({ status, endReason, focus = 5, distractions = [] }) {
   };
   STATE.lastRecord = record;  // ★ 暫存最新一筆，讓 getAiFeedback 可以取用
   STATE.records.unshift(record);
-    saveToStorage();
-    renderHistory();
-    updateSummary();
-    if (currentUser && firestoreDb) {
-      saveRecordToFirestore(record)
-        .then(() => {
-          record.synced = true;
-          saveToStorage();
-          renderHistory();
-        })
-        .catch(e => console.warn('Firestore 寫入失敗：', e));
-    }
-  
+  saveToStorage();
+  renderHistory();
+  updateSummary();
+  if (currentUser && firestoreDb) {
+    saveRecordToFirestore(record)
+      .then(() => {
+        record.synced = true;
+        saveToStorage();
+        renderHistory();
+      })
+      .catch(e => console.warn('Firestore 寫入失敗：', e));
+  }
+
 }
 
 function renderHistory(overrideRecords) {
@@ -947,11 +947,11 @@ function confirmEdit() {
   const record = STATE.records.find(r => String(r.id) === String(id));
   if (!record) { hideModal(EL.modalEditRecord); return; }
 
-  record.category  = EL.editCategory.value;
-  record.project   = EL.editProject.value.trim();
-  record.taskName  = EL.editTaskName.value.trim() || '（未填寫）';
+  record.category = EL.editCategory.value;
+  record.project = EL.editProject.value.trim();
+  record.taskName = EL.editTaskName.value.trim() || '（未填寫）';
   record.taskReason = EL.editTaskReason.value.trim() || '（未填寫）';
-  record.taskNote  = EL.editTaskNote.value.trim();
+  record.taskNote = EL.editTaskNote.value.trim();
   record.actualSec = (parseInt(EL.editActualMin.value, 10) || 1) * 60;
 
   saveToStorage();
@@ -1125,16 +1125,16 @@ function initEventListeners() {
   EL.btnSaveUsername.addEventListener('click', handleSaveUsername);
   EL.togglePublic.addEventListener('change', handleTogglePublic);
   EL.btnCopyUrl.addEventListener('click', () => {
-  navigator.clipboard?.writeText(EL.shareUrlText.textContent).then(() => {
-    EL.btnCopyUrl.textContent = '已複製！';
-    setTimeout(() => { EL.btnCopyUrl.textContent = '複製'; }, 2000);
+    navigator.clipboard?.writeText(EL.shareUrlText.textContent).then(() => {
+      EL.btnCopyUrl.textContent = '已複製！';
+      setTimeout(() => { EL.btnCopyUrl.textContent = '複製'; }, 2000);
+    });
   });
-});
-EL.btnLogout.addEventListener('click', async () => {
-  await firebaseAuth.signOut();
-  hideModal(EL.modalAccount);
-});
-EL.btnMyRecords.addEventListener('click', handleMyRecords);
+  EL.btnLogout.addEventListener('click', async () => {
+    await firebaseAuth.signOut();
+    hideModal(EL.modalAccount);
+  });
+  EL.btnMyRecords.addEventListener('click', handleMyRecords);
 
   // 登入 Modal
   EL.btnGoogleLogin.addEventListener('click', handleGoogleLogin);
@@ -1184,37 +1184,37 @@ function initFirebase() {
   try {
     firebase.initializeApp(FIREBASE_CONFIG);
     firebaseAuth = firebase.auth();
-    firestoreDb  = firebase.firestore();
+    firestoreDb = firebase.firestore();
 
-  firebaseAuth.onAuthStateChanged(async (user) => {
-    currentUser = user;
-    if (user) {
-      hideModal(EL.modalLogin);   // ★ 登入後關掉 Modal
-      EL.syncState.textContent = user.email === DEMO_EMAIL ? '👀 訪客模式' : user.email;
-      if (EL.btnMyRecords)   EL.btnMyRecords.hidden   = user.email === DEMO_EMAIL;
-      if (EL.btnAccount)     EL.btnAccount.hidden     = false;
-      if (EL.btnLoginHeader) EL.btnLoginHeader.hidden = true;
+    firebaseAuth.onAuthStateChanged(async (user) => {
+      currentUser = user;
+      if (user) {
+        hideModal(EL.modalLogin);   // ★ 登入後關掉 Modal
+        EL.syncState.textContent = user.email === DEMO_EMAIL ? '👀 訪客模式' : user.email;
+        if (EL.btnMyRecords) EL.btnMyRecords.hidden = user.email === DEMO_EMAIL;
+        if (EL.btnAccount) EL.btnAccount.hidden = false;
+        if (EL.btnLoginHeader) EL.btnLoginHeader.hidden = true;
 
-      await firestoreDb.collection('users').doc(user.uid).set({
-        email:       user.email,
-        displayName: user.displayName || '',
-        photoURL:    user.photoURL    || '',
-        updatedAt:   firebase.firestore.FieldValue.serverTimestamp()
-      }, { merge: true });
-      // 清除本機舊資料，以 Firestore 為主
-      STATE.records = [];
-      await loadFromFirestore();
-      if (user.email !== DEMO_EMAIL) {
-        await checkDailyGoal();
+        await firestoreDb.collection('users').doc(user.uid).set({
+          email: user.email,
+          displayName: user.displayName || '',
+          photoURL: user.photoURL || '',
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+        // 清除本機舊資料，以 Firestore 為主
+        STATE.records = [];
+        await loadFromFirestore();
+        if (user.email !== DEMO_EMAIL) {
+          await checkDailyGoal();
+        }
+      } else {
+        EL.syncState.textContent = '';
+        if (EL.btnMyRecords) EL.btnMyRecords.hidden = true;
+        if (EL.btnAccount) EL.btnAccount.hidden = true;
+        if (EL.btnLoginHeader) EL.btnLoginHeader.hidden = false;
+        showModal(EL.modalLogin);   // ★ 未登入就強制顯示登入畫面
       }
-    } else {
-      EL.syncState.textContent = '';
-      if (EL.btnMyRecords)   EL.btnMyRecords.hidden   = true;
-      if (EL.btnAccount)     EL.btnAccount.hidden     = true;
-      if (EL.btnLoginHeader) EL.btnLoginHeader.hidden = false;
-      showModal(EL.modalLogin);   // ★ 未登入就強制顯示登入畫面
-    }
-});
+    });
   } catch (err) { console.error('Firebase 初始化失敗：', err); }
 }
 
@@ -1225,22 +1225,22 @@ async function saveRecordToFirestore(record) {
     .collection('users').doc(currentUser.uid)
     .collection('records').doc(String(record.id))
     .set({
-      timestamp:      record.timestamp  || '',
-      startTime:      record.startTime  || '',
-      endTime:        record.endTime    || '',
-      task:           record.taskName   || '',
-      reason:         record.taskReason || '',
+      timestamp: record.timestamp || '',
+      startTime: record.startTime || '',
+      endTime: record.endTime || '',
+      task: record.taskName || '',
+      reason: record.taskReason || '',
       plannedMinutes: Math.round((record.plannedSec || 0) / 60),
-      actualMinutes:  Math.round((record.actualSec  || 0) / 60),
-      status:         record.status     || 'incomplete',
-      stopReason:     record.endReason  || '',
-      note:           record.taskNote   || '',
-      category:       record.category   || '',
-      project:        record.project    || '',
-      focus:          record.focus      || 0,
-      distractions:   Array.isArray(record.distractions)
-                        ? record.distractions.join('、') : '',
-      createdAt:      firebase.firestore.FieldValue.serverTimestamp()
+      actualMinutes: Math.round((record.actualSec || 0) / 60),
+      status: record.status || 'incomplete',
+      stopReason: record.endReason || '',
+      note: record.taskNote || '',
+      category: record.category || '',
+      project: record.project || '',
+      focus: record.focus || 0,
+      distractions: Array.isArray(record.distractions)
+        ? record.distractions.join('、') : '',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
 }
 
@@ -1284,7 +1284,7 @@ async function getAiFeedback(record) {
     const idToken = await currentUser.getIdToken();
     const response = await fetch(GEMINI_WORKER_URL, {
       method: 'POST',
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${idToken}`
       },
@@ -1359,18 +1359,18 @@ async function loadFromFirestore() {
       if (localIds.has(doc.id)) return;
       const d = doc.data();
       STATE.records.push({
-        id:          Number(doc.id) || doc.id,
-        timestamp:   d.timestamp   || '',
-        taskName:    d.task        || '',
-        taskReason:  d.reason      || '',
-        taskNote:    d.note        || '',
-        plannedSec:  (d.plannedMinutes || 0) * 60,
-        actualSec:   (d.actualMinutes  || 0) * 60,
-        status:      d.status      || 'incomplete',
-        endReason:   d.stopReason  || '',
-        category:    d.category    || '',
-        project:     d.project     || '',
-        focus:       d.focus       || 0,
+        id: Number(doc.id) || doc.id,
+        timestamp: d.timestamp || '',
+        taskName: d.task || '',
+        taskReason: d.reason || '',
+        taskNote: d.note || '',
+        plannedSec: (d.plannedMinutes || 0) * 60,
+        actualSec: (d.actualMinutes || 0) * 60,
+        status: d.status || 'incomplete',
+        endReason: d.stopReason || '',
+        category: d.category || '',
+        project: d.project || '',
+        focus: d.focus || 0,
         distractions: d.distractions
           ? d.distractions.split('、').filter(Boolean) : [],
         synced: true,
@@ -1409,7 +1409,7 @@ async function loadPublicUserRecords(userId) {
         taskName: d.task || '', taskReason: d.reason || '',
         taskNote: d.note || '',
         plannedSec: (d.plannedMinutes || 0) * 60,
-        actualSec:  (d.actualMinutes  || 0) * 60,
+        actualSec: (d.actualMinutes || 0) * 60,
         status: d.status || 'incomplete', endReason: d.stopReason || '',
         category: d.category || '', project: d.project || '',
         focus: d.focus || 0,
@@ -1474,18 +1474,18 @@ async function loadPublicUserRecords(userId) {
     const publicRecords = snapshot.docs.map(doc => {
       const d = doc.data();
       return {
-        id:          doc.id,
-        timestamp:   d.timestamp   || '',
-        taskName:    d.task        || '',
-        taskReason:  d.reason      || '',
-        taskNote:    d.note        || '',
-        plannedSec:  (d.plannedMinutes || 0) * 60,
-        actualSec:   (d.actualMinutes  || 0) * 60,
-        status:      d.status      || 'incomplete',
-        endReason:   d.stopReason  || '',
-        category:    d.category    || '',
-        project:     d.project     || '',
-        focus:       d.focus       || 0,
+        id: doc.id,
+        timestamp: d.timestamp || '',
+        taskName: d.task || '',
+        taskReason: d.reason || '',
+        taskNote: d.note || '',
+        plannedSec: (d.plannedMinutes || 0) * 60,
+        actualSec: (d.actualMinutes || 0) * 60,
+        status: d.status || 'incomplete',
+        endReason: d.stopReason || '',
+        category: d.category || '',
+        project: d.project || '',
+        focus: d.focus || 0,
         distractions: d.distractions
           ? d.distractions.split('、').filter(Boolean) : [],
         synced: true,
@@ -1514,28 +1514,28 @@ async function saveRecordToFirestore(record) {
   // ★ 訪客帳號 email，這個帳號的紀錄不會真的存入 Firestore
   const DEMO_EMAIL = 'demo@focus.app';
   if (currentUser && firestoreDb && currentUser.email !== DEMO_EMAIL) {
-  saveRecordToFirestore(record).catch(e => console.warn('Firestore 寫入失敗：', e));
+    saveRecordToFirestore(record).catch(e => console.warn('Firestore 寫入失敗：', e));
   }
   if (!currentUser || !firestoreDb) return;
   await firestoreDb
     .collection('users').doc(currentUser.uid)
     .collection('records').doc(String(record.id))
     .set({
-      timestamp:      record.timestamp     || '',
-      task:           record.taskName      || '',
-      reason:         record.taskReason    || '',
-      plannedMinutes: Math.round((record.plannedSec  || 0) / 60),
-      actualMinutes:  Math.round((record.actualSec   || 0) / 60),
-      status:         record.status        || 'incomplete',
-      stopReason:     record.endReason     || '',
-      note:           record.taskNote      || '',
-      category:       record.category      || '',
-      project:        record.project       || '',
-      focus:          record.focus         || 0,
-      distractions:   Array.isArray(record.distractions)
-                        ? record.distractions.join('、') : '',
-      synced:         true,
-      createdAt:      firebase.firestore.FieldValue.serverTimestamp()
+      timestamp: record.timestamp || '',
+      task: record.taskName || '',
+      reason: record.taskReason || '',
+      plannedMinutes: Math.round((record.plannedSec || 0) / 60),
+      actualMinutes: Math.round((record.actualSec || 0) / 60),
+      status: record.status || 'incomplete',
+      stopReason: record.endReason || '',
+      note: record.taskNote || '',
+      category: record.category || '',
+      project: record.project || '',
+      focus: record.focus || 0,
+      distractions: Array.isArray(record.distractions)
+        ? record.distractions.join('、') : '',
+      synced: true,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
 }
 
@@ -1546,13 +1546,13 @@ async function openAccountModal() {
   // 填入基本資訊
   EL.accountEmail.textContent = currentUser.email;
   if (currentUser.photoURL) {
-    EL.accountAvatar.src     = currentUser.photoURL;
-    EL.accountAvatar.hidden  = false;
+    EL.accountAvatar.src = currentUser.photoURL;
+    EL.accountAvatar.hidden = false;
   }
 
   // 讀取現有設定
   const userDoc = await firestoreDb.collection('users').doc(currentUser.uid).get();
-  const data    = userDoc.exists ? userDoc.data() : {};
+  const data = userDoc.exists ? userDoc.data() : {};
 
   // 用戶名稱
   EL.usernameInput.value = data.username || '';
@@ -1582,8 +1582,8 @@ function updatePublicUI(isPublic, username) {
 
 /* ── 儲存用戶名稱 ── */
 async function handleSaveUsername() {
-  const raw      = EL.usernameInput.value.trim().toLowerCase();
-  const valid    = /^[a-zA-Z0-9_]{3,20}$/.test(raw);
+  const raw = EL.usernameInput.value.trim().toLowerCase();
+  const valid = /^[a-zA-Z0-9_]{3,20}$/.test(raw);
 
   if (!valid) {
     EL.usernameHint.textContent = '⚠ 只能使用英文、數字、底線，長度 3–20 字';
@@ -1591,13 +1591,13 @@ async function handleSaveUsername() {
     return;
   }
 
-  EL.btnSaveUsername.disabled  = true;
-  EL.usernameHint.textContent  = '檢查中...';
-  EL.usernameHint.style.color  = 'var(--text-muted)';
+  EL.btnSaveUsername.disabled = true;
+  EL.usernameHint.textContent = '檢查中...';
+  EL.usernameHint.style.color = 'var(--text-muted)';
 
   try {
     // 讀取目前已有的用戶名稱（若有則先刪除舊的）
-    const userDoc     = await firestoreDb.collection('users').doc(currentUser.uid).get();
+    const userDoc = await firestoreDb.collection('users').doc(currentUser.uid).get();
     const oldUsername = userDoc.exists ? (userDoc.data().username || '') : '';
 
     // 檢查新名稱是否已被使用
@@ -1620,7 +1620,7 @@ async function handleSaveUsername() {
 
       // 新增新名稱索引
       batch.set(firestoreDb.collection('usernames').doc(raw), {
-        uid:       currentUser.uid,
+        uid: currentUser.uid,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
 
@@ -1682,18 +1682,18 @@ async function loadFromFirestore() {
       const d = doc.data();
       // 還原成本機格式
       STATE.records.push({
-        id:          Number(doc.id) || doc.id,
-        timestamp:   d.timestamp   || '',
-        taskName:    d.task        || '',
-        taskReason:  d.reason      || '',
-        taskNote:    d.note        || '',
-        plannedSec:  (d.plannedMinutes || 0) * 60,
-        actualSec:   (d.actualMinutes  || 0) * 60,
-        status:      d.status      || 'incomplete',
-        endReason:   d.stopReason  || '',
-        category:    d.category    || '',
-        project:     d.project     || '',
-        focus:       d.focus       || 0,
+        id: Number(doc.id) || doc.id,
+        timestamp: d.timestamp || '',
+        taskName: d.task || '',
+        taskReason: d.reason || '',
+        taskNote: d.note || '',
+        plannedSec: (d.plannedMinutes || 0) * 60,
+        actualSec: (d.actualMinutes || 0) * 60,
+        status: d.status || 'incomplete',
+        endReason: d.stopReason || '',
+        category: d.category || '',
+        project: d.project || '',
+        focus: d.focus || 0,
         distractions: d.distractions
           ? d.distractions.split('、').filter(Boolean) : [],
         synced: true,
@@ -1788,9 +1788,9 @@ ${JSON.stringify(recentRecords)}
     const idToken = await currentUser.getIdToken();
     const response = await fetch(GEMINI_WORKER_URL, {
       method: 'POST',
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${idToken}` 
+        'Authorization': `Bearer ${idToken}`
       },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
@@ -1841,7 +1841,7 @@ function renderDailyTasks(tasks) {
 
   EL.dailyGoalTaskList.querySelectorAll('.task-card-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      EL.taskName.value   = btn.dataset.task;
+      EL.taskName.value = btn.dataset.task;
       EL.taskReason.value = btn.dataset.reason;
       hideModal(EL.modalDailyGoal);
       const details = document.getElementById('taskExtraDetails');
@@ -1889,7 +1889,7 @@ function renderTaskShortcuts(tasks) {
 
   EL.taskShortcutArea.querySelectorAll('.shortcut-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      EL.taskName.value   = btn.dataset.task;
+      EL.taskName.value = btn.dataset.task;
       EL.taskReason.value = btn.dataset.reason;
     });
   });
@@ -2060,17 +2060,17 @@ async function seedDemoData() {
 
   // 先確保用戶文件存在
   await firestoreDb.collection('users').doc(DEMO_UID).set({
-    email:       'demo@focus.app',
+    email: 'demo@focus.app',
     displayName: '示範帳號',
-    photoURL:    '',
-    isPublic:    true,   // 訪客帳號設為公開
-    username:    'demo',
-    updatedAt:   firebase.firestore.FieldValue.serverTimestamp()
+    photoURL: '',
+    isPublic: true,   // 訪客帳號設為公開
+    username: 'demo',
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   }, { merge: true });
 
   // 建立 username 索引
   await firestoreDb.collection('usernames').doc('demo').set({
-    uid:       DEMO_UID,
+    uid: DEMO_UID,
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   });
 
