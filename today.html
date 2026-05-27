@@ -7,396 +7,435 @@
   <title>今日計畫</title>
   <link rel="stylesheet" href="style.css" />
   <style>
-    /* ── 覆寫全域 overflow，今日計畫頁需要滾動 ── */
-    html, body {
-      height: auto;
-      overflow: auto;
-    }
+    html, body { height: auto; overflow: auto; }
 
-    /* ── 頁面容器 ── */
     .today-layout {
-      max-width: 780px;
+      max-width: 920px;
       margin: 0 auto;
-      padding: 28px 20px 60px;
+      padding: 24px 20px 72px;
     }
 
     /* ── Header ── */
     .today-header {
       display: flex;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 28px;
+      gap: 10px;
+      margin-bottom: 20px;
     }
     .today-header h1 {
-      font-size: 1.35rem;
+      font-size: 1.25rem;
       font-weight: 700;
-      color: var(--text-primary);
       flex: 1;
     }
+    .page-icon { font-size: 1.25rem; }
     .today-date {
-      font-size: 0.82rem;
+      font-size: 0.78rem;
       color: var(--text-muted);
       font-family: var(--font-mono);
     }
-    .btn-theme-toggle {
-      padding: 4px 10px;
-      border-radius: var(--radius-sm);
-      border: 1px solid var(--border);
-      background: transparent;
-      color: var(--text-muted);
-      font-size: 0.88rem;
-      cursor: pointer;
-      transition: all var(--transition);
-    }
-    .btn-theme-toggle:hover {
-      border-color: var(--text-muted);
-      color: var(--text-primary);
-    }
 
-    /* ── 統計摘要 ── */
+    /* ── Summary ── */
     .summary-bar {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
-      margin-bottom: 28px;
+      gap: 10px;
+      margin-bottom: 18px;
     }
     .summary-card {
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: var(--radius-md);
-      padding: 14px 16px;
+      padding: 12px 14px;
       text-align: center;
     }
-    .summary-card .s-value {
-      font-size: 1.5rem;
+    .s-value {
+      font-size: 1.4rem;
       font-weight: 700;
       font-family: var(--font-mono);
       color: var(--text-primary);
       line-height: 1;
-      margin-bottom: 4px;
+      margin-bottom: 3px;
     }
-    .summary-card .s-value.accent { color: var(--action); }
-    .summary-card .s-value.done   { color: var(--rest); }
-    .summary-card .s-value.warn   { color: var(--overtime); }
-    .summary-card .s-label {
-      font-size: 0.72rem;
+    .s-value.accent { color: var(--action); }
+    .s-value.done   { color: var(--rest); }
+    .s-value.warn   { color: var(--overtime); }
+    .s-label {
+      font-size: 0.68rem;
       color: var(--text-muted);
       text-transform: uppercase;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.05em;
     }
 
-    /* ── 新增目標表單 ── */
+    /* ── Tabs ── */
+    .view-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 20px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .tab-btn {
+      padding: 7px 18px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-muted);
+      font-family: var(--font-ui);
+      font-size: 0.84rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .tab-btn:hover { color: var(--text-primary); border-color: var(--text-muted); }
+    .tab-btn.active { background: var(--action); border-color: var(--action); color: #fff; }
+
+    /* ── Add Form ── */
     .add-form-wrap {
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: var(--radius-lg);
-      padding: 20px;
-      margin-bottom: 24px;
+      padding: 18px 20px;
+      margin-bottom: 20px;
     }
     .add-form-wrap h2 {
-      font-size: 0.85rem;
+      font-size: 0.78rem;
       font-weight: 600;
       color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.07em;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
     .form-row {
-      display: grid;
-      grid-template-columns: 1fr 110px 110px;
+      display: flex;
       gap: 10px;
       margin-bottom: 10px;
-    }
-    .form-row-full {
-      margin-bottom: 10px;
+      flex-wrap: wrap;
     }
     .form-field {
       display: flex;
       flex-direction: column;
-      gap: 5px;
+      gap: 4px;
+      min-width: 0;
     }
+    .form-field.f1 { flex: 1; min-width: 80px; }
+    .form-field.f2 { flex: 2; min-width: 120px; }
+    .form-field.f3 { flex: 3; min-width: 180px; }
     .form-field label {
-      font-size: 0.72rem;
+      font-size: 0.67rem;
       color: var(--text-label);
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.06em;
     }
-    .form-field input,
-    .form-field select,
-    .form-field textarea {
+    .form-field input {
       background: var(--bg-input);
       border: 1px solid var(--border);
       border-radius: var(--radius-sm);
       color: var(--text-primary);
       font-family: var(--font-ui);
-      font-size: 0.88rem;
-      padding: 8px 10px;
-      transition: border-color var(--transition);
+      font-size: 0.85rem;
+      padding: 7px 10px;
       outline: none;
-      resize: none;
+      transition: border-color var(--transition);
+      width: 100%;
     }
-    .form-field input:focus,
-    .form-field select:focus,
-    .form-field textarea:focus {
-      border-color: var(--action);
-    }
-    .form-field textarea {
-      height: 60px;
-    }
-    .form-field select option {
-      background: var(--bg-card);
-    }
+    .form-field input:focus { border-color: var(--action); }
+    .form-field input[type="date"] { font-family: var(--font-mono); }
 
-    /* 優先順序顏色 */
-    select.pri-high   { border-left: 3px solid var(--reward) !important; }
-    select.pri-mid    { border-left: 3px solid var(--overtime) !important; }
-    select.pri-low    { border-left: 3px solid var(--rest) !important; }
+    /* 緊急/重要 toggles */
+    .toggle-group { display: flex; gap: 7px; }
+    .toggle-btn {
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: var(--bg-input);
+      color: var(--text-muted);
+      font-size: 0.77rem;
+      font-weight: 600;
+      font-family: var(--font-ui);
+      cursor: pointer;
+      transition: all var(--transition);
+      white-space: nowrap;
+    }
+    .toggle-btn:hover { border-color: var(--text-muted); }
+    #fUrgent.on    { background: var(--reward-dim);   border-color: var(--reward);   color: var(--reward); }
+    #fImportant.on { background: var(--action-dim);   border-color: var(--action);   color: var(--action); }
 
     .btn-add {
       width: 100%;
       margin-top: 6px;
-      padding: 10px;
+      padding: 9px;
       background: var(--action);
       color: #fff;
       border: none;
       border-radius: var(--radius-sm);
       font-family: var(--font-ui);
-      font-size: 0.88rem;
+      font-size: 0.85rem;
       font-weight: 600;
       cursor: pointer;
       transition: opacity var(--transition);
     }
     .btn-add:hover { opacity: 0.85; }
-    .btn-add:active { opacity: 0.7; }
 
-    /* ── 目標列表 ── */
-    .goals-list {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
+    /* ── Goal list card ── */
+    .goals-list { display: flex; flex-direction: column; gap: 10px; }
 
     .goal-card {
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: var(--radius-md);
-      padding: 16px 18px;
-      transition: border-color var(--transition);
+      padding: 13px 15px;
       position: relative;
+      transition: border-color var(--transition), box-shadow var(--transition);
     }
     .goal-card.is-running {
       border-color: var(--action);
       box-shadow: 0 0 0 2px var(--action-dim);
     }
-    .goal-card.is-done {
-      opacity: 0.65;
-    }
-    .goal-card.is-done .goal-name {
-      text-decoration: line-through;
-      color: var(--text-muted);
-    }
+    .goal-card.is-done { opacity: 0.58; }
+    .goal-card.is-done .goal-name { text-decoration: line-through; color: var(--text-muted); }
 
-    /* 優先順序左邊框 */
-    .goal-card[data-priority="high"] { border-left: 3px solid var(--reward); }
-    .goal-card[data-priority="mid"]  { border-left: 3px solid var(--overtime); }
-    .goal-card[data-priority="low"]  { border-left: 3px solid var(--rest); }
+    .goal-card[data-q="q1"] { border-left: 3px solid var(--reward); }
+    .goal-card[data-q="q2"] { border-left: 3px solid var(--action); }
+    .goal-card[data-q="q3"] { border-left: 3px solid var(--overtime); }
+    .goal-card[data-q="q4"] { border-left: 3px solid var(--text-label); }
 
-    .goal-top {
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-    }
-    .goal-done-check {
-      width: 18px;
-      height: 18px;
+    .goal-top { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+    .goal-check {
+      width: 17px; height: 17px;
       border: 2px solid var(--border);
       border-radius: 50%;
       cursor: pointer;
       flex-shrink: 0;
       margin-top: 2px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.6rem;
       transition: all var(--transition);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.65rem;
     }
-    .goal-done-check:hover { border-color: var(--rest); }
-    .is-done .goal-done-check {
-      background: var(--rest);
-      border-color: var(--rest);
-      color: #fff;
+    .goal-check:hover { border-color: var(--rest); }
+    .is-done .goal-check { background: var(--rest); border-color: var(--rest); color: #fff; }
+
+    .goal-name { font-size: 0.9rem; font-weight: 600; margin-bottom: 5px; }
+    .goal-meta { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+
+    /* Quadrant badge */
+    .q-badge {
+      font-size: 0.65rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      padding: 2px 7px; border-radius: 20px;
     }
-    .goal-info { flex: 1; }
-    .goal-name {
-      font-size: 0.95rem;
-      font-weight: 600;
-      color: var(--text-primary);
-      margin-bottom: 4px;
-    }
-    .goal-meta {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-    .goal-pri-badge {
-      font-size: 0.68rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.07em;
+    .q-badge.q1 { background: var(--reward-dim);  color: var(--reward); }
+    .q-badge.q2 { background: var(--action-dim);  color: var(--action); }
+    .q-badge.q3 { background: var(--overtime-dim); color: var(--overtime); }
+    .q-badge.q4 { background: rgba(107,114,128,.15); color: var(--text-label); }
+
+    /* Deadline tag */
+    .dl-tag {
+      font-size: 0.7rem;
+      font-family: var(--font-mono);
       padding: 2px 7px;
       border-radius: 20px;
     }
-    .pri-high { background: var(--reward-dim); color: var(--reward); }
-    .pri-mid  { background: var(--overtime-dim); color: var(--overtime); }
-    .pri-low  { background: var(--rest-dim); color: var(--rest); }
+    .dl-over  { background: rgba(239,68,68,.15);  color: #ef4444; }
+    .dl-today { background: var(--reward-dim);    color: var(--reward); }
+    .dl-soon  { background: var(--overtime-dim);  color: var(--overtime); }
+    .dl-ok    { background: var(--bg-input);       color: var(--text-muted); }
 
-    .goal-time-est {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      font-family: var(--font-mono);
-    }
-
-    /* 備註 */
     .goal-note {
-      margin-top: 8px;
-      font-size: 0.78rem;
-      color: var(--text-label);
-      padding: 6px 10px;
-      background: var(--bg-input);
-      border-radius: var(--radius-sm);
-      white-space: pre-wrap;
+      font-size: 0.75rem; color: var(--text-label);
+      padding: 5px 9px; background: var(--bg-input);
+      border-radius: var(--radius-sm); margin-bottom: 8px;
     }
 
-    /* 計時器列 */
+    /* Timer row */
     .goal-timer-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-top: 12px;
-      padding-top: 10px;
-      border-top: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+      padding-top: 8px; border-top: 1px solid var(--border);
     }
-    .timer-display-sm {
-      font-family: var(--font-mono);
-      font-size: 1.1rem;
-      font-weight: 500;
-      color: var(--text-primary);
-      min-width: 62px;
+    .timer-sm {
+      font-family: var(--font-mono); font-size: 0.98rem; font-weight: 500; min-width: 54px;
     }
-    .is-running .timer-display-sm { color: var(--action); }
+    .is-running .timer-sm { color: var(--action); }
+    .time-info { flex: 1; display: flex; gap: 12px; }
+    .tb { display: flex; flex-direction: column; }
+    .tb-l { font-size: 0.6rem; color: var(--text-label); text-transform: uppercase; }
+    .tb-v { font-family: var(--font-mono); font-size: 0.76rem; color: var(--text-muted); }
+    .tb-v.over { color: var(--overtime); }
 
-    .goal-time-info {
-      flex: 1;
-      display: flex;
-      gap: 14px;
-    }
-    .time-block {
-      display: flex;
-      flex-direction: column;
-    }
-    .time-block .t-label {
-      font-size: 0.65rem;
-      color: var(--text-label);
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-    }
-    .time-block .t-val {
-      font-family: var(--font-mono);
-      font-size: 0.8rem;
-      color: var(--text-muted);
-    }
-    .time-block .t-val.over { color: var(--overtime); }
-
-    .timer-btns {
-      display: flex;
-      gap: 6px;
-      margin-left: auto;
-    }
-    .btn-timer {
-      padding: 6px 14px;
+    .timer-btns { display: flex; gap: 5px; margin-left: auto; }
+    .btn-t {
+      padding: 5px 11px;
       border-radius: var(--radius-sm);
       border: 1px solid var(--border);
       background: var(--bg-input);
-      color: var(--text-primary);
-      font-size: 0.78rem;
-      font-weight: 600;
-      font-family: var(--font-ui);
-      cursor: pointer;
-      transition: all var(--transition);
+      font-size: 0.74rem; font-weight: 600; font-family: var(--font-ui);
+      cursor: pointer; transition: all var(--transition);
     }
-    .btn-timer:hover { border-color: var(--action); color: var(--action); }
+    .btn-t.start { border-color: var(--action);   color: var(--action); }
+    .btn-t.start:hover { background: var(--action-dim); }
+    .btn-t.pause { border-color: var(--overtime);  color: var(--overtime); }
+    .btn-t.pause:hover { background: var(--overtime-dim); }
+    .btn-t.stop  { border-color: var(--rest);      color: var(--rest); }
+    .btn-t.stop:hover  { background: var(--rest-dim); }
 
-    .btn-timer.start  { border-color: var(--action); color: var(--action); }
-    .btn-timer.start:hover { background: var(--action-dim); }
-
-    .btn-timer.pause  { border-color: var(--overtime); color: var(--overtime); }
-    .btn-timer.pause:hover { background: var(--overtime-dim); }
-
-    .btn-timer.stop   { border-color: var(--rest); color: var(--rest); }
-    .btn-timer.stop:hover { background: var(--rest-dim); }
-
-    .btn-timer:disabled {
-      opacity: 0.3;
-      cursor: not-allowed;
+    .btn-del {
+      position: absolute; top: 11px; right: 11px;
+      width: 19px; height: 19px; border-radius: 50%;
+      border: 1px solid var(--border); background: transparent;
+      color: var(--text-label); font-size: 0.6rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; transition: all var(--transition);
     }
+    .goal-card:hover .btn-del { opacity: 1; }
+    .btn-del:hover { background: rgba(239,68,68,.15); border-color: rgba(239,68,68,.5); color: #ef4444; }
 
-    /* 刪除按鈕 */
-    .btn-delete {
-      position: absolute;
-      top: 14px;
-      right: 14px;
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      border: 1px solid var(--border);
-      background: transparent;
-      color: var(--text-label);
-      font-size: 0.7rem;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all var(--transition);
-      opacity: 0;
-    }
-    .goal-card:hover .btn-delete { opacity: 1; }
-    .btn-delete:hover {
-      background: rgba(239, 68, 68, 0.15);
-      border-color: rgba(239, 68, 68, 0.5);
-      color: #ef4444;
-    }
+    /* Empty hint */
+    .empty-hint { text-align: center; padding: 36px 20px; color: var(--text-label); font-size: 0.84rem; }
+    .empty-hint .ei { font-size: 2rem; margin-bottom: 8px; }
 
-    /* ── 空白狀態 ── */
-    .empty-state {
+    /* Completed section */
+    .completed-section { margin-top: 18px; }
+    .btn-completed {
+      width: 100%; padding: 8px 14px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-md); color: var(--text-muted);
+      font-family: var(--font-ui); font-size: 0.8rem; font-weight: 600;
+      cursor: pointer; text-align: left; transition: all var(--transition);
+    }
+    .btn-completed:hover { border-color: var(--text-muted); color: var(--text-primary); }
+    .completed-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+
+    /* ────────────────────────────────────────────
+       MATRIX VIEW
+    ──────────────────────────────────────────── */
+    .matrix-wrap { }
+
+    .matrix-axis {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
       text-align: center;
-      padding: 48px 20px;
-      color: var(--text-label);
+      margin-bottom: 6px;
+      gap: 12px;
     }
-    .empty-state .empty-icon { font-size: 2.5rem; margin-bottom: 12px; }
-    .empty-state p { font-size: 0.85rem; }
+    .mx-axis-label {
+      font-size: 0.67rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      color: var(--text-label);
+      padding-bottom: 6px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .matrix-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .quadrant {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      min-height: 190px;
+      transition: border-color var(--transition), background var(--transition);
+    }
+    .quadrant.drag-over {
+      border-color: var(--action) !important;
+      background: var(--action-dim);
+    }
+    .q1 { border-top: 3px solid var(--reward); }
+    .q2 { border-top: 3px solid var(--action); }
+    .q3 { border-top: 3px solid var(--overtime); }
+    .q4 { border-top: 3px solid var(--text-label); }
+
+    .qhead {
+      display: flex; align-items: center; gap: 6px;
+      margin-bottom: 10px; padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .qhead-title { font-size: 0.78rem; font-weight: 700; flex: 1; }
+    .q1 .qhead-title { color: var(--reward); }
+    .q2 .qhead-title { color: var(--action); }
+    .q3 .qhead-title { color: var(--overtime); }
+    .q4 .qhead-title { color: var(--text-label); }
+    .qhead-count {
+      font-size: 0.68rem; font-family: var(--font-mono);
+      color: var(--text-label); background: var(--bg-input);
+      padding: 2px 6px; border-radius: 10px;
+    }
+
+    /* Matrix card */
+    .mx-card {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 8px 10px;
+      margin-bottom: 6px;
+      cursor: grab;
+      transition: border-color var(--transition), opacity var(--transition);
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    .mx-card:last-child { margin-bottom: 0; }
+    .mx-card:hover { border-color: var(--text-muted); }
+    .mx-card.dragging { opacity: 0.35; cursor: grabbing; }
+    .mx-card.is-done { opacity: 0.55; }
+    .mx-card.is-done .mc-name { text-decoration: line-through; color: var(--text-label); }
+    .mx-card.is-running { border-color: var(--action); }
+
+    .mc-row { display: flex; align-items: flex-start; gap: 7px; }
+    .mc-check {
+      width: 14px; height: 14px;
+      border: 2px solid var(--border);
+      border-radius: 50%; flex-shrink: 0;
+      margin-top: 2px; cursor: pointer;
+      transition: all var(--transition);
+    }
+    .mc-check:hover { border-color: var(--rest); }
+    .mx-card.is-done .mc-check { background: var(--rest); border-color: var(--rest); }
+    .mc-name { font-size: 0.82rem; font-weight: 600; color: var(--text-primary); flex: 1; line-height: 1.3; }
+    .mc-drag { color: var(--text-label); font-size: 0.8rem; cursor: grab; flex-shrink: 0; }
+
+    .mc-foot { display: flex; align-items: center; gap: 6px; margin-top: 5px; flex-wrap: wrap; }
+    .mc-time { font-size: 0.67rem; font-family: var(--font-mono); color: var(--text-label); }
+    .mc-run-dot {
+      width: 5px; height: 5px; border-radius: 50%; background: var(--action); flex-shrink: 0;
+      will-change: transform, opacity;
+      animation: blink 1.2s ease-in-out infinite;
+    }
+    @keyframes blink {
+      0%,100% { transform: scale(1); }
+      50%     { transform: scale(0.5); opacity: .4; }
+    }
+
+    .mx-empty {
+      text-align: center; padding: 18px 10px;
+      color: var(--text-label); font-size: 0.74rem;
+      border: 1px dashed var(--border); border-radius: var(--radius-sm);
+    }
 
     /* ── RWD ── */
-    @media (max-width: 600px) {
+    @media (max-width: 620px) {
       .summary-bar { grid-template-columns: repeat(2, 1fr); }
-      .form-row { grid-template-columns: 1fr; }
+      .matrix-grid { grid-template-columns: 1fr; }
+      .matrix-axis { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
-
 <div class="today-layout">
 
   <!-- Header -->
   <header class="today-header">
-    <span style="font-size:1.4rem">📋</span>
+    <span class="page-icon">📋</span>
     <h1>今日計畫</h1>
     <span class="today-date" id="todayDate"></span>
-    <button class="btn-theme-toggle" id="btnTheme" title="切換深/淺色">🌙</button>
+    <button type="button" class="btn-theme-toggle" id="btnTheme" title="切換深/淺色">🌙</button>
   </header>
 
-  <!-- 統計摘要 -->
+  <!-- Summary -->
   <div class="summary-bar">
     <div class="summary-card">
       <div class="s-value accent" id="statTotal">0</div>
@@ -416,44 +455,68 @@
     </div>
   </div>
 
-  <!-- 新增目標表單 -->
-  <div class="add-form-wrap">
-    <h2>＋ 新增今日目標</h2>
-    <div class="form-row">
-      <div class="form-field">
-        <label for="fName">目標名稱</label>
-        <input type="text" id="fName" placeholder="例：完成報告第一章" />
-      </div>
-      <div class="form-field">
-        <label for="fTime">預計時間（分）</label>
-        <input type="number" id="fTime" min="1" max="480" placeholder="30" />
-      </div>
-      <div class="form-field">
-        <label for="fPri">優先順序</label>
-        <select id="fPri">
-          <option value="high">🔴 高</option>
-          <option value="mid" selected>🟡 中</option>
-          <option value="low">🟢 低</option>
-        </select>
-      </div>
-    </div>
-    <div class="form-row-full form-field">
-      <label for="fNote">備註說明</label>
-      <textarea id="fNote" placeholder="補充說明、參考資料連結…（可省略）"></textarea>
-    </div>
-    <button class="btn-add" id="btnAdd">新增目標</button>
+  <!-- Tabs -->
+  <div class="view-tabs">
+    <button type="button" class="tab-btn active" data-tab="list">📝 列表</button>
+    <button type="button" class="tab-btn" data-tab="matrix">⊞ 四象限</button>
   </div>
 
-  <!-- 目標列表 -->
-  <div class="goals-list" id="goalsList">
-    <div class="empty-state" id="emptyState">
-      <div class="empty-icon">📭</div>
-      <p>還沒有今日目標，從上方表單開始新增吧！</p>
+  <!-- ══ LIST VIEW ══ -->
+  <div id="viewList" class="view-pane">
+
+    <div class="add-form-wrap">
+      <h2>＋ 新增目標</h2>
+      <div class="form-row">
+        <div class="form-field f3">
+          <label for="fName">目標名稱</label>
+          <input type="text" id="fName" placeholder="例：完成報告第一章" autocomplete="off" />
+        </div>
+        <div class="form-field f1">
+          <label for="fTime">預計（分）</label>
+          <input type="number" id="fTime" min="1" max="999" placeholder="30" />
+        </div>
+        <div class="form-field f1">
+          <label for="fDeadline">截止日期</label>
+          <input type="date" id="fDeadline" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label>緊急 / 重要</label>
+          <div class="toggle-group">
+            <button type="button" class="toggle-btn" id="fUrgent">⚡ 緊急</button>
+            <button type="button" class="toggle-btn" id="fImportant">⭐ 重要</button>
+          </div>
+        </div>
+        <div class="form-field f3">
+          <label for="fNote">備註說明</label>
+          <input type="text" id="fNote" placeholder="補充說明（可省略）" />
+        </div>
+      </div>
+      <button type="button" class="btn-add" id="btnAdd">新增目標</button>
     </div>
+
+    <div class="goals-list" id="goalsList"></div>
+    <div id="completedSec" class="completed-section"></div>
+
+  </div>
+
+  <!-- ══ MATRIX VIEW ══ -->
+  <div id="viewMatrix" class="view-pane" hidden>
+
+    <div class="matrix-wrap">
+      <div class="matrix-axis">
+        <div class="mx-axis-label">← 緊急</div>
+        <div class="mx-axis-label">不緊急 →</div>
+      </div>
+      <div class="matrix-grid" id="matrixGrid"></div>
+    </div>
+
+    <div id="completedSecMx" class="completed-section"></div>
+
   </div>
 
 </div>
-
 <script src="today.js"></script>
 </body>
 </html>
