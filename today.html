@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📋</text></svg>" />
+  <title>今日計畫</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* ── 覆寫全域 overflow，今日計畫頁需要滾動 ── */
+    html, body {
+      height: auto;
+      overflow: auto;
+    }
+
+    /* ── 頁面容器 ── */
+    .today-layout {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 28px 20px 60px;
+    }
+
+    /* ── Header ── */
+    .today-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+    .today-header h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      flex: 1;
+    }
+    .today-date {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+    .btn-theme-toggle {
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 0.88rem;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .btn-theme-toggle:hover {
+      border-color: var(--text-muted);
+      color: var(--text-primary);
+    }
+
+    /* ── 統計摘要 ── */
+    .summary-bar {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+    .summary-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      text-align: center;
+    }
+    .summary-card .s-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      color: var(--text-primary);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .summary-card .s-value.accent { color: var(--action); }
+    .summary-card .s-value.done   { color: var(--rest); }
+    .summary-card .s-value.warn   { color: var(--overtime); }
+    .summary-card .s-label {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    /* ── 新增目標表單 ── */
+    .add-form-wrap {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+    .add-form-wrap h2 {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 16px;
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 110px 110px;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .form-row-full {
+      margin-bottom: 10px;
+    }
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .form-field label {
+      font-size: 0.72rem;
+      color: var(--text-label);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .form-field input,
+    .form-field select,
+    .form-field textarea {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      font-family: var(--font-ui);
+      font-size: 0.88rem;
+      padding: 8px 10px;
+      transition: border-color var(--transition);
+      outline: none;
+      resize: none;
+    }
+    .form-field input:focus,
+    .form-field select:focus,
+    .form-field textarea:focus {
+      border-color: var(--action);
+    }
+    .form-field textarea {
+      height: 60px;
+    }
+    .form-field select option {
+      background: var(--bg-card);
+    }
+
+    /* 優先順序顏色 */
+    select.pri-high   { border-left: 3px solid var(--reward) !important; }
+    select.pri-mid    { border-left: 3px solid var(--overtime) !important; }
+    select.pri-low    { border-left: 3px solid var(--rest) !important; }
+
+    .btn-add {
+      width: 100%;
+      margin-top: 6px;
+      padding: 10px;
+      background: var(--action);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-ui);
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity var(--transition);
+    }
+    .btn-add:hover { opacity: 0.85; }
+    .btn-add:active { opacity: 0.7; }
+
+    /* ── 目標列表 ── */
+    .goals-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .goal-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 16px 18px;
+      transition: border-color var(--transition);
+      position: relative;
+    }
+    .goal-card.is-running {
+      border-color: var(--action);
+      box-shadow: 0 0 0 2px var(--action-dim);
+    }
+    .goal-card.is-done {
+      opacity: 0.65;
+    }
+    .goal-card.is-done .goal-name {
+      text-decoration: line-through;
+      color: var(--text-muted);
+    }
+
+    /* 優先順序左邊框 */
+    .goal-card[data-priority="high"] { border-left: 3px solid var(--reward); }
+    .goal-card[data-priority="mid"]  { border-left: 3px solid var(--overtime); }
+    .goal-card[data-priority="low"]  { border-left: 3px solid var(--rest); }
+
+    .goal-top {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .goal-done-check {
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--border);
+      border-radius: 50%;
+      cursor: pointer;
+      flex-shrink: 0;
+      margin-top: 2px;
+      transition: all var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+    }
+    .goal-done-check:hover { border-color: var(--rest); }
+    .is-done .goal-done-check {
+      background: var(--rest);
+      border-color: var(--rest);
+      color: #fff;
+    }
+    .goal-info { flex: 1; }
+    .goal-name {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+    .goal-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .goal-pri-badge {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      padding: 2px 7px;
+      border-radius: 20px;
+    }
+    .pri-high { background: var(--reward-dim); color: var(--reward); }
+    .pri-mid  { background: var(--overtime-dim); color: var(--overtime); }
+    .pri-low  { background: var(--rest-dim); color: var(--rest); }
+
+    .goal-time-est {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    /* 備註 */
+    .goal-note {
+      margin-top: 8px;
+      font-size: 0.78rem;
+      color: var(--text-label);
+      padding: 6px 10px;
+      background: var(--bg-input);
+      border-radius: var(--radius-sm);
+      white-space: pre-wrap;
+    }
+
+    /* 計時器列 */
+    .goal-timer-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+    .timer-display-sm {
+      font-family: var(--font-mono);
+      font-size: 1.1rem;
+      font-weight: 500;
+      color: var(--text-primary);
+      min-width: 62px;
+    }
+    .is-running .timer-display-sm { color: var(--action); }
+
+    .goal-time-info {
+      flex: 1;
+      display: flex;
+      gap: 14px;
+    }
+    .time-block {
+      display: flex;
+      flex-direction: column;
+    }
+    .time-block .t-label {
+      font-size: 0.65rem;
+      color: var(--text-label);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .time-block .t-val {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    .time-block .t-val.over { color: var(--overtime); }
+
+    .timer-btns {
+      display: flex;
+      gap: 6px;
+      margin-left: auto;
+    }
+    .btn-timer {
+      padding: 6px 14px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--bg-input);
+      color: var(--text-primary);
+      font-size: 0.78rem;
+      font-weight: 600;
+      font-family: var(--font-ui);
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .btn-timer:hover { border-color: var(--action); color: var(--action); }
+
+    .btn-timer.start  { border-color: var(--action); color: var(--action); }
+    .btn-timer.start:hover { background: var(--action-dim); }
+
+    .btn-timer.pause  { border-color: var(--overtime); color: var(--overtime); }
+    .btn-timer.pause:hover { background: var(--overtime-dim); }
+
+    .btn-timer.stop   { border-color: var(--rest); color: var(--rest); }
+    .btn-timer.stop:hover { background: var(--rest-dim); }
+
+    .btn-timer:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    /* 刪除按鈕 */
+    .btn-delete {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-label);
+      font-size: 0.7rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all var(--transition);
+      opacity: 0;
+    }
+    .goal-card:hover .btn-delete { opacity: 1; }
+    .btn-delete:hover {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: rgba(239, 68, 68, 0.5);
+      color: #ef4444;
+    }
+
+    /* ── 空白狀態 ── */
+    .empty-state {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--text-label);
+    }
+    .empty-state .empty-icon { font-size: 2.5rem; margin-bottom: 12px; }
+    .empty-state p { font-size: 0.85rem; }
+
+    /* ── RWD ── */
+    @media (max-width: 600px) {
+      .summary-bar { grid-template-columns: repeat(2, 1fr); }
+      .form-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="today-layout">
+
+  <!-- Header -->
+  <header class="today-header">
+    <span style="font-size:1.4rem">📋</span>
+    <h1>今日計畫</h1>
+    <span class="today-date" id="todayDate"></span>
+    <button class="btn-theme-toggle" id="btnTheme" title="切換深/淺色">🌙</button>
+  </header>
+
+  <!-- 統計摘要 -->
+  <div class="summary-bar">
+    <div class="summary-card">
+      <div class="s-value accent" id="statTotal">0</div>
+      <div class="s-label">總目標</div>
+    </div>
+    <div class="summary-card">
+      <div class="s-value done" id="statDone">0</div>
+      <div class="s-label">已完成</div>
+    </div>
+    <div class="summary-card">
+      <div class="s-value" id="statPlanned">0m</div>
+      <div class="s-label">預計總時間</div>
+    </div>
+    <div class="summary-card">
+      <div class="s-value" id="statActual">0m</div>
+      <div class="s-label">實際總時間</div>
+    </div>
+  </div>
+
+  <!-- 新增目標表單 -->
+  <div class="add-form-wrap">
+    <h2>＋ 新增今日目標</h2>
+    <div class="form-row">
+      <div class="form-field">
+        <label for="fName">目標名稱</label>
+        <input type="text" id="fName" placeholder="例：完成報告第一章" />
+      </div>
+      <div class="form-field">
+        <label for="fTime">預計時間（分）</label>
+        <input type="number" id="fTime" min="1" max="480" placeholder="30" />
+      </div>
+      <div class="form-field">
+        <label for="fPri">優先順序</label>
+        <select id="fPri">
+          <option value="high">🔴 高</option>
+          <option value="mid" selected>🟡 中</option>
+          <option value="low">🟢 低</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row-full form-field">
+      <label for="fNote">備註說明</label>
+      <textarea id="fNote" placeholder="補充說明、參考資料連結…（可省略）"></textarea>
+    </div>
+    <button class="btn-add" id="btnAdd">新增目標</button>
+  </div>
+
+  <!-- 目標列表 -->
+  <div class="goals-list" id="goalsList">
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">📭</div>
+      <p>還沒有今日目標，從上方表單開始新增吧！</p>
+    </div>
+  </div>
+
+</div>
+
+<script src="today.js"></script>
+</body>
+</html>
