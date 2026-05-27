@@ -298,8 +298,10 @@ function buildListCard(g) {
 
 // ── 四象限模式 ────────────────────────────────────────────────
 function renderMatrix() {
-  const grid = document.getElementById('matrixGrid');
-  grid.innerHTML = '';
+  const cross = document.getElementById('matrixCross');
+
+  // 只移除象限，保留十字線和軸標籤
+  cross.querySelectorAll('.quadrant').forEach(el => el.remove());
 
   QUADS.forEach(qDef => {
     const items = goals.filter(g => !g.done && getQ(g) === qDef.key);
@@ -309,20 +311,11 @@ function renderMatrix() {
     qDiv.dataset.urgent    = qDef.urgent;
     qDiv.dataset.important = qDef.important;
 
-    const itemsHtml = items.length === 0
-      ? `<div class="mx-empty">拖曳任務到這裡</div>`
-      : '';
-
-    qDiv.innerHTML = `
-      <div class="qhead">
-        <span>${qDef.icon}</span>
-        <span class="qhead-title">${qDef.label}</span>
-        <span class="qhead-count">${items.length}</span>
-      </div>
-      <div class="q-items">${itemsHtml}</div>`;
-
-    const itemsEl = qDiv.querySelector('.q-items');
-    items.forEach(g => itemsEl.appendChild(buildMatrixCard(g)));
+    if (items.length === 0) {
+      qDiv.innerHTML = `<span class="mx-empty">拖曳任務至此</span>`;
+    } else {
+      items.forEach(g => qDiv.appendChild(buildMatrixCard(g)));
+    }
 
     // Drop zone 事件
     qDiv.addEventListener('dragover', e => {
@@ -343,10 +336,10 @@ function renderMatrix() {
       draggedId = null;
     });
 
-    grid.appendChild(qDiv);
+    cross.appendChild(qDiv);
   });
 
-  // 已完成區塊
+  // ── 已完成區塊 ──
   const sec = document.getElementById('completedSecMx');
   sec.innerHTML = '';
   const done = goals.filter(g => g.done);
@@ -361,7 +354,8 @@ function renderMatrix() {
 
   if (showDoneMatrix) {
     const wrap = document.createElement('div');
-    wrap.className = 'completed-list';
+    // 已完成卡片橫排顯示
+    wrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;';
     done.forEach(g => {
       const card = buildMatrixCard(g);
       card.draggable = false;
@@ -373,27 +367,30 @@ function renderMatrix() {
 
 function buildMatrixCard(g) {
   const isRunning = (activeId === g.id);
-  const dl = fmtDeadline(g.deadline);
+  const dl        = fmtDeadline(g.deadline);
 
   const div = document.createElement('div');
   div.className = `mx-card${isRunning ? ' is-running' : ''}${g.done ? ' is-done' : ''}`;
   div.dataset.id = g.id;
   div.draggable  = !g.done;
 
-  div.innerHTML = `
-    <div class="mc-row">
-      <div class="mc-check" title="${g.done ? '取消完成' : '標記完成'}"></div>
-      <span class="mc-name">${escHtml(g.name)}</span>
-      ${isRunning ? '<span class="mc-run-dot"></span>' : ''}
-      ${!g.done ? '<span class="mc-drag" title="拖曳移動">⠿</span>' : ''}
-    </div>
-    <div class="mc-foot">
-      ${g.estMin ? `<span class="mc-time">預計 ${fmtMin(g.estMin)}</span>` : ''}
-      <span class="mc-time" data-timer="${g.id}"${!g.actualSec ? ' hidden' : ''}>${fmtSec(g.actualSec || 0)}</span>
-      ${dl ? `<span class="dl-tag ${dl.cls}" style="font-size:.64rem">📅 ${dl.text}</span>` : ''}
-    </div>`;
+  // 截止日期文字（上方小字）
+  const dlText = dl ? dl.text : (g.deadline ? g.deadline : '');
 
-  div.querySelector('.mc-check').addEventListener('click', e => {
+  // 計時資訊（若有）
+  const timerHtml = (isRunning || g.actualSec > 0) ? `
+    <div class="mc-sub">
+      ${isRunning ? '<span class="mc-run-dot"></span>' : ''}
+      <span data-timer="${g.id}">${fmtSec(g.actualSec || 0)}</span>
+    </div>` : `<span data-timer="${g.id}" hidden>${fmtSec(g.actualSec || 0)}</span>`;
+
+  div.innerHTML = `
+    <button type="button" class="mc-check-btn" title="${g.done ? '取消完成' : '標記完成'}">${g.done ? '✓' : ''}</button>
+    <div class="mc-deadline-label">${escHtml(dlText)}</div>
+    <div class="mc-name">${escHtml(g.name)}</div>
+    ${timerHtml}`;
+
+  div.querySelector('.mc-check-btn').addEventListener('click', e => {
     e.stopPropagation();
     toggleDone(g.id);
   });

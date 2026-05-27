@@ -306,102 +306,154 @@
     .completed-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
 
     /* ────────────────────────────────────────────
-       MATRIX VIEW
+       MATRIX VIEW — 十字軸樣式
     ──────────────────────────────────────────── */
-    .matrix-wrap { }
 
-    .matrix-axis {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      text-align: center;
-      margin-bottom: 6px;
-      gap: 12px;
-    }
-    .mx-axis-label {
-      font-size: 0.67rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.09em;
-      color: var(--text-label);
-      padding-bottom: 6px;
-      border-bottom: 2px solid var(--border);
-    }
-
-    .matrix-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-
-    .quadrant {
+    /* 外層容器 */
+    .matrix-cross {
+      position: relative;
+      height: 540px;
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: var(--radius-md);
-      padding: 14px;
-      min-height: 190px;
-      transition: border-color var(--transition), background var(--transition);
-    }
-    .quadrant.drag-over {
-      border-color: var(--action) !important;
-      background: var(--action-dim);
-    }
-    .q1 { border-top: 3px solid var(--reward); }
-    .q2 { border-top: 3px solid var(--action); }
-    .q3 { border-top: 3px solid var(--overtime); }
-    .q4 { border-top: 3px solid var(--text-label); }
-
-    .qhead {
-      display: flex; align-items: center; gap: 6px;
-      margin-bottom: 10px; padding-bottom: 8px;
-      border-bottom: 1px solid var(--border);
-    }
-    .qhead-title { font-size: 0.78rem; font-weight: 700; flex: 1; }
-    .q1 .qhead-title { color: var(--reward); }
-    .q2 .qhead-title { color: var(--action); }
-    .q3 .qhead-title { color: var(--overtime); }
-    .q4 .qhead-title { color: var(--text-label); }
-    .qhead-count {
-      font-size: 0.68rem; font-family: var(--font-mono);
-      color: var(--text-label); background: var(--bg-input);
-      padding: 2px 6px; border-radius: 10px;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
     }
 
-    /* Matrix card */
+    /* 十字線 */
+    .mx-line-v, .mx-line-h {
+      position: absolute;
+      background: rgba(255,255,255,0.1);
+      pointer-events: none;
+      z-index: 2;
+    }
+    [data-theme="light"] .mx-line-v,
+    [data-theme="light"] .mx-line-h { background: rgba(0,0,0,0.12); }
+
+    .mx-line-v { left: 50%; top: 0; bottom: 0; width: 1px; transform: translateX(-50%); }
+    .mx-line-h { top: 50%;  left: 0; right: 0; height: 1px; transform: translateY(-50%); }
+
+    /* 箭頭 */
+    .mx-line-v::before, .mx-line-v::after,
+    .mx-line-h::before, .mx-line-h::after {
+      content: '';
+      position: absolute;
+      border: 5px solid transparent;
+    }
+    .mx-line-v::before  { top: 0;    left: 50%; transform: translateX(-50%); border-bottom-color: var(--text-label); }
+    .mx-line-v::after   { bottom: 0; left: 50%; transform: translateX(-50%); border-top-color:    var(--text-label); }
+    .mx-line-h::before  { left: 0;   top: 50%;  transform: translateY(-50%); border-right-color:  var(--text-label); }
+    .mx-line-h::after   { right: 0;  top: 50%;  transform: translateY(-50%); border-left-color:   var(--text-label); }
+
+    /* 軸標籤 */
+    .mx-label {
+      position: absolute;
+      z-index: 4;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+      pointer-events: none;
+      background: var(--bg-card);
+      padding: 2px 8px;
+      border-radius: 20px;
+    }
+    .mx-label.top    { top: 10px;    left: 50%;  transform: translateX(-50%); }
+    .mx-label.bottom { bottom: 10px; left: 50%;  transform: translateX(-50%); }
+    .mx-label.left   { left: 10px;   top: 50%;   transform: translateY(-50%); }
+    .mx-label.right  { right: 10px;  top: 50%;   transform: translateY(-50%); }
+
+    /* 象限區域（放置卡片的 drop zone） */
+    .quadrant {
+      position: absolute;
+      z-index: 1;
+      padding: 32px 14px 14px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 7px;
+      transition: background var(--transition);
+    }
+    .quadrant.q2 { top: 0;    left: 0;   width: 50%; height: 50%; } /* 不緊急+重要   */
+    .quadrant.q1 { top: 0;    right: 0;  width: 50%; height: 50%; } /* 緊急+重要     */
+    .quadrant.q4 { bottom: 0; left: 0;   width: 50%; height: 50%; } /* 不緊急+不重要 */
+    .quadrant.q3 { bottom: 0; right: 0;  width: 50%; height: 50%; } /* 緊急+不重要   */
+
+    .quadrant.drag-over { background: var(--action-dim) !important; }
+
+    /* ── 矩陣任務卡片 ── */
     .mx-card {
-      background: var(--bg-input);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 8px 10px;
-      margin-bottom: 6px;
+      width: 128px;
+      border-radius: var(--radius-md);
+      padding: 8px 12px 10px;
+      text-align: center;
       cursor: grab;
-      transition: border-color var(--transition), opacity var(--transition);
       -webkit-user-select: none;
       user-select: none;
+      transition: box-shadow var(--transition), opacity var(--transition), transform var(--transition);
+      position: relative;
     }
-    .mx-card:last-child { margin-bottom: 0; }
-    .mx-card:hover { border-color: var(--text-muted); }
-    .mx-card.dragging { opacity: 0.35; cursor: grabbing; }
-    .mx-card.is-done { opacity: 0.55; }
-    .mx-card.is-done .mc-name { text-decoration: line-through; color: var(--text-label); }
-    .mx-card.is-running { border-color: var(--action); }
+    .mx-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(0,0,0,.35);
+    }
+    .mx-card.dragging  { opacity: 0.25; cursor: grabbing; transform: none; }
+    .mx-card.is-done   { opacity: 0.45; }
+    .mx-card.is-done .mc-name { text-decoration: line-through; }
 
-    .mc-row { display: flex; align-items: flex-start; gap: 7px; }
-    .mc-check {
-      width: 14px; height: 14px;
-      border: 2px solid var(--border);
-      border-radius: 50%; flex-shrink: 0;
-      margin-top: 2px; cursor: pointer;
+    /* 各象限卡片配色（沿用設計系統變數）*/
+    .quadrant.q1 .mx-card { background: var(--reward-dim);   border: 1px solid var(--reward); }
+    .quadrant.q2 .mx-card { background: var(--action-dim);   border: 1px solid var(--action); }
+    .quadrant.q3 .mx-card { background: var(--overtime-dim); border: 1px solid var(--overtime); }
+    .quadrant.q4 .mx-card { background: var(--bg-input);      border: 1px solid var(--border); }
+
+    /* 卡片內容：截止日期（小字）+ 任務名稱（粗） */
+    .mc-deadline-label {
+      font-size: 0.62rem;
+      font-family: var(--font-mono);
+      color: var(--text-label);
+      line-height: 1.4;
+      margin-bottom: 3px;
+      min-height: 1em;
+    }
+    .mc-name {
+      font-size: 0.83rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1.3;
+      word-break: break-word;
+    }
+    .mc-sub {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      margin-top: 4px;
+      font-size: 0.64rem;
+      font-family: var(--font-mono);
+      color: var(--text-label);
+    }
+
+    /* 完成圓鈕（右上角） */
+    .mc-check-btn {
+      position: absolute;
+      top: 5px; right: 5px;
+      width: 15px; height: 15px;
+      border: 1.5px solid var(--border);
+      border-radius: 50%;
+      background: transparent;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.55rem; color: transparent;
       transition: all var(--transition);
+      padding: 0;
     }
-    .mc-check:hover { border-color: var(--rest); }
-    .mx-card.is-done .mc-check { background: var(--rest); border-color: var(--rest); }
-    .mc-name { font-size: 0.82rem; font-weight: 600; color: var(--text-primary); flex: 1; line-height: 1.3; }
-    .mc-drag { color: var(--text-label); font-size: 0.8rem; cursor: grab; flex-shrink: 0; }
+    .mx-card:hover .mc-check-btn { border-color: var(--rest); }
+    .mx-card.is-done .mc-check-btn { background: var(--rest); border-color: var(--rest); color: #fff; }
 
-    .mc-foot { display: flex; align-items: center; gap: 6px; margin-top: 5px; flex-wrap: wrap; }
-    .mc-time { font-size: 0.67rem; font-family: var(--font-mono); color: var(--text-label); }
     .mc-run-dot {
-      width: 5px; height: 5px; border-radius: 50%; background: var(--action); flex-shrink: 0;
+      display: inline-block;
+      width: 5px; height: 5px; border-radius: 50%; background: var(--action);
       will-change: transform, opacity;
       animation: blink 1.2s ease-in-out infinite;
     }
@@ -411,16 +463,17 @@
     }
 
     .mx-empty {
-      text-align: center; padding: 18px 10px;
-      color: var(--text-label); font-size: 0.74rem;
-      border: 1px dashed var(--border); border-radius: var(--radius-sm);
+      font-size: 0.7rem;
+      color: var(--text-label);
+      opacity: 0.4;
+      pointer-events: none;
     }
 
     /* ── RWD ── */
     @media (max-width: 620px) {
       .summary-bar { grid-template-columns: repeat(2, 1fr); }
-      .matrix-grid { grid-template-columns: 1fr; }
-      .matrix-axis { grid-template-columns: 1fr; }
+      .matrix-cross { height: 460px; }
+      .mx-card { width: 108px; }
     }
   </style>
 </head>
@@ -504,12 +557,16 @@
   <!-- ══ MATRIX VIEW ══ -->
   <div id="viewMatrix" class="view-pane" hidden>
 
-    <div class="matrix-wrap">
-      <div class="matrix-axis">
-        <div class="mx-axis-label">← 緊急</div>
-        <div class="mx-axis-label">不緊急 →</div>
-      </div>
-      <div class="matrix-grid" id="matrixGrid"></div>
+    <div class="matrix-cross" id="matrixCross">
+      <!-- 十字線 -->
+      <div class="mx-line-v"></div>
+      <div class="mx-line-h"></div>
+      <!-- 軸標籤 -->
+      <span class="mx-label top">重要</span>
+      <span class="mx-label bottom">不重要</span>
+      <span class="mx-label left">不緊急</span>
+      <span class="mx-label right">緊急</span>
+      <!-- 象限由 JS 產生 -->
     </div>
 
     <div id="completedSecMx" class="completed-section"></div>
