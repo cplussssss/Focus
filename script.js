@@ -983,8 +983,6 @@ function loadFromStorage() {
    ============================================================ */
 function initEventListeners() {
   EL.btnDemoLogin.addEventListener('click', handleDemoLogin);
-  // 登入按鈕
-  EL.btnLoginHeader.addEventListener('click', () => showModal(EL.modalLogin));
 
   // 帳號設定按鈕
   EL.btnAccount.addEventListener('click', openAccountModal);
