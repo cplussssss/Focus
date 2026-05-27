@@ -53,15 +53,32 @@ function fmtMin(min) {
 }
 
 /** 回傳 { text, cls } 或 null */
+/** 列表模式：中文自然語言格式 */
 function fmtDeadline(dateStr) {
   if (!dateStr) return null;
   const today   = new Date(todayStr());
   const due     = new Date(dateStr);
   const diffDay = Math.round((due - today) / 86400000);
-  if (diffDay < 0)  return { text: `逾期 ${-diffDay} 天`, cls: 'dl-over' };
-  if (diffDay === 0) return { text: '今天截止',           cls: 'dl-today' };
-  if (diffDay <= 2)  return { text: `還有 ${diffDay} 天`, cls: 'dl-soon' };
-  return { text: `${due.getMonth()+1}/${due.getDate()}`,   cls: 'dl-ok' };
+  if (diffDay < 0)   return { text: `逾期 ${-diffDay} 天`, cls: 'dl-over' };
+  if (diffDay === 0) return { text: '今天截止',             cls: 'dl-today' };
+  if (diffDay <= 2)  return { text: `還有 ${diffDay} 天`,   cls: 'dl-soon' };
+  return { text: `${due.getMonth()+1}/${due.getDate()}`,    cls: 'dl-ok' };
+}
+
+/** 四象限卡片格式："M/D  D: ±N" */
+function fmtDeadlineMx(dateStr) {
+  if (!dateStr) return null;
+  const today   = new Date(todayStr());
+  const due     = new Date(dateStr);
+  const diffDay = Math.round((due - today) / 86400000);
+  const label   = `${due.getMonth()+1}/${due.getDate()}  D: ${diffDay}`;
+
+  let cls = 'dl-ok';
+  if (diffDay < 0)        cls = 'dl-over';
+  else if (diffDay === 0) cls = 'dl-today';
+  else if (diffDay <= 2)  cls = 'dl-soon';
+
+  return { text: label, cls };
 }
 
 function escHtml(str) {
@@ -367,26 +384,28 @@ function renderMatrix() {
 
 function buildMatrixCard(g) {
   const isRunning = (activeId === g.id);
-  const dl        = fmtDeadline(g.deadline);
+  const dl        = fmtDeadlineMx(g.deadline);   // 矩陣專用格式
 
   const div = document.createElement('div');
   div.className = `mx-card${isRunning ? ' is-running' : ''}${g.done ? ' is-done' : ''}`;
   div.dataset.id = g.id;
   div.draggable  = !g.done;
 
-  // 截止日期文字（上方小字）
-  const dlText = dl ? dl.text : (g.deadline ? g.deadline : '');
+  // 截止日期列（無截止日期時顯示空白佔位，維持卡片高度一致）
+  const dlCls  = dl ? dl.cls : 'dl-none';
+  const dlText = dl ? escHtml(dl.text) : '&nbsp;';
 
   // 計時資訊（若有）
-  const timerHtml = (isRunning || g.actualSec > 0) ? `
-    <div class="mc-sub">
-      ${isRunning ? '<span class="mc-run-dot"></span>' : ''}
-      <span data-timer="${g.id}">${fmtSec(g.actualSec || 0)}</span>
-    </div>` : `<span data-timer="${g.id}" hidden>${fmtSec(g.actualSec || 0)}</span>`;
+  const timerHtml = (isRunning || g.actualSec > 0)
+    ? `<div class="mc-sub">
+         ${isRunning ? '<span class="mc-run-dot"></span>' : ''}
+         <span data-timer="${g.id}">${fmtSec(g.actualSec || 0)}</span>
+       </div>`
+    : `<span data-timer="${g.id}" hidden></span>`;
 
   div.innerHTML = `
     <button type="button" class="mc-check-btn" title="${g.done ? '取消完成' : '標記完成'}">${g.done ? '✓' : ''}</button>
-    <div class="mc-deadline-label">${escHtml(dlText)}</div>
+    <div class="mc-dl ${dlCls}">${dlText}</div>
     <div class="mc-name">${escHtml(g.name)}</div>
     ${timerHtml}`;
 

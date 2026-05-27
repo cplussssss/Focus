@@ -362,16 +362,16 @@
     .mx-label.left   { left: 10px;   top: 50%;   transform: translateY(-50%); }
     .mx-label.right  { right: 10px;  top: 50%;   transform: translateY(-50%); }
 
-    /* 象限區域（放置卡片的 drop zone） */
+    /* 象限區域：2 欄 grid，超出可捲動 */
     .quadrant {
       position: absolute;
       z-index: 1;
-      padding: 32px 14px 14px;
+      padding: 28px 8px 8px;
       overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 7px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-content: start;
+      gap: 6px;
       transition: background var(--transition);
     }
     .quadrant.q2 { top: 0;    left: 0;   width: 50%; height: 50%; } /* 不緊急+重要   */
@@ -383,9 +383,10 @@
 
     /* ── 矩陣任務卡片 ── */
     .mx-card {
-      width: 128px;
+      width: 100%;
+      min-width: 0;
       border-radius: var(--radius-md);
-      padding: 8px 12px 10px;
+      padding: 7px 10px 9px;
       text-align: center;
       cursor: grab;
       -webkit-user-select: none;
@@ -395,41 +396,50 @@
     }
     .mx-card:hover {
       transform: translateY(-2px);
-      box-shadow: 0 6px 18px rgba(0,0,0,.35);
+      box-shadow: 0 6px 18px rgba(0,0,0,.3);
     }
     .mx-card.dragging  { opacity: 0.25; cursor: grabbing; transform: none; }
     .mx-card.is-done   { opacity: 0.45; }
     .mx-card.is-done .mc-name { text-decoration: line-through; }
 
-    /* 各象限卡片配色（沿用設計系統變數）*/
+    /* 各象限卡片配色 */
     .quadrant.q1 .mx-card { background: var(--reward-dim);   border: 1px solid var(--reward); }
     .quadrant.q2 .mx-card { background: var(--action-dim);   border: 1px solid var(--action); }
     .quadrant.q3 .mx-card { background: var(--overtime-dim); border: 1px solid var(--overtime); }
     .quadrant.q4 .mx-card { background: var(--bg-input);      border: 1px solid var(--border); }
 
-    /* 卡片內容：截止日期（小字）+ 任務名稱（粗） */
-    .mc-deadline-label {
-      font-size: 0.62rem;
+    /* 截止日期（上方小字） */
+    .mc-dl {
+      font-size: 0.6rem;
       font-family: var(--font-mono);
-      color: var(--text-label);
       line-height: 1.4;
       margin-bottom: 3px;
-      min-height: 1em;
+      min-height: 0.9em;
+      letter-spacing: 0.03em;
     }
+    .mc-dl.dl-over  { color: #ef4444; }
+    .mc-dl.dl-today { color: var(--reward); }
+    .mc-dl.dl-soon  { color: var(--overtime); }
+    .mc-dl.dl-ok    { color: var(--text-label); }
+    .mc-dl.dl-none  { color: transparent; } /* 無截止日期：佔位但不顯示 */
+
+    /* 任務名稱（主體粗體） */
     .mc-name {
-      font-size: 0.83rem;
+      font-size: 0.8rem;
       font-weight: 700;
       color: var(--text-primary);
       line-height: 1.3;
       word-break: break-word;
     }
+
+    /* 計時資訊 */
     .mc-sub {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 5px;
+      gap: 4px;
       margin-top: 4px;
-      font-size: 0.64rem;
+      font-size: 0.62rem;
       font-family: var(--font-mono);
       color: var(--text-label);
     }
@@ -438,13 +448,13 @@
     .mc-check-btn {
       position: absolute;
       top: 5px; right: 5px;
-      width: 15px; height: 15px;
+      width: 14px; height: 14px;
       border: 1.5px solid var(--border);
       border-radius: 50%;
       background: transparent;
       cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      font-size: 0.55rem; color: transparent;
+      font-size: 0.5rem; color: transparent;
       transition: all var(--transition);
       padding: 0;
     }
@@ -462,18 +472,22 @@
       50%     { transform: scale(0.5); opacity: .4; }
     }
 
+    /* 空象限提示：橫跨兩欄 */
     .mx-empty {
-      font-size: 0.7rem;
+      grid-column: 1 / -1;
+      font-size: 0.69rem;
       color: var(--text-label);
       opacity: 0.4;
       pointer-events: none;
+      text-align: center;
+      padding: 8px 0;
     }
 
     /* ── RWD ── */
     @media (max-width: 620px) {
       .summary-bar { grid-template-columns: repeat(2, 1fr); }
       .matrix-cross { height: 460px; }
-      .mx-card { width: 108px; }
+      .quadrant { grid-template-columns: 1fr; }
     }
   </style>
 </head>
