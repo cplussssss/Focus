@@ -329,7 +329,8 @@ body {
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
-  width: 160px;
+  min-width: 150px;
+  width: max-content;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
@@ -341,16 +342,22 @@ body {
 }
 
 .settings-item {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
   width: 100%;
   text-align: left;
   padding: 6px 10px;
-  border-radius: var(--radius-sm);
+  gap: 8px;
+  border-radius: 8px;
   border: 1px solid transparent;
   background: var(--bg-input);
   color: var(--text-primary);
   font-size: 0.92rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.12s;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .settings-item.btn-profile-page,
@@ -364,9 +371,10 @@ body {
 }
 
 .settings-item.btn-changelog-link {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: space-between;
+  width: 100%;
   text-decoration: none;
 }
 
