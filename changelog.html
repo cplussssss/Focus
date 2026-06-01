@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📓</text></svg>" />
+  <title>開發日記 — 番茄</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+  <style>
+    .cl-layout {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 28px 20px 80px;
+    }
+
+    .cl-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+    .cl-header h1 { font-size: 1.4rem; margin: 0; }
+    .cl-back {
+      margin-left: auto;
+      font-size: .82rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      padding: 4px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      transition: background .15s;
+    }
+    .cl-back:hover { background: var(--hover-bg); }
+
+    /* Markdown 內容樣式 */
+    .cl-body { font-size: .9rem; line-height: 1.75; color: var(--text); }
+
+    .cl-body h1 { font-size: 1.3rem; margin: 0 0 6px; }
+    .cl-body h2 {
+      font-size: 1rem;
+      margin: 32px 0 10px;
+      padding: 10px 14px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: 6px;
+      font-family: var(--font-mono);
+    }
+    .cl-body h2:first-of-type { margin-top: 0; }
+
+    .cl-body p  { margin: 0 0 10px; color: var(--text-muted); }
+    .cl-body ul { margin: 0 0 8px; padding-left: 20px; }
+    .cl-body li { margin-bottom: 5px; color: var(--text); }
+    .cl-body strong { color: var(--text); }
+    .cl-body hr { border: none; border-top: 1px solid var(--border); margin: 4px 0 0; }
+    .cl-body blockquote {
+      margin: 10px 0;
+      padding: 8px 14px;
+      border-left: 3px solid var(--border);
+      color: var(--text-muted);
+      font-size: .84rem;
+    }
+    .cl-body code {
+      font-family: var(--font-mono);
+      font-size: .82rem;
+      background: var(--hover-bg);
+      padding: 1px 5px;
+      border-radius: 3px;
+    }
+
+    .cl-loading {
+      color: var(--text-muted);
+      font-size: .88rem;
+      padding: 20px 0;
+    }
+    .cl-error {
+      color: #e85d3a;
+      font-size: .88rem;
+      padding: 20px 0;
+    }
+  </style>
+</head>
+<body>
+<div class="cl-layout">
+
+  <header class="cl-header">
+    <span style="font-size:1.6rem">📓</span>
+    <h1>開發日記</h1>
+    <a href="index.html" class="cl-back">← 回番茄鐘</a>
+  </header>
+
+  <div class="cl-body" id="clBody">
+    <p class="cl-loading">載入中…</p>
+  </div>
+
+</div>
+
+<script>
+  // 固定淺色，標記已讀
+  (function () {
+    document.documentElement.setAttribute('data-theme', 'light');
+
+    // 標記已讀：版本號要跟 index.html 裡的 LATEST_VER 一致
+    var LATEST = 'v0.3';
+    localStorage.setItem('cl-seen', LATEST);
+  })();
+
+  // 讀取並渲染 changelog.md
+  fetch('changelog.md')
+    .then(res => {
+      if (!res.ok) throw new Error('載入失敗');
+      return res.text();
+    })
+    .then(md => {
+      document.getElementById('clBody').innerHTML = marked.parse(md);
+    })
+    .catch(err => {
+      document.getElementById('clBody').innerHTML =
+        `<p class="cl-error">⚠ 無法載入內容：${err.message}</p>`;
+    });
+</script>
+</body>
+</html>

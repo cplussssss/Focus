@@ -249,26 +249,15 @@ function resetForm() {
 }
 
 function startEdit(id) {
-  const g = goals.find(item => item.id === id);
-  if (!g) return;
-
-  document.getElementById('fName').value = g.name;
-  document.getElementById('fTime').value = g.estMin || '';
-  document.getElementById('fDeadline').value = g.deadline || '';
-  document.getElementById('fNote').value = g.note || '';
-  document.getElementById('fUrgent').classList.toggle('on', !!g.urgent);
-  document.getElementById('fImportant').classList.toggle('on', !!g.important);
-
   editingId = id;
-  const btn = document.getElementById('btnAdd');
-  btn.textContent = '儲存修改';
-  btn.classList.add('editing');
-  document.getElementById('btnCancelEdit').hidden = false;
-  document.getElementById('fName').focus();
+  render();
 }
 
 function cancelEdit() {
-  resetForm();
+  if (editingId) {
+    editingId = null;
+    render();
+  }
 }
 
 function addGoal() {
@@ -343,6 +332,7 @@ function renderList() {
   const active = goals.filter(g => !g.done);
 
   list.innerHTML = '';
+  list.classList.toggle('editing-active', !!editingId);
   if (active.length === 0) {
     list.innerHTML = `<div class="empty-hint"><div class="ei">📭</div>還沒有進行中的目標，從上方新增吧！</div>`;
   } else {
@@ -369,6 +359,7 @@ function renderList() {
 }
 
 function buildListCard(g) {
+  const isEditing = (g.id === editingId);
   const isRunning = (activeId === g.id);
   const actualSec = g.actualSec || 0;
   const estSec = (g.estMin || 0) * 60;
@@ -378,56 +369,118 @@ function buildListCard(g) {
   const dl = fmtDeadline(g.deadline);
 
   const div = document.createElement('div');
-  div.className = `goal-card${isRunning ? ' is-running' : ''}${g.done ? ' is-done' : ''}`;
+  div.className = `goal-card${isRunning ? ' is-running' : ''}${g.done ? ' is-done' : ''}${isEditing ? ' editing' : ''}`;
   div.dataset.id = g.id;
   div.dataset.q = q;
 
-  div.innerHTML = `
-    <button type="button" class="btn-edit" data-action="edit" title="編輯">✎</button>
-    <button type="button" class="btn-del" data-action="delete" title="刪除">✕</button>
-    <div class="goal-top">
-      <div class="goal-check" data-action="toggle">${g.done ? '✓' : ''}</div>
-      <div style="flex:1;min-width:0">
-        <div class="goal-name">${escHtml(g.name)}</div>
-        <div class="goal-meta">
-          <span class="q-badge ${q}">${qNames[q]}</span>
-          ${g.estMin ? `<span style="font-size:.7rem;color:var(--text-muted);font-family:var(--font-mono)">預計 ${fmtMin(g.estMin)}</span>` : ''}
-          ${dl ? `<span class="dl-tag ${dl.cls}">📅 ${dl.text}</span>` : ''}
+  if (isEditing) {
+    div.innerHTML = `
+      <div class="edit-card-inner">
+        <div class="edit-row">
+          <input type="text" class="edit-name" value="${escHtml(g.name)}" placeholder="目標名稱" />
         </div>
-      </div>
-    </div>
-    ${g.note ? `<div class="goal-note">${escHtml(g.note)}</div>` : ''}
-    <div class="goal-timer-row">
-      <div class="timer-sm" data-timer="${g.id}">${fmtSec(actualSec)}</div>
-      <div class="time-info">
-        ${g.estMin ? `<div class="tb"><span class="tb-l">預計</span><span class="tb-v">${fmtMin(g.estMin)}</span></div>` : ''}
-        <div class="tb">
-          <span class="tb-l">實際</span>
-          <span class="tb-v${isOver ? ' over' : ''}">${fmtSec(actualSec)}</span>
+        <div class="edit-row edit-row--compact">
+          <input type="number" class="edit-estMin" min="1" value="${g.estMin || ''}" placeholder="預計（分）" />
+          <input type="date" class="edit-deadline" value="${g.deadline || ''}" />
         </div>
-      </div>
-      <div class="timer-btns">
-        ${!g.done && !isRunning
-      ? `<button type="button" class="btn-t start" data-action="start">▶ 開始</button>` : ''}
-        ${isRunning
-      ? `<button type="button" class="btn-t pause" data-action="pause">⏸ 暫停</button>` : ''}
-        ${(isRunning || (actualSec > 0 && !g.done))
-      ? `<button type="button" class="btn-t stop"  data-action="stop">✓ 完成</button>` : ''}
-      </div>
-    </div>`;
+        <div class="edit-row edit-row--compact">
+          <button type="button" class="toggle-btn edit-urgent ${g.urgent ? 'on' : ''}" data-action="toggle-urgent">⚡ 緊急</button>
+          <button type="button" class="toggle-btn edit-important ${g.important ? 'on' : ''}" data-action="toggle-important">⭐ 重要</button>
+          <input type="text" class="edit-note" value="${escHtml(g.note || '')}" placeholder="備註（可省略）" />
+        </div>
+        <div class="edit-actions">
+          <button type="button" class="btn btn-primary" data-action="save">儲存</button>
+          <button type="button" class="btn btn-secondary" data-action="cancel">取消</button>
+        </div>
+      </div>`;
 
-  div.addEventListener('click', e => {
-    const action = e.target.closest('[data-action]')?.dataset.action;
-    const id = div.dataset.id;
-    if (action === 'start') startTimer(id);
-    if (action === 'pause') pauseTimer(id);
-    if (action === 'stop') stopTimer(id);
-    if (action === 'toggle') toggleDone(id);
-    if (action === 'edit') startEdit(id);
-    if (action === 'delete') deleteGoal(id);
-  });
+    div.addEventListener('click', e => {
+      const action = e.target.closest('[data-action]')?.dataset.action;
+      if (!action) return;
+      const id = div.dataset.id;
+      if (action === 'toggle-urgent' || action === 'toggle-important') {
+        const btn = e.target.closest('button');
+        if (btn) btn.classList.toggle('on');
+        return;
+      }
+      if (action === 'save') saveCardEdit(id, div);
+      if (action === 'cancel') cancelCardEdit();
+    });
+  } else {
+    div.innerHTML = `
+      <button type="button" class="btn-edit" data-action="edit" title="編輯">✎</button>
+      <button type="button" class="btn-del" data-action="delete" title="刪除">✕</button>
+      <div class="goal-top">
+        <div class="goal-check" data-action="toggle">${g.done ? '✓' : ''}</div>
+        <div style="flex:1;min-width:0">
+          <div class="goal-name">${escHtml(g.name)}</div>
+          <div class="goal-meta">
+            <span class="q-badge ${q}">${qNames[q]}</span>
+            ${g.estMin ? `<span style="font-size:.7rem;color:var(--text-muted);font-family:var(--font-mono)">預計 ${fmtMin(g.estMin)}</span>` : ''}
+            ${dl ? `<span class="dl-tag ${dl.cls}">📅 ${dl.text}</span>` : ''}
+          </div>
+        </div>
+      </div>
+      ${g.note ? `<div class="goal-note">${escHtml(g.note)}</div>` : ''}
+      <div class="goal-timer-row">
+        <div class="timer-sm" data-timer="${g.id}">${fmtSec(actualSec)}</div>
+        <div class="time-info">
+          ${g.estMin ? `<div class="tb"><span class="tb-l">預計</span><span class="tb-v">${fmtMin(g.estMin)}</span></div>` : ''}
+          <div class="tb">
+            <span class="tb-l">實際</span>
+            <span class="tb-v${isOver ? ' over' : ''}">${fmtSec(actualSec)}</span>
+          </div>
+        </div>
+        <div class="timer-btns">
+          ${!g.done && !isRunning
+        ? `<button type="button" class="btn-t start" data-action="start">▶ 開始</button>` : ''}
+          ${isRunning
+        ? `<button type="button" class="btn-t pause" data-action="pause">⏸ 暫停</button>` : ''}
+          ${(isRunning || (actualSec > 0 && !g.done))
+        ? `<button type="button" class="btn-t stop"  data-action="stop">✓ 完成</button>` : ''}
+        </div>
+      </div>`;
+
+    div.addEventListener('click', e => {
+      const action = e.target.closest('[data-action]')?.dataset.action;
+      const id = div.dataset.id;
+      if (action === 'start') startTimer(id);
+      if (action === 'pause') pauseTimer(id);
+      if (action === 'stop') stopTimer(id);
+      if (action === 'toggle') toggleDone(id);
+      if (action === 'edit') startEdit(id);
+      if (action === 'delete') deleteGoal(id);
+    });
+  }
 
   return div;
+}
+
+function saveCardEdit(id, container) {
+  const g = goals.find(item => item.id === id);
+  if (!g) return;
+  const name = container.querySelector('.edit-name').value.trim();
+  if (!name) return;
+  const estMin = parseInt(container.querySelector('.edit-estMin').value) || 0;
+  const deadline = container.querySelector('.edit-deadline').value || null;
+  const note = container.querySelector('.edit-note').value.trim();
+  const urgent = container.querySelector('.edit-urgent').classList.contains('on');
+  const important = container.querySelector('.edit-important').classList.contains('on');
+
+  g.name = name;
+  g.estMin = estMin;
+  g.deadline = deadline;
+  g.note = note;
+  g.urgent = urgent;
+  g.important = important;
+
+  editingId = null;
+  scheduleSave(); render();
+}
+
+function cancelCardEdit() {
+  editingId = null;
+  render();
 }
 
 // ── 四象限模式 ────────────────────────────────────────────────

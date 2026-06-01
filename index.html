@@ -16,6 +16,13 @@
 
 <body>
 
+<!-- 更新 banner（有新版本時自動顯示，關掉後不再出現） -->
+<div id="updateBanner" class="update-banner" hidden>
+  <span id="updateBannerText"></span>
+  <a href="changelog.html" class="ub-link">查看詳情</a>
+  <button type="button" class="ub-close" id="btnCloseBanner" title="關閉">✕</button>
+</div>
+
   <div class="app-layout">
 
     <!-- ══ 左欄：計時器 + 輸入區 ══ -->
@@ -29,6 +36,10 @@
           </div>
           <div class="today-link-wrapper">
             <a href="today.html" class="btn-today-link" title="前往今日計畫">今日計畫</a>
+            <a href="changelog.html" class="btn-changelog-link" id="btnChangelog" title="開發日記">
+              📓
+              <span class="cl-dot" id="clDot" hidden></span>
+            </a>
           </div>
         </div>
         <span class="sync-state" id="syncState"></span>
@@ -466,6 +477,7 @@
 
   <script>
     (function () {
+      // ── 主題 ──
       var btn = document.getElementById('btnThemeToggle');
       var saved = localStorage.getItem('theme') || 'dark';
       if (saved === 'light') {
@@ -484,6 +496,37 @@
           localStorage.setItem('theme', 'light');
         }
       });
+
+      // ── 更新提醒 ──
+      // ★ 每次發布新版本，只需改這兩行 ★
+      var LATEST_VER  = 'v0.3';
+      var LATEST_DESC = '今日計畫現在支援跨裝置同步，並新增開發日記！';
+
+      var seen = localStorage.getItem('cl-seen');
+
+      // 紅點：沒看過最新版就顯示
+      var dot = document.getElementById('clDot');
+      if (dot && seen !== LATEST_VER) dot.hidden = false;
+
+      // Banner：沒關過這個版本的 banner 才顯示
+      var bannerDismissed = localStorage.getItem('cl-banner-dismissed');
+      if (bannerDismissed !== LATEST_VER) {
+        var banner = document.getElementById('updateBanner');
+        var bannerText = document.getElementById('updateBannerText');
+        if (banner && bannerText) {
+          bannerText.textContent = '🆕 ' + LATEST_VER + '：' + LATEST_DESC;
+          banner.hidden = false;
+        }
+      }
+
+      // 關閉 banner
+      var closeBtn = document.getElementById('btnCloseBanner');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', function () {
+          document.getElementById('updateBanner').hidden = true;
+          localStorage.setItem('cl-banner-dismissed', LATEST_VER);
+        });
+      }
     })();
   </script>
   <script src="script.js"></script>

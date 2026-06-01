@@ -414,6 +414,123 @@
       margin-bottom: 8px;
     }
 
+    .goal-card.editing {
+      border-color: var(--action);
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, .24);
+      background: rgba(56, 189, 248, .08);
+      transform: scale(1.01);
+    }
+
+    .goals-list.editing-active .goal-card:not(.editing) {
+      opacity: 0.35;
+      filter: grayscale(0.6) blur(0.1px);
+      pointer-events: none;
+    }
+
+    .edit-card-inner {
+      display: grid;
+      gap: 10px;
+    }
+
+    .edit-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .edit-row--compact {
+      align-items: center;
+    }
+
+    .edit-row input[type="text"],
+    .edit-row input[type="number"],
+    .edit-row input[type="date"] {
+      width: 100%;
+      min-width: 0;
+      padding: 9px 10px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--bg-input);
+      color: var(--text-primary);
+      font-family: var(--font-ui);
+      font-size: 0.92rem;
+      outline: none;
+      transition: border-color var(--transition);
+    }
+
+    .edit-row input[type="text"]::placeholder,
+    .edit-row input[type="number"]::placeholder {
+      color: var(--text-label);
+    }
+
+    .edit-row input:focus {
+      border-color: var(--action);
+    }
+
+    .edit-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .edit-actions .btn {
+      flex: 1;
+    }
+
+    .btn-edit {
+      position: absolute;
+      top: 11px;
+      right: 41px;
+      width: 19px;
+      height: 19px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-label);
+      font-size: 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      opacity: 0;
+      transition: all var(--transition);
+    }
+
+    .btn-edit:hover {
+      background: rgba(59, 130, 246, .15);
+      border-color: rgba(59, 130, 246, .35);
+      color: var(--action);
+    }
+
+    .goal-card:hover .btn-edit,
+    .goal-card:hover .btn-del {
+      opacity: 1;
+    }
+
+    .btn-del {
+      position: absolute;
+      top: 11px;
+      right: 11px;
+      width: 19px;
+      height: 19px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-label);
+      font-size: 0.6rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all var(--transition);
+    }
+
+    .btn-del:hover {
+      background: rgba(239, 68, 68, .15);
+      border-color: rgba(239, 68, 68, .5);
+      color: #ef4444;
+    }
+
     /* Timer row */
     .goal-timer-row {
       display: flex;
