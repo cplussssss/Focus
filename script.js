@@ -149,12 +149,12 @@ function initElements() {
     btnCancelLogin: document.getElementById('btnCancelLogin'),
     btnMyRecords: document.getElementById('btnMyRecords'),  // ★ 新增
     btnProfilePage: document.getElementById('btnProfilePage'),
-    btnShareLink: document.getElementById('btnShareLink'),
     userBadge: document.getElementById('userBadge'),
     btnLogoutMenu: document.getElementById('btnLogoutMenu'),
     btnSettings: document.getElementById('btnSettings'),
     settingsPopup: document.getElementById('settingsPopup'),
     btnThemeToggle: document.getElementById('btnThemeToggle'),
+    btnAccountName: document.getElementById('btnAccountName'),
 
     // 帳號設定 Modal
     modalAccount: document.getElementById('modalAccount'),
@@ -1124,7 +1124,7 @@ function initEventListeners() {
   // 登入按鈕（header）
   EL.btnLoginHeader.addEventListener('click', () => showModal(EL.modalLogin));
   if (EL.btnProfilePage) EL.btnProfilePage.addEventListener('click', openPublicProfile);
-  if (EL.btnShareLink) EL.btnShareLink.addEventListener('click', openAccountModal);
+  if (EL.btnAccountName) EL.btnAccountName.addEventListener('click', handleAccountNameClick);
   if (EL.userBadge) EL.userBadge.addEventListener('click', openAccountModal);
   if (EL.btnLogoutMenu) EL.btnLogoutMenu.addEventListener('click', async () => {
     try {
@@ -1169,6 +1169,7 @@ function initEventListeners() {
         EL.settingsPopup.setAttribute('aria-hidden', 'false');
         EL.settingsPopup.hidden = false;
       }
+      if (EL.btnAccountName) refreshSettingsAccountName();
       e.stopPropagation();
     });
 
@@ -1277,6 +1278,8 @@ function initFirebase() {
           EL.userBadge.hidden = false;
         }
         if (EL.btnLoginHeader) EL.btnLoginHeader.hidden = true;
+        if (EL.btnLogoutMenu) EL.btnLogoutMenu.hidden = false;
+        if (EL.btnAccountName) refreshSettingsAccountName();
 
         await firestoreDb.collection('users').doc(user.uid).set({
           email: user.email,
@@ -1296,6 +1299,8 @@ function initFirebase() {
         if (EL.btnAccount) EL.btnAccount.hidden = true;
         if (EL.userBadge) EL.userBadge.hidden = true;
         if (EL.btnLoginHeader) EL.btnLoginHeader.hidden = false;
+        if (EL.btnLogoutMenu) EL.btnLogoutMenu.hidden = true;
+        if (EL.btnAccountName) refreshSettingsAccountName();
         showModal(EL.modalLogin);   // ★ 未登入就強制顯示登入畫面
       }
     });
@@ -1424,6 +1429,23 @@ async function handleMyRecords() {
   if (!currentUser) return;
   const url = `${location.origin}${location.pathname.replace('index.html', '')}dashboard.html`;
   window.open(url, '_blank');
+}
+
+function refreshSettingsAccountName() {
+  if (!EL.btnAccountName) return;
+  const nameLabel = currentUser
+    ? (currentUser.displayName || currentUser.email || '帳號')
+    : '訪客';
+  EL.btnAccountName.textContent = `帳號名稱：${nameLabel}`;
+  EL.btnAccountName.title = currentUser ? '管理帳號設定' : '請先登入';
+}
+
+function handleAccountNameClick() {
+  if (currentUser) {
+    openAccountModal();
+  } else {
+    showModal(EL.modalLogin);
+  }
 }
 
 /* ── Firestore：從雲端載入紀錄合併到本機 ── */
