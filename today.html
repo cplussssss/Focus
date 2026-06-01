@@ -1,13 +1,22 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📋</text></svg>" />
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📋</text></svg>" />
   <title>今日計畫</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <link rel="stylesheet" href="style.css" />
   <style>
-    html, body { height: auto; overflow: auto; }
+    html,
+    body {
+      height: auto;
+      overflow: auto;
+    }
 
     .today-layout {
       max-width: 920px;
@@ -22,12 +31,17 @@
       gap: 10px;
       margin-bottom: 20px;
     }
+
     .today-header h1 {
       font-size: 1.25rem;
       font-weight: 700;
       flex: 1;
     }
-    .page-icon { font-size: 1.25rem; }
+
+    .page-icon {
+      font-size: 1.25rem;
+    }
+
     .today-date {
       font-size: 0.78rem;
       color: var(--text-muted);
@@ -41,6 +55,7 @@
       gap: 10px;
       margin-bottom: 18px;
     }
+
     .summary-card {
       background: var(--bg-card);
       border: 1px solid var(--border);
@@ -48,6 +63,7 @@
       padding: 12px 14px;
       text-align: center;
     }
+
     .s-value {
       font-size: 1.4rem;
       font-weight: 700;
@@ -56,9 +72,19 @@
       line-height: 1;
       margin-bottom: 3px;
     }
-    .s-value.accent { color: var(--action); }
-    .s-value.done   { color: var(--rest); }
-    .s-value.warn   { color: var(--overtime); }
+
+    .s-value.accent {
+      color: var(--action);
+    }
+
+    .s-value.done {
+      color: var(--rest);
+    }
+
+    .s-value.warn {
+      color: var(--overtime);
+    }
+
     .s-label {
       font-size: 0.68rem;
       color: var(--text-muted);
@@ -74,6 +100,7 @@
       padding-bottom: 14px;
       border-bottom: 1px solid var(--border);
     }
+
     .tab-btn {
       padding: 7px 18px;
       border-radius: var(--radius-sm);
@@ -86,8 +113,17 @@
       cursor: pointer;
       transition: all var(--transition);
     }
-    .tab-btn:hover { color: var(--text-primary); border-color: var(--text-muted); }
-    .tab-btn.active { background: var(--action); border-color: var(--action); color: #fff; }
+
+    .tab-btn:hover {
+      color: var(--text-primary);
+      border-color: var(--text-muted);
+    }
+
+    .tab-btn.active {
+      background: var(--action);
+      border-color: var(--action);
+      color: #fff;
+    }
 
     /* ── Add Form ── */
     .add-form-wrap {
@@ -97,6 +133,7 @@
       padding: 18px 20px;
       margin-bottom: 20px;
     }
+
     .add-form-wrap h2 {
       font-size: 0.78rem;
       font-weight: 600;
@@ -105,21 +142,36 @@
       letter-spacing: 0.07em;
       margin-bottom: 14px;
     }
+
     .form-row {
       display: flex;
       gap: 10px;
       margin-bottom: 10px;
       flex-wrap: wrap;
     }
+
     .form-field {
       display: flex;
       flex-direction: column;
       gap: 4px;
       min-width: 0;
     }
-    .form-field.f1 { flex: 1; min-width: 80px; }
-    .form-field.f2 { flex: 2; min-width: 120px; }
-    .form-field.f3 { flex: 3; min-width: 180px; }
+
+    .form-field.f1 {
+      flex: 1;
+      min-width: 80px;
+    }
+
+    .form-field.f2 {
+      flex: 2;
+      min-width: 120px;
+    }
+
+    .form-field.f3 {
+      flex: 3;
+      min-width: 180px;
+    }
+
     .form-field label {
       font-size: 0.67rem;
       color: var(--text-label);
@@ -127,6 +179,7 @@
       text-transform: uppercase;
       letter-spacing: 0.06em;
     }
+
     .form-field input {
       background: var(--bg-input);
       border: 1px solid var(--border);
@@ -139,11 +192,21 @@
       transition: border-color var(--transition);
       width: 100%;
     }
-    .form-field input:focus { border-color: var(--action); }
-    .form-field input[type="date"] { font-family: var(--font-mono); }
+
+    .form-field input:focus {
+      border-color: var(--action);
+    }
+
+    .form-field input[type="date"] {
+      font-family: var(--font-mono);
+    }
 
     /* 緊急/重要 toggles */
-    .toggle-group { display: flex; gap: 7px; }
+    .toggle-group {
+      display: flex;
+      gap: 7px;
+    }
+
     .toggle-btn {
       padding: 6px 14px;
       border-radius: 20px;
@@ -157,9 +220,22 @@
       transition: all var(--transition);
       white-space: nowrap;
     }
-    .toggle-btn:hover { border-color: var(--text-muted); }
-    #fUrgent.on    { background: var(--reward-dim);   border-color: var(--reward);   color: var(--reward); }
-    #fImportant.on { background: var(--action-dim);   border-color: var(--action);   color: var(--action); }
+
+    .toggle-btn:hover {
+      border-color: var(--text-muted);
+    }
+
+    #fUrgent.on {
+      background: var(--reward-dim);
+      border-color: var(--reward);
+      color: var(--reward);
+    }
+
+    #fImportant.on {
+      background: var(--action-dim);
+      border-color: var(--action);
+      color: var(--action);
+    }
 
     .btn-add {
       width: 100%;
@@ -175,10 +251,17 @@
       cursor: pointer;
       transition: opacity var(--transition);
     }
-    .btn-add:hover { opacity: 0.85; }
+
+    .btn-add:hover {
+      opacity: 0.85;
+    }
 
     /* ── Goal list card ── */
-    .goals-list { display: flex; flex-direction: column; gap: 10px; }
+    .goals-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
 
     .goal-card {
       background: var(--bg-card);
@@ -188,46 +271,111 @@
       position: relative;
       transition: border-color var(--transition), box-shadow var(--transition);
     }
+
     .goal-card.is-running {
       border-color: var(--action);
       box-shadow: 0 0 0 2px var(--action-dim);
     }
-    .goal-card.is-done { opacity: 0.58; }
-    .goal-card.is-done .goal-name { text-decoration: line-through; color: var(--text-muted); }
 
-    .goal-card[data-q="q1"] { border-left: 3px solid var(--reward); }
-    .goal-card[data-q="q2"] { border-left: 3px solid var(--action); }
-    .goal-card[data-q="q3"] { border-left: 3px solid var(--overtime); }
-    .goal-card[data-q="q4"] { border-left: 3px solid var(--text-label); }
+    .goal-card.is-done {
+      opacity: 0.58;
+    }
 
-    .goal-top { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+    .goal-card.is-done .goal-name {
+      text-decoration: line-through;
+      color: var(--text-muted);
+    }
+
+    .goal-card[data-q="q1"] {
+      border-left: 3px solid var(--reward);
+    }
+
+    .goal-card[data-q="q2"] {
+      border-left: 3px solid var(--action);
+    }
+
+    .goal-card[data-q="q3"] {
+      border-left: 3px solid var(--overtime);
+    }
+
+    .goal-card[data-q="q4"] {
+      border-left: 3px solid var(--text-label);
+    }
+
+    .goal-top {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
     .goal-check {
-      width: 17px; height: 17px;
+      width: 17px;
+      height: 17px;
       border: 2px solid var(--border);
       border-radius: 50%;
       cursor: pointer;
       flex-shrink: 0;
       margin-top: 2px;
-      display: flex; align-items: center; justify-content: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       font-size: 0.6rem;
       transition: all var(--transition);
     }
-    .goal-check:hover { border-color: var(--rest); }
-    .is-done .goal-check { background: var(--rest); border-color: var(--rest); color: #fff; }
 
-    .goal-name { font-size: 0.9rem; font-weight: 600; margin-bottom: 5px; }
-    .goal-meta { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+    .goal-check:hover {
+      border-color: var(--rest);
+    }
+
+    .is-done .goal-check {
+      background: var(--rest);
+      border-color: var(--rest);
+      color: #fff;
+    }
+
+    .goal-name {
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+
+    .goal-meta {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      flex-wrap: wrap;
+    }
 
     /* Quadrant badge */
     .q-badge {
-      font-size: 0.65rem; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 0.06em;
-      padding: 2px 7px; border-radius: 20px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 2px 7px;
+      border-radius: 20px;
     }
-    .q-badge.q1 { background: var(--reward-dim);  color: var(--reward); }
-    .q-badge.q2 { background: var(--action-dim);  color: var(--action); }
-    .q-badge.q3 { background: var(--overtime-dim); color: var(--overtime); }
-    .q-badge.q4 { background: rgba(107,114,128,.15); color: var(--text-label); }
+
+    .q-badge.q1 {
+      background: var(--reward-dim);
+      color: var(--reward);
+    }
+
+    .q-badge.q2 {
+      background: var(--action-dim);
+      color: var(--action);
+    }
+
+    .q-badge.q3 {
+      background: var(--overtime-dim);
+      color: var(--overtime);
+    }
+
+    .q-badge.q4 {
+      background: rgba(107, 114, 128, .15);
+      color: var(--text-label);
+    }
 
     /* Deadline tag */
     .dl-tag {
@@ -236,74 +384,245 @@
       padding: 2px 7px;
       border-radius: 20px;
     }
-    .dl-over  { background: rgba(239,68,68,.15);  color: #ef4444; }
-    .dl-today { background: var(--reward-dim);    color: var(--reward); }
-    .dl-soon  { background: var(--overtime-dim);  color: var(--overtime); }
-    .dl-ok    { background: var(--bg-input);       color: var(--text-muted); }
+
+    .dl-over {
+      background: rgba(239, 68, 68, .15);
+      color: #ef4444;
+    }
+
+    .dl-today {
+      background: var(--reward-dim);
+      color: var(--reward);
+    }
+
+    .dl-soon {
+      background: var(--overtime-dim);
+      color: var(--overtime);
+    }
+
+    .dl-ok {
+      background: var(--bg-input);
+      color: var(--text-muted);
+    }
 
     .goal-note {
-      font-size: 0.75rem; color: var(--text-label);
-      padding: 5px 9px; background: var(--bg-input);
-      border-radius: var(--radius-sm); margin-bottom: 8px;
+      font-size: 0.75rem;
+      color: var(--text-label);
+      padding: 5px 9px;
+      background: var(--bg-input);
+      border-radius: var(--radius-sm);
+      margin-bottom: 8px;
     }
 
     /* Timer row */
     .goal-timer-row {
-      display: flex; align-items: center; gap: 10px;
-      padding-top: 8px; border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
     }
-    .timer-sm {
-      font-family: var(--font-mono); font-size: 0.98rem; font-weight: 500; min-width: 54px;
-    }
-    .is-running .timer-sm { color: var(--action); }
-    .time-info { flex: 1; display: flex; gap: 12px; }
-    .tb { display: flex; flex-direction: column; }
-    .tb-l { font-size: 0.6rem; color: var(--text-label); text-transform: uppercase; }
-    .tb-v { font-family: var(--font-mono); font-size: 0.76rem; color: var(--text-muted); }
-    .tb-v.over { color: var(--overtime); }
 
-    .timer-btns { display: flex; gap: 5px; margin-left: auto; }
+    .timer-sm {
+      font-family: var(--font-mono);
+      font-size: 0.98rem;
+      font-weight: 500;
+      min-width: 54px;
+    }
+
+    .is-running .timer-sm {
+      color: var(--action);
+    }
+
+    .time-info {
+      flex: 1;
+      display: flex;
+      gap: 12px;
+    }
+
+    .tb {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .tb-l {
+      font-size: 0.6rem;
+      color: var(--text-label);
+      text-transform: uppercase;
+    }
+
+    .tb-v {
+      font-family: var(--font-mono);
+      font-size: 0.76rem;
+      color: var(--text-muted);
+    }
+
+    .tb-v.over {
+      color: var(--overtime);
+    }
+
+    .timer-btns {
+      display: flex;
+      gap: 5px;
+      margin-left: auto;
+    }
+
     .btn-t {
       padding: 5px 11px;
       border-radius: var(--radius-sm);
       border: 1px solid var(--border);
       background: var(--bg-input);
-      font-size: 0.74rem; font-weight: 600; font-family: var(--font-ui);
-      cursor: pointer; transition: all var(--transition);
+      font-size: 0.74rem;
+      font-weight: 600;
+      font-family: var(--font-ui);
+      cursor: pointer;
+      transition: all var(--transition);
     }
-    .btn-t.start { border-color: var(--action);   color: var(--action); }
-    .btn-t.start:hover { background: var(--action-dim); }
-    .btn-t.pause { border-color: var(--overtime);  color: var(--overtime); }
-    .btn-t.pause:hover { background: var(--overtime-dim); }
-    .btn-t.stop  { border-color: var(--rest);      color: var(--rest); }
-    .btn-t.stop:hover  { background: var(--rest-dim); }
+
+    .btn-t.start {
+      border-color: var(--action);
+      color: var(--action);
+    }
+
+    .btn-t.start:hover {
+      background: var(--action-dim);
+    }
+
+    .btn-t.pause {
+      border-color: var(--overtime);
+      color: var(--overtime);
+    }
+
+    .btn-t.pause:hover {
+      background: var(--overtime-dim);
+    }
+
+    .btn-t.stop {
+      border-color: var(--rest);
+      color: var(--rest);
+    }
+
+    .btn-t.stop:hover {
+      background: var(--rest-dim);
+    }
 
     .btn-del {
-      position: absolute; top: 11px; right: 11px;
-      width: 19px; height: 19px; border-radius: 50%;
-      border: 1px solid var(--border); background: transparent;
-      color: var(--text-label); font-size: 0.6rem; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      opacity: 0; transition: all var(--transition);
+      position: absolute;
+      top: 11px;
+      right: 11px;
+      width: 19px;
+      height: 19px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-label);
+      font-size: 0.6rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: all var(--transition);
     }
-    .goal-card:hover .btn-del { opacity: 1; }
-    .btn-del:hover { background: rgba(239,68,68,.15); border-color: rgba(239,68,68,.5); color: #ef4444; }
+
+    .goal-card:hover .btn-del,
+    .goal-card:hover .btn-edit {
+      opacity: 1;
+    }
+
+    .btn-edit {
+      position: absolute;
+      top: 11px;
+      right: 41px;
+      width: 19px;
+      height: 19px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-label);
+      font-size: 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      opacity: 0;
+      transition: all var(--transition);
+    }
+
+    .btn-edit:hover {
+      background: rgba(59, 130, 246, .15);
+      border-color: rgba(59, 130, 246, .35);
+      color: var(--action);
+    }
+
+    .goal-card:hover .btn-del {
+      opacity: 1;
+    }
+
+    .btn-del:hover {
+      background: rgba(239, 68, 68, .15);
+      border-color: rgba(239, 68, 68, .5);
+      color: #ef4444;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 6px;
+    }
+
+    .form-actions .btn-add {
+      flex: 1;
+    }
+
+    .btn-cancel-edit {
+      flex: 1;
+    }
 
     /* Empty hint */
-    .empty-hint { text-align: center; padding: 36px 20px; color: var(--text-label); font-size: 0.84rem; }
-    .empty-hint .ei { font-size: 2rem; margin-bottom: 8px; }
+    .empty-hint {
+      text-align: center;
+      padding: 36px 20px;
+      color: var(--text-label);
+      font-size: 0.84rem;
+    }
+
+    .empty-hint .ei {
+      font-size: 2rem;
+      margin-bottom: 8px;
+    }
 
     /* Completed section */
-    .completed-section { margin-top: 18px; }
-    .btn-completed {
-      width: 100%; padding: 8px 14px;
-      background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: var(--radius-md); color: var(--text-muted);
-      font-family: var(--font-ui); font-size: 0.8rem; font-weight: 600;
-      cursor: pointer; text-align: left; transition: all var(--transition);
+    .completed-section {
+      margin-top: 18px;
     }
-    .btn-completed:hover { border-color: var(--text-muted); color: var(--text-primary); }
-    .completed-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+
+    .btn-completed {
+      width: 100%;
+      padding: 8px 14px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      color: var(--text-muted);
+      font-family: var(--font-ui);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: left;
+      transition: all var(--transition);
+    }
+
+    .btn-completed:hover {
+      border-color: var(--text-muted);
+      color: var(--text-primary);
+    }
+
+    .completed-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 10px;
+    }
 
     /* ────────────────────────────────────────────
        MATRIX VIEW — 十字軸樣式
@@ -320,29 +639,72 @@
     }
 
     /* 十字線 */
-    .mx-line-v, .mx-line-h {
+    .mx-line-v,
+    .mx-line-h {
       position: absolute;
-      background: rgba(255,255,255,0.1);
+      background: rgba(255, 255, 255, 0.1);
       pointer-events: none;
       z-index: 2;
     }
-    [data-theme="light"] .mx-line-v,
-    [data-theme="light"] .mx-line-h { background: rgba(0,0,0,0.12); }
 
-    .mx-line-v { left: 50%; top: 0; bottom: 0; width: 1px; transform: translateX(-50%); }
-    .mx-line-h { top: 50%;  left: 0; right: 0; height: 1px; transform: translateY(-50%); }
+    [data-theme="light"] .mx-line-v,
+    [data-theme="light"] .mx-line-h {
+      background: rgba(0, 0, 0, 0.12);
+    }
+
+    .mx-line-v {
+      left: 50%;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      transform: translateX(-50%);
+    }
+
+    .mx-line-h {
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 1px;
+      transform: translateY(-50%);
+    }
 
     /* 箭頭 */
-    .mx-line-v::before, .mx-line-v::after,
-    .mx-line-h::before, .mx-line-h::after {
+    .mx-line-v::before,
+    .mx-line-v::after,
+    .mx-line-h::before,
+    .mx-line-h::after {
       content: '';
       position: absolute;
       border: 5px solid transparent;
     }
-    .mx-line-v::before  { top: 0;    left: 50%; transform: translateX(-50%); border-bottom-color: var(--text-label); }
-    .mx-line-v::after   { bottom: 0; left: 50%; transform: translateX(-50%); border-top-color:    var(--text-label); }
-    .mx-line-h::before  { left: 0;   top: 50%;  transform: translateY(-50%); border-right-color:  var(--text-label); }
-    .mx-line-h::after   { right: 0;  top: 50%;  transform: translateY(-50%); border-left-color:   var(--text-label); }
+
+    .mx-line-v::before {
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      border-bottom-color: var(--text-label);
+    }
+
+    .mx-line-v::after {
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      border-top-color: var(--text-label);
+    }
+
+    .mx-line-h::before {
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      border-right-color: var(--text-label);
+    }
+
+    .mx-line-h::after {
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      border-left-color: var(--text-label);
+    }
 
     /* 軸標籤 */
     .mx-label {
@@ -357,10 +719,30 @@
       padding: 2px 8px;
       border-radius: 20px;
     }
-    .mx-label.top    { top: 10px;    left: 50%;  transform: translateX(-50%); }
-    .mx-label.bottom { bottom: 10px; left: 50%;  transform: translateX(-50%); }
-    .mx-label.left   { left: 10px;   top: 50%;   transform: translateY(-50%); }
-    .mx-label.right  { right: 10px;  top: 50%;   transform: translateY(-50%); }
+
+    .mx-label.top {
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .mx-label.bottom {
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .mx-label.left {
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    .mx-label.right {
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
 
     /* 象限區域：2 欄 grid，超出可捲動 */
     .quadrant {
@@ -374,12 +756,43 @@
       gap: 6px;
       transition: background var(--transition);
     }
-    .quadrant.q2 { top: 0;    left: 0;   width: 50%; height: 50%; } /* 不緊急+重要   */
-    .quadrant.q1 { top: 0;    right: 0;  width: 50%; height: 50%; } /* 緊急+重要     */
-    .quadrant.q4 { bottom: 0; left: 0;   width: 50%; height: 50%; } /* 不緊急+不重要 */
-    .quadrant.q3 { bottom: 0; right: 0;  width: 50%; height: 50%; } /* 緊急+不重要   */
 
-    .quadrant.drag-over { background: var(--action-dim) !important; }
+    .quadrant.q2 {
+      top: 0;
+      left: 0;
+      width: 50%;
+      height: 50%;
+    }
+
+    /* 不緊急+重要   */
+    .quadrant.q1 {
+      top: 0;
+      right: 0;
+      width: 50%;
+      height: 50%;
+    }
+
+    /* 緊急+重要     */
+    .quadrant.q4 {
+      bottom: 0;
+      left: 0;
+      width: 50%;
+      height: 50%;
+    }
+
+    /* 不緊急+不重要 */
+    .quadrant.q3 {
+      bottom: 0;
+      right: 0;
+      width: 50%;
+      height: 50%;
+    }
+
+    /* 緊急+不重要   */
+
+    .quadrant.drag-over {
+      background: var(--action-dim) !important;
+    }
 
     /* ── 矩陣任務卡片 ── */
     .mx-card {
@@ -394,19 +807,46 @@
       transition: box-shadow var(--transition), opacity var(--transition), transform var(--transition);
       position: relative;
     }
+
     .mx-card:hover {
       transform: translateY(-2px);
-      box-shadow: 0 6px 18px rgba(0,0,0,.3);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, .3);
     }
-    .mx-card.dragging  { opacity: 0.25; cursor: grabbing; transform: none; }
-    .mx-card.is-done   { opacity: 0.45; }
-    .mx-card.is-done .mc-name { text-decoration: line-through; }
+
+    .mx-card.dragging {
+      opacity: 0.25;
+      cursor: grabbing;
+      transform: none;
+    }
+
+    .mx-card.is-done {
+      opacity: 0.45;
+    }
+
+    .mx-card.is-done .mc-name {
+      text-decoration: line-through;
+    }
 
     /* 各象限卡片配色 */
-    .quadrant.q1 .mx-card { background: var(--reward-dim);   border: 1px solid var(--reward); }
-    .quadrant.q2 .mx-card { background: var(--action-dim);   border: 1px solid var(--action); }
-    .quadrant.q3 .mx-card { background: var(--overtime-dim); border: 1px solid var(--overtime); }
-    .quadrant.q4 .mx-card { background: var(--bg-input);      border: 1px solid var(--border); }
+    .quadrant.q1 .mx-card {
+      background: var(--reward-dim);
+      border: 1px solid var(--reward);
+    }
+
+    .quadrant.q2 .mx-card {
+      background: var(--action-dim);
+      border: 1px solid var(--action);
+    }
+
+    .quadrant.q3 .mx-card {
+      background: var(--overtime-dim);
+      border: 1px solid var(--overtime);
+    }
+
+    .quadrant.q4 .mx-card {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+    }
 
     /* 截止日期（上方小字） */
     .mc-dl {
@@ -417,11 +857,28 @@
       min-height: 0.9em;
       letter-spacing: 0.03em;
     }
-    .mc-dl.dl-over  { color: #ef4444; }
-    .mc-dl.dl-today { color: var(--reward); }
-    .mc-dl.dl-soon  { color: var(--overtime); }
-    .mc-dl.dl-ok    { color: var(--text-label); }
-    .mc-dl.dl-none  { color: transparent; } /* 無截止日期：佔位但不顯示 */
+
+    .mc-dl.dl-over {
+      color: #ef4444;
+    }
+
+    .mc-dl.dl-today {
+      color: var(--reward);
+    }
+
+    .mc-dl.dl-soon {
+      color: var(--overtime);
+    }
+
+    .mc-dl.dl-ok {
+      color: var(--text-label);
+    }
+
+    .mc-dl.dl-none {
+      color: transparent;
+    }
+
+    /* 無截止日期：佔位但不顯示 */
 
     /* 任務名稱（主體粗體） */
     .mc-name {
@@ -447,29 +904,54 @@
     /* 完成圓鈕（右上角） */
     .mc-check-btn {
       position: absolute;
-      top: 5px; right: 5px;
-      width: 14px; height: 14px;
+      top: 5px;
+      right: 5px;
+      width: 14px;
+      height: 14px;
       border: 1.5px solid var(--border);
       border-radius: 50%;
       background: transparent;
       cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 0.5rem; color: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.5rem;
+      color: transparent;
       transition: all var(--transition);
       padding: 0;
     }
-    .mx-card:hover .mc-check-btn { border-color: var(--rest); }
-    .mx-card.is-done .mc-check-btn { background: var(--rest); border-color: var(--rest); color: #fff; }
+
+    .mx-card:hover .mc-check-btn {
+      border-color: var(--rest);
+    }
+
+    .mx-card.is-done .mc-check-btn {
+      background: var(--rest);
+      border-color: var(--rest);
+      color: #fff;
+    }
 
     .mc-run-dot {
       display: inline-block;
-      width: 5px; height: 5px; border-radius: 50%; background: var(--action);
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--action);
       will-change: transform, opacity;
       animation: blink 1.2s ease-in-out infinite;
     }
+
     @keyframes blink {
-      0%,100% { transform: scale(1); }
-      50%     { transform: scale(0.5); opacity: .4; }
+
+      0%,
+      100% {
+        transform: scale(1);
+      }
+
+      50% {
+        transform: scale(0.5);
+        opacity: .4;
+      }
     }
 
     /* 空象限提示：橫跨兩欄 */
@@ -485,109 +967,123 @@
 
     /* ── RWD ── */
     @media (max-width: 620px) {
-      .summary-bar { grid-template-columns: repeat(2, 1fr); }
-      .matrix-cross { height: 460px; }
-      .quadrant { grid-template-columns: 1fr; }
+      .summary-bar {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .matrix-cross {
+        height: 460px;
+      }
+
+      .quadrant {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
+
 <body>
-<div class="today-layout">
+  <div class="today-layout">
 
-  <!-- Header -->
-  <header class="today-header">
-    <span class="page-icon">📋</span>
-    <h1>今日計畫</h1>
-    <span class="today-date" id="todayDate"></span>
-    <button type="button" class="btn-theme-toggle" id="btnTheme" title="切換深/淺色">🌙</button>
-  </header>
+    <!-- Header -->
+    <header class="today-header">
+      <span class="page-icon">📋</span>
+      <h1>今日計畫</h1>
+      <span class="today-date" id="todayDate"></span>
+      <span id="todaySyncBadge" style="font-size:0.72rem;color:var(--text-muted);font-family:var(--font-mono);"></span>
+      <button type="button" class="btn-theme-toggle" id="btnTheme" title="切換深/淺色">🌙</button>
+    </header>
 
-  <!-- Summary -->
-  <div class="summary-bar">
-    <div class="summary-card">
-      <div class="s-value accent" id="statTotal">0</div>
-      <div class="s-label">總目標</div>
-    </div>
-    <div class="summary-card">
-      <div class="s-value done" id="statDone">0</div>
-      <div class="s-label">已完成</div>
-    </div>
-    <div class="summary-card">
-      <div class="s-value" id="statPlanned">0m</div>
-      <div class="s-label">預計總時間</div>
-    </div>
-    <div class="summary-card">
-      <div class="s-value" id="statActual">0m</div>
-      <div class="s-label">實際總時間</div>
-    </div>
-  </div>
-
-  <!-- Tabs -->
-  <div class="view-tabs">
-    <button type="button" class="tab-btn active" data-tab="list">📝 列表</button>
-    <button type="button" class="tab-btn" data-tab="matrix">⊞ 四象限</button>
-  </div>
-
-  <!-- ══ LIST VIEW ══ -->
-  <div id="viewList" class="view-pane">
-
-    <div class="add-form-wrap">
-      <h2>＋ 新增目標</h2>
-      <div class="form-row">
-        <div class="form-field f3">
-          <label for="fName">目標名稱</label>
-          <input type="text" id="fName" placeholder="例：完成報告第一章" autocomplete="off" />
-        </div>
-        <div class="form-field f1">
-          <label for="fTime">預計（分）</label>
-          <input type="number" id="fTime" min="1" max="999" placeholder="30" />
-        </div>
-        <div class="form-field f1">
-          <label for="fDeadline">截止日期</label>
-          <input type="date" id="fDeadline" />
-        </div>
+    <!-- Summary -->
+    <div class="summary-bar">
+      <div class="summary-card">
+        <div class="s-value accent" id="statTotal">0</div>
+        <div class="s-label">總目標</div>
       </div>
-      <div class="form-row">
-        <div class="form-field">
-          <label>緊急 / 重要</label>
-          <div class="toggle-group">
-            <button type="button" class="toggle-btn" id="fUrgent">⚡ 緊急</button>
-            <button type="button" class="toggle-btn" id="fImportant">⭐ 重要</button>
+      <div class="summary-card">
+        <div class="s-value done" id="statDone">0</div>
+        <div class="s-label">已完成</div>
+      </div>
+      <div class="summary-card">
+        <div class="s-value" id="statPlanned">0m</div>
+        <div class="s-label">預計總時間</div>
+      </div>
+      <div class="summary-card">
+        <div class="s-value" id="statActual">0m</div>
+        <div class="s-label">實際總時間</div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="view-tabs">
+      <button type="button" class="tab-btn active" data-tab="list">📝 列表</button>
+      <button type="button" class="tab-btn" data-tab="matrix">⊞ 四象限</button>
+    </div>
+
+    <!-- ══ LIST VIEW ══ -->
+    <div id="viewList" class="view-pane">
+
+      <div class="add-form-wrap">
+        <h2>＋ 新增目標</h2>
+        <div class="form-row">
+          <div class="form-field f3">
+            <label for="fName">目標名稱</label>
+            <input type="text" id="fName" placeholder="例：完成報告第一章" autocomplete="off" />
+          </div>
+          <div class="form-field f1">
+            <label for="fTime">預計（分）</label>
+            <input type="number" id="fTime" min="1" max="999" placeholder="30" />
+          </div>
+          <div class="form-field f1">
+            <label for="fDeadline">截止日期</label>
+            <input type="date" id="fDeadline" />
           </div>
         </div>
-        <div class="form-field f3">
-          <label for="fNote">備註說明</label>
-          <input type="text" id="fNote" placeholder="補充說明（可省略）" />
+        <div class="form-row">
+          <div class="form-field">
+            <label>緊急 / 重要</label>
+            <div class="toggle-group">
+              <button type="button" class="toggle-btn" id="fUrgent">⚡ 緊急</button>
+              <button type="button" class="toggle-btn" id="fImportant">⭐ 重要</button>
+            </div>
+          </div>
+          <div class="form-field f3">
+            <label for="fNote">備註說明</label>
+            <input type="text" id="fNote" placeholder="補充說明（可省略）" />
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-add" id="btnAdd">新增目標</button>
+          <button type="button" class="btn btn-secondary btn-cancel-edit" id="btnCancelEdit" hidden>取消編輯</button>
         </div>
       </div>
-      <button type="button" class="btn-add" id="btnAdd">新增目標</button>
+
+      <div class="goals-list" id="goalsList"></div>
+      <div id="completedSec" class="completed-section"></div>
+
     </div>
 
-    <div class="goals-list" id="goalsList"></div>
-    <div id="completedSec" class="completed-section"></div>
+    <!-- ══ MATRIX VIEW ══ -->
+    <div id="viewMatrix" class="view-pane" hidden>
 
-  </div>
+      <div class="matrix-cross" id="matrixCross">
+        <!-- 十字線 -->
+        <div class="mx-line-v"></div>
+        <div class="mx-line-h"></div>
+        <!-- 軸標籤 -->
+        <span class="mx-label top">重要</span>
+        <span class="mx-label bottom">不重要</span>
+        <span class="mx-label left">不緊急</span>
+        <span class="mx-label right">緊急</span>
+        <!-- 象限由 JS 產生 -->
+      </div>
 
-  <!-- ══ MATRIX VIEW ══ -->
-  <div id="viewMatrix" class="view-pane" hidden>
+      <div id="completedSecMx" class="completed-section"></div>
 
-    <div class="matrix-cross" id="matrixCross">
-      <!-- 十字線 -->
-      <div class="mx-line-v"></div>
-      <div class="mx-line-h"></div>
-      <!-- 軸標籤 -->
-      <span class="mx-label top">重要</span>
-      <span class="mx-label bottom">不重要</span>
-      <span class="mx-label left">不緊急</span>
-      <span class="mx-label right">緊急</span>
-      <!-- 象限由 JS 產生 -->
     </div>
 
-    <div id="completedSecMx" class="completed-section"></div>
-
   </div>
-
-</div>
-<script src="today.js"></script>
+  <script src="today.js"></script>
 </body>
+
 </html>

@@ -1,43 +1,57 @@
 /* ============================================================
-   today.js — 今日計畫 v2
-   ・永久儲存（localStorage，不自動清除）
-   ・列表模式 + 四象限模式（可切換）
-   ・計時器（同時只能一個，換一個自動暫停）
-   ・已完成任務隱藏，可展開查看
-   ・舊版資料（priority 欄位）自動升級
+   today.js — 今日計畫 v3（Firestore 版）
+   ・登入後資料存 Firestore：users/{uid}/dailyGoals/{YYYY-MM-DD}
+   ・未登入降為 localStorage 暫存
+   ・列表模式 + 四象限模式
+   ・計時器（同時只能一個）
    ============================================================ */
 
 const STORAGE_KEY = 'today-plan-v2';
-const THEME_KEY   = 'focus-theme';
+const THEME_KEY = 'focus-theme';
+const FIREBASE_CONFIG = {
+  apiKey: 'AIzaSyDeAM6lR-NcH--3avA1fqnA620DX2ktsNM',
+  authDomain: 'focus-e5f62.firebaseapp.com',
+  projectId: 'focus-e5f62',
+  storageBucket: 'focus-e5f62.firebasestorage.app',
+  messagingSenderId: '1075734057431',
+  appId: '1:1075734057431:web:add0bd3e6f1069ac317b92',
+};
 
 // ── 狀態 ──────────────────────────────────────────────────────
-let goals      = [];
-let activeId   = null;   // 正在計時的 goal id
-let tickTimer  = null;   // setInterval handle
-let draggedId  = null;   // 四象限拖曳中的 goal id
-let activeTab  = 'list';
-let showDoneList   = false;
+let goals = [];
+let activeId = null;
+let editingId = null;
+let tickTimer = null;
+let draggedId = null;
+let activeTab = 'list';
+let showDoneList = false;
 let showDoneMatrix = false;
+
+// ── Firebase ──────────────────────────────────────────────────
+let firebaseAuth = null;
+let firestoreDb = null;
+let currentUser = null;
+let _saveTimer = null;   // debounce 計時器
 
 // ── 象限定義 ──────────────────────────────────────────────────
 const QUADS = [
-  { key:'q1', urgent:true,  important:true,  icon:'🔴', label:'緊急 ＋ 重要'     },
-  { key:'q2', urgent:false, important:true,  icon:'🔵', label:'不緊急 ＋ 重要'   },
-  { key:'q3', urgent:true,  important:false, icon:'🟡', label:'緊急 ＋ 不重要'   },
-  { key:'q4', urgent:false, important:false, icon:'⚫', label:'不緊急 ＋ 不重要' },
+  { key: 'q1', urgent: true, important: true, icon: '🔴', label: '緊急 ＋ 重要' },
+  { key: 'q2', urgent: false, important: true, icon: '🔵', label: '不緊急 ＋ 重要' },
+  { key: 'q3', urgent: true, important: false, icon: '🟡', label: '緊急 ＋ 不重要' },
+  { key: 'q4', urgent: false, important: false, icon: '⚫', label: '不緊急 ＋ 不重要' },
 ];
 
 function getQ(g) {
-  if (g.urgent  && g.important)  return 'q1';
-  if (!g.urgent && g.important)  return 'q2';
-  if (g.urgent  && !g.important) return 'q3';
+  if (g.urgent && g.important) return 'q1';
+  if (!g.urgent && g.important) return 'q2';
+  if (g.urgent && !g.important) return 'q3';
   return 'q4';
 }
 
 // ── 工具函式 ──────────────────────────────────────────────────
-function uid()      { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 function todayStr() { return new Date().toISOString().slice(0, 10); }
-function pad(n)     { return String(n).padStart(2, '0'); }
+function pad(n) { return String(n).padStart(2, '0'); }
 
 function fmtSec(sec) {
   const h = Math.floor(sec / 3600);
@@ -48,36 +62,31 @@ function fmtSec(sec) {
 
 function fmtMin(min) {
   if (!min) return '0m';
-  if (min >= 60) { const h = Math.floor(min/60); const r = min%60; return r ? `${h}h ${r}m` : `${h}h`; }
+  if (min >= 60) { const h = Math.floor(min / 60); const r = min % 60; return r ? `${h}h ${r}m` : `${h}h`; }
   return `${min}m`;
 }
 
-/** 回傳 { text, cls } 或 null */
-/** 列表模式：中文自然語言格式 */
 function fmtDeadline(dateStr) {
   if (!dateStr) return null;
-  const today   = new Date(todayStr());
-  const due     = new Date(dateStr);
+  const today = new Date(todayStr());
+  const due = new Date(dateStr);
   const diffDay = Math.round((due - today) / 86400000);
-  if (diffDay < 0)   return { text: `逾期 ${-diffDay} 天`, cls: 'dl-over' };
-  if (diffDay === 0) return { text: '今天截止',             cls: 'dl-today' };
-  if (diffDay <= 2)  return { text: `還有 ${diffDay} 天`,   cls: 'dl-soon' };
-  return { text: `${due.getMonth()+1}/${due.getDate()}`,    cls: 'dl-ok' };
+  if (diffDay < 0) return { text: `逾期 ${-diffDay} 天`, cls: 'dl-over' };
+  if (diffDay === 0) return { text: '今天截止', cls: 'dl-today' };
+  if (diffDay <= 2) return { text: `還有 ${diffDay} 天`, cls: 'dl-soon' };
+  return { text: `${due.getMonth() + 1}/${due.getDate()}`, cls: 'dl-ok' };
 }
 
-/** 四象限卡片格式："M/D  D: ±N" */
 function fmtDeadlineMx(dateStr) {
   if (!dateStr) return null;
-  const today   = new Date(todayStr());
-  const due     = new Date(dateStr);
+  const today = new Date(todayStr());
+  const due = new Date(dateStr);
   const diffDay = Math.round((due - today) / 86400000);
-  const label   = `${due.getMonth()+1}/${due.getDate()}  D: ${diffDay}`;
-
+  const label = `${due.getMonth() + 1}/${due.getDate()}  D: ${diffDay}`;
   let cls = 'dl-ok';
-  if (diffDay < 0)        cls = 'dl-over';
+  if (diffDay < 0) cls = 'dl-over';
   else if (diffDay === 0) cls = 'dl-today';
-  else if (diffDay <= 2)  cls = 'dl-soon';
-
+  else if (diffDay <= 2) cls = 'dl-soon';
   return { text: label, cls };
 }
 
@@ -87,40 +96,102 @@ function escHtml(str) {
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-// ── 資料 ──────────────────────────────────────────────────────
-function loadData() {
+// ── 同步狀態顯示 ──────────────────────────────────────────────
+function setSyncBadge(text) {
+  const el = document.getElementById('todaySyncBadge');
+  if (el) el.textContent = text;
+}
+
+// ── 資料：localStorage（本地備份 / 未登入用）─────────────────
+function loadLocal() {
   try { goals = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
   catch { goals = []; }
+  upgradeGoals();
+}
 
-  // 升級舊版資料（priority → urgent / important）
+function saveLocal() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(goals));
+}
+
+function upgradeGoals() {
   goals = goals.map(g => {
     if (!('urgent' in g)) {
-      const map = { high:[true,true], mid:[false,true], low:[false,false] };
+      const map = { high: [true, true], mid: [false, true], low: [false, false] };
       const [u, i] = map[g.priority] || [false, false];
       g.urgent = u; g.important = i;
     }
-    if (!('deadline' in g))   g.deadline   = null;
-    if (!('sessions' in g))   g.sessions   = [];
-    if (!('actualSec' in g))  g.actualSec  = 0;
-    if (!('createdAt' in g))  g.createdAt  = Date.now();
+    if (!('deadline' in g)) g.deadline = null;
+    if (!('sessions' in g)) g.sessions = [];
+    if (!('actualSec' in g)) g.actualSec = 0;
+    if (!('createdAt' in g)) g.createdAt = Date.now();
     return g;
   });
 }
 
-function saveData() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(goals));
+// ── 資料：Firestore ───────────────────────────────────────────
+// 跨天共用同一份文件：users/{uid}/todayPlan/main
+function getPlanRef() {
+  if (!firestoreDb || !currentUser) return null;
+  return firestoreDb
+    .collection('users').doc(currentUser.uid)
+    .collection('todayPlan').doc('main');
 }
+
+async function loadFromFirestore() {
+  const ref = getPlanRef();
+  if (!ref) return;
+  try {
+    setSyncBadge('☁ 同步中…');
+    const doc = await ref.get();
+    if (doc.exists && Array.isArray(doc.data().goals)) {
+      goals = doc.data().goals;
+      upgradeGoals();
+      saveLocal();
+    }
+    setSyncBadge('✅ 已同步');
+  } catch (err) {
+    console.warn('Firestore 載入失敗：', err);
+    setSyncBadge('⚠ 載入失敗');
+  }
+}
+
+// debounce：避免每秒 tick 都寫 Firestore（最快 3 秒寫一次）
+function scheduleSave() {
+  saveLocal();
+  if (!firestoreDb || !currentUser) return;
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(() => saveToFirestore(), 3000);
+}
+
+async function saveToFirestore() {
+  const ref = getPlanRef();
+  if (!ref) return;
+  try {
+    setSyncBadge('☁ 儲存中…');
+    await ref.set(
+      { goals, updatedAt: firebase.firestore.FieldValue.serverTimestamp() },
+      { merge: true }
+    );
+    setSyncBadge('✅ 已同步');
+  } catch (err) {
+    console.warn('Firestore 儲存失敗：', err);
+    setSyncBadge('⚠ 儲存失敗');
+  }
+}
+
+// 舊版相容的統一介面
+function loadData() { loadLocal(); }
+function saveData() { scheduleSave(); render(); }
 
 // ── 計時器 ────────────────────────────────────────────────────
 function startTimer(id) {
   if (activeId && activeId !== id) pauseTimer(activeId);
   const g = goals.find(g => g.id === id);
   if (!g || g.done) return;
-
   g.sessions.push({ start: Date.now(), end: null });
   activeId = id;
   if (!tickTimer) tickTimer = setInterval(tick, 1000);
-  saveData(); render();
+  scheduleSave(); render();
 }
 
 function pauseTimer(id) {
@@ -128,7 +199,7 @@ function pauseTimer(id) {
   if (!g) return;
   const last = g.sessions[g.sessions.length - 1];
   if (last && !last.end) {
-    last.end   = Date.now();
+    last.end = Date.now();
     g.actualSec = calcActualSec(g);
   }
   if (activeId === id) {
@@ -136,13 +207,13 @@ function pauseTimer(id) {
     clearInterval(tickTimer);
     tickTimer = null;
   }
-  saveData(); render();
+  scheduleSave(); render();
 }
 
 function stopTimer(id) {
   pauseTimer(id);
   const g = goals.find(g => g.id === id);
-  if (g) { g.done = true; saveData(); }
+  if (g) { g.done = true; scheduleSave(); }
   render();
 }
 
@@ -157,21 +228,72 @@ function tick() {
   const g = goals.find(g => g.id === activeId);
   if (!g) return;
   g.actualSec = calcActualSec(g);
-  saveData();
+  scheduleSave();
   patchTimer(activeId);
   updateSummary();
 }
 
 // ── CRUD ──────────────────────────────────────────────────────
+function resetForm() {
+  document.getElementById('fName').value = '';
+  document.getElementById('fTime').value = '';
+  document.getElementById('fDeadline').value = '';
+  document.getElementById('fNote').value = '';
+  document.getElementById('fUrgent').classList.remove('on');
+  document.getElementById('fImportant').classList.remove('on');
+  editingId = null;
+  const btn = document.getElementById('btnAdd');
+  btn.textContent = '新增目標';
+  btn.classList.remove('editing');
+  document.getElementById('btnCancelEdit').hidden = true;
+}
+
+function startEdit(id) {
+  const g = goals.find(item => item.id === id);
+  if (!g) return;
+
+  document.getElementById('fName').value = g.name;
+  document.getElementById('fTime').value = g.estMin || '';
+  document.getElementById('fDeadline').value = g.deadline || '';
+  document.getElementById('fNote').value = g.note || '';
+  document.getElementById('fUrgent').classList.toggle('on', !!g.urgent);
+  document.getElementById('fImportant').classList.toggle('on', !!g.important);
+
+  editingId = id;
+  const btn = document.getElementById('btnAdd');
+  btn.textContent = '儲存修改';
+  btn.classList.add('editing');
+  document.getElementById('btnCancelEdit').hidden = false;
+  document.getElementById('fName').focus();
+}
+
+function cancelEdit() {
+  resetForm();
+}
+
 function addGoal() {
-  const name     = document.getElementById('fName').value.trim();
-  const estMin   = parseInt(document.getElementById('fTime').value) || 0;
+  const name = document.getElementById('fName').value.trim();
+  const estMin = parseInt(document.getElementById('fTime').value) || 0;
   const deadline = document.getElementById('fDeadline').value || null;
-  const note     = document.getElementById('fNote').value.trim();
-  const urgent   = document.getElementById('fUrgent').classList.contains('on');
+  const note = document.getElementById('fNote').value.trim();
+  const urgent = document.getElementById('fUrgent').classList.contains('on');
   const important = document.getElementById('fImportant').classList.contains('on');
 
   if (!name) { document.getElementById('fName').focus(); return; }
+
+  if (editingId) {
+    const g = goals.find(item => item.id === editingId);
+    if (!g) return;
+    g.name = name;
+    g.estMin = estMin;
+    g.deadline = deadline;
+    g.note = note;
+    g.urgent = urgent;
+    g.important = important;
+    resetForm();
+    scheduleSave(); render();
+    return;
+  }
 
   goals.push({
     id: uid(), name, estMin, urgent, important,
@@ -179,14 +301,8 @@ function addGoal() {
     sessions: [], createdAt: Date.now()
   });
 
-  document.getElementById('fName').value     = '';
-  document.getElementById('fTime').value     = '';
-  document.getElementById('fDeadline').value = '';
-  document.getElementById('fNote').value     = '';
-  document.getElementById('fUrgent').classList.remove('on');
-  document.getElementById('fImportant').classList.remove('on');
-
-  saveData(); render();
+  resetForm();
+  scheduleSave(); render();
   document.getElementById('fName').focus();
 }
 
@@ -195,7 +311,7 @@ function toggleDone(id) {
   if (!g) return;
   if (!g.done && activeId === id) pauseTimer(id);
   g.done = !g.done;
-  saveData(); render();
+  scheduleSave(); render();
 }
 
 function deleteGoal(id) {
@@ -203,27 +319,27 @@ function deleteGoal(id) {
     clearInterval(tickTimer); tickTimer = null; activeId = null;
   }
   goals = goals.filter(g => g.id !== id);
-  saveData(); render();
+  scheduleSave(); render();
 }
 
 function moveToQuad(id, urgent, important) {
   const g = goals.find(g => g.id === id);
   if (!g) return;
   g.urgent = urgent; g.important = important;
-  saveData(); render();
+  scheduleSave(); render();
 }
 
 // ── 渲染主入口 ────────────────────────────────────────────────
 function render() {
   if (activeTab === 'list') renderList();
-  else                      renderMatrix();
+  else renderMatrix();
   updateSummary();
 }
 
 // ── 列表模式 ──────────────────────────────────────────────────
 function renderList() {
-  const list  = document.getElementById('goalsList');
-  const done  = goals.filter(g =>  g.done);
+  const list = document.getElementById('goalsList');
+  const done = goals.filter(g => g.done);
   const active = goals.filter(g => !g.done);
 
   list.innerHTML = '';
@@ -233,13 +349,12 @@ function renderList() {
     active.forEach(g => list.appendChild(buildListCard(g)));
   }
 
-  // 已完成區塊
   const sec = document.getElementById('completedSec');
   sec.innerHTML = '';
   if (done.length === 0) return;
 
   const btn = document.createElement('button');
-  btn.type      = 'button';
+  btn.type = 'button';
   btn.className = 'btn-completed';
   btn.innerHTML = `已完成（${done.length}）${showDoneList ? ' ▲' : ' ▼'}`;
   btn.addEventListener('click', () => { showDoneList = !showDoneList; renderList(); });
@@ -256,18 +371,19 @@ function renderList() {
 function buildListCard(g) {
   const isRunning = (activeId === g.id);
   const actualSec = g.actualSec || 0;
-  const estSec    = (g.estMin || 0) * 60;
-  const isOver    = actualSec > estSec && estSec > 0;
-  const q         = getQ(g);
-  const qNames    = { q1:'緊急重要', q2:'重要', q3:'緊急', q4:'一般' };
-  const dl        = fmtDeadline(g.deadline);
+  const estSec = (g.estMin || 0) * 60;
+  const isOver = actualSec > estSec && estSec > 0;
+  const q = getQ(g);
+  const qNames = { q1: '緊急重要', q2: '重要', q3: '緊急', q4: '一般' };
+  const dl = fmtDeadline(g.deadline);
 
   const div = document.createElement('div');
   div.className = `goal-card${isRunning ? ' is-running' : ''}${g.done ? ' is-done' : ''}`;
   div.dataset.id = g.id;
-  div.dataset.q  = q;
+  div.dataset.q = q;
 
   div.innerHTML = `
+    <button type="button" class="btn-edit" data-action="edit" title="編輯">✎</button>
     <button type="button" class="btn-del" data-action="delete" title="刪除">✕</button>
     <div class="goal-top">
       <div class="goal-check" data-action="toggle">${g.done ? '✓' : ''}</div>
@@ -292,21 +408,22 @@ function buildListCard(g) {
       </div>
       <div class="timer-btns">
         ${!g.done && !isRunning
-          ? `<button type="button" class="btn-t start" data-action="start">▶ 開始</button>` : ''}
+      ? `<button type="button" class="btn-t start" data-action="start">▶ 開始</button>` : ''}
         ${isRunning
-          ? `<button type="button" class="btn-t pause" data-action="pause">⏸ 暫停</button>` : ''}
+      ? `<button type="button" class="btn-t pause" data-action="pause">⏸ 暫停</button>` : ''}
         ${(isRunning || (actualSec > 0 && !g.done))
-          ? `<button type="button" class="btn-t stop"  data-action="stop">✓ 完成</button>`  : ''}
+      ? `<button type="button" class="btn-t stop"  data-action="stop">✓ 完成</button>` : ''}
       </div>
     </div>`;
 
   div.addEventListener('click', e => {
     const action = e.target.closest('[data-action]')?.dataset.action;
     const id = div.dataset.id;
-    if (action === 'start')  startTimer(id);
-    if (action === 'pause')  pauseTimer(id);
-    if (action === 'stop')   stopTimer(id);
+    if (action === 'start') startTimer(id);
+    if (action === 'pause') pauseTimer(id);
+    if (action === 'stop') stopTimer(id);
     if (action === 'toggle') toggleDone(id);
+    if (action === 'edit') startEdit(id);
     if (action === 'delete') deleteGoal(id);
   });
 
@@ -316,8 +433,6 @@ function buildListCard(g) {
 // ── 四象限模式 ────────────────────────────────────────────────
 function renderMatrix() {
   const cross = document.getElementById('matrixCross');
-
-  // 只移除象限，保留十字線和軸標籤
   cross.querySelectorAll('.quadrant').forEach(el => el.remove());
 
   QUADS.forEach(qDef => {
@@ -325,7 +440,7 @@ function renderMatrix() {
 
     const qDiv = document.createElement('div');
     qDiv.className = `quadrant ${qDef.key}`;
-    qDiv.dataset.urgent    = qDef.urgent;
+    qDiv.dataset.urgent = qDef.urgent;
     qDiv.dataset.important = qDef.important;
 
     if (items.length === 0) {
@@ -334,7 +449,6 @@ function renderMatrix() {
       items.forEach(g => qDiv.appendChild(buildMatrixCard(g)));
     }
 
-    // Drop zone 事件
     qDiv.addEventListener('dragover', e => {
       e.preventDefault();
       e.dataTransfer.dropEffect = 'move';
@@ -347,7 +461,7 @@ function renderMatrix() {
       e.preventDefault();
       qDiv.classList.remove('drag-over');
       if (!draggedId) return;
-      const u = qDiv.dataset.urgent    === 'true';
+      const u = qDiv.dataset.urgent === 'true';
       const i = qDiv.dataset.important === 'true';
       moveToQuad(draggedId, u, i);
       draggedId = null;
@@ -356,14 +470,13 @@ function renderMatrix() {
     cross.appendChild(qDiv);
   });
 
-  // ── 已完成區塊 ──
   const sec = document.getElementById('completedSecMx');
   sec.innerHTML = '';
   const done = goals.filter(g => g.done);
   if (done.length === 0) return;
 
   const btn = document.createElement('button');
-  btn.type      = 'button';
+  btn.type = 'button';
   btn.className = 'btn-completed';
   btn.innerHTML = `已完成（${done.length}）${showDoneMatrix ? ' ▲' : ' ▼'}`;
   btn.addEventListener('click', () => { showDoneMatrix = !showDoneMatrix; renderMatrix(); });
@@ -371,7 +484,6 @@ function renderMatrix() {
 
   if (showDoneMatrix) {
     const wrap = document.createElement('div');
-    // 已完成卡片橫排顯示
     wrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;';
     done.forEach(g => {
       const card = buildMatrixCard(g);
@@ -384,18 +496,16 @@ function renderMatrix() {
 
 function buildMatrixCard(g) {
   const isRunning = (activeId === g.id);
-  const dl        = fmtDeadlineMx(g.deadline);   // 矩陣專用格式
+  const dl = fmtDeadlineMx(g.deadline);
 
   const div = document.createElement('div');
   div.className = `mx-card${isRunning ? ' is-running' : ''}${g.done ? ' is-done' : ''}`;
   div.dataset.id = g.id;
-  div.draggable  = !g.done;
+  div.draggable = !g.done;
 
-  // 截止日期列（無截止日期時顯示空白佔位，維持卡片高度一致）
-  const dlCls  = dl ? dl.cls : 'dl-none';
+  const dlCls = dl ? dl.cls : 'dl-none';
   const dlText = dl ? escHtml(dl.text) : '&nbsp;';
 
-  // 計時資訊（若有）
   const timerHtml = (isRunning || g.actualSec > 0)
     ? `<div class="mc-sub">
          ${isRunning ? '<span class="mc-run-dot"></span>' : ''}
@@ -425,21 +535,19 @@ function buildMatrixCard(g) {
   return div;
 }
 
-// ── 局部更新計時器（避免全重繪閃爍）────────────────────────────
+// ── 局部更新計時器 ────────────────────────────────────────────
 function patchTimer(id) {
   const g = goals.find(g => g.id === id);
   if (!g) return;
-  const sec   = g.actualSec || 0;
+  const sec = g.actualSec || 0;
   const estSec = (g.estMin || 0) * 60;
   const isOver = sec > estSec && estSec > 0;
 
-  // 列表卡片主計時器
   document.querySelectorAll(`[data-timer="${id}"]`).forEach(el => {
     el.textContent = fmtSec(sec);
     el.hidden = false;
   });
 
-  // 列表卡片右側「實際」欄
   const card = document.querySelector(`.goal-card[data-id="${id}"]`);
   if (card) {
     const tbvs = card.querySelectorAll('.tb-v');
@@ -453,14 +561,14 @@ function patchTimer(id) {
 
 // ── 統計摘要 ──────────────────────────────────────────────────
 function updateSummary() {
-  const total     = goals.length;
+  const total = goals.length;
   const doneCount = goals.filter(g => g.done).length;
-  const planned   = goals.reduce((a, g) => a + (g.estMin || 0), 0);
+  const planned = goals.reduce((a, g) => a + (g.estMin || 0), 0);
   const actualSec = goals.reduce((a, g) => a + (g.actualSec || 0), 0);
   const actualMin = Math.round(actualSec / 60);
 
-  document.getElementById('statTotal').textContent   = total;
-  document.getElementById('statDone').textContent    = doneCount;
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statDone').textContent = doneCount;
   document.getElementById('statPlanned').textContent = fmtMin(planned);
   const actEl = document.getElementById('statActual');
   actEl.textContent = fmtMin(actualMin);
@@ -470,7 +578,7 @@ function updateSummary() {
 // ── 頁籤切換 ──────────────────────────────────────────────────
 function switchTab(tab) {
   activeTab = tab;
-  document.getElementById('viewList').hidden   = (tab !== 'list');
+  document.getElementById('viewList').hidden = (tab !== 'list');
   document.getElementById('viewMatrix').hidden = (tab !== 'matrix');
   document.querySelectorAll('.tab-btn').forEach(btn =>
     btn.classList.toggle('active', btn.dataset.tab === tab));
@@ -490,10 +598,62 @@ function toggleTheme() {
 
 // ── 日期顯示 ──────────────────────────────────────────────────
 function renderDate() {
-  const now  = new Date();
-  const days = ['日','一','二','三','四','五','六'];
+  const now = new Date();
+  const days = ['日', '一', '二', '三', '四', '五', '六'];
   document.getElementById('todayDate').textContent =
-    `${now.getFullYear()}/${pad(now.getMonth()+1)}/${pad(now.getDate())} （週${days[now.getDay()]}）`;
+    `${now.getFullYear()}/${pad(now.getMonth() + 1)}/${pad(now.getDate())} （週${days[now.getDay()]}）`;
+}
+
+// ── Firebase 初始化 ───────────────────────────────────────────
+function initFirebase() {
+  try {
+    // 避免重複初始化（index.html 也載入同一個 firebase SDK）
+    if (!firebase.apps.length) {
+      firebase.initializeApp(FIREBASE_CONFIG);
+    }
+    firebaseAuth = firebase.auth();
+    firestoreDb = firebase.firestore();
+
+    firebaseAuth.onAuthStateChanged(async (user) => {
+      currentUser = user;
+      const badge = document.getElementById('todaySyncBadge');
+
+      if (user) {
+        if (badge) badge.textContent = `☁ ${user.email}`;
+        // 從 Firestore 載入今天的資料（以雲端為主）
+        await loadFromFirestore();
+        render();
+        // 恢復計時器
+        resumeRunningTimer();
+      } else {
+        if (badge) badge.textContent = '未登入（本地模式）';
+        // 未登入：用 localStorage
+        loadLocal();
+        render();
+        resumeRunningTimer();
+      }
+    });
+  } catch (err) {
+    console.error('Firebase 初始化失敗：', err);
+    // 降為本地模式
+    loadLocal();
+    render();
+    resumeRunningTimer();
+  }
+}
+
+// ── 恢復計時（重整後） ────────────────────────────────────────
+function resumeRunningTimer() {
+  const running = goals.find(g =>
+    !g.done &&
+    g.sessions?.length &&
+    g.sessions[g.sessions.length - 1].end === null
+  );
+  if (running) {
+    activeId = running.id;
+    tickTimer = setInterval(tick, 1000);
+    render();
+  }
 }
 
 // ── 初始化 ────────────────────────────────────────────────────
@@ -502,7 +662,6 @@ function init() {
   document.getElementById('btnTheme').addEventListener('click', toggleTheme);
 
   renderDate();
-  loadData();
 
   // 頁籤
   document.querySelectorAll('.tab-btn').forEach(btn =>
@@ -510,6 +669,7 @@ function init() {
 
   // 新增
   document.getElementById('btnAdd').addEventListener('click', addGoal);
+  document.getElementById('btnCancelEdit').addEventListener('click', cancelEdit);
   document.getElementById('fName').addEventListener('keydown', e => {
     if (e.key === 'Enter') addGoal();
   });
@@ -521,19 +681,8 @@ function init() {
     });
   });
 
-  render();
-
-  // 頁面重整後恢復計時（sessions 最後一個 end 為 null）
-  const running = goals.find(g =>
-    !g.done &&
-    g.sessions?.length &&
-    g.sessions[g.sessions.length - 1].end === null
-  );
-  if (running) {
-    activeId  = running.id;
-    tickTimer = setInterval(tick, 1000);
-    render();
-  }
+  // Firebase 初始化（會觸發 onAuthStateChanged → 載入資料 → render）
+  initFirebase();
 }
 
 document.addEventListener('DOMContentLoaded', init);

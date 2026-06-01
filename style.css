@@ -260,7 +260,7 @@ body {
 .btn-today-link:hover {
   border-color: var(--action);
   color: var(--action);
-  background: rgba(59,130,246,.08);
+  background: rgba(59, 130, 246, .08);
 }
 
 .logo-icon {
@@ -1873,12 +1873,29 @@ body.timer-active .btn-section {
 }
 
 /* 展開介面後恢復完整顯示 */
-body.timer-active.timer-expanded .app-header { display: flex; }
-body.timer-active.timer-expanded .settings-section { display: grid; }
-body.timer-active.timer-expanded .task-section { display: flex; }
-body.timer-active.timer-expanded .state-section { display: block; }
-body.timer-active.timer-expanded .sync-result { display: block; }
-body.timer-active.timer-expanded .col-right { display: flex; }
+body.timer-active.timer-expanded .app-header {
+  display: flex;
+}
+
+body.timer-active.timer-expanded .settings-section {
+  display: grid;
+}
+
+body.timer-active.timer-expanded .task-section {
+  display: flex;
+}
+
+body.timer-active.timer-expanded .state-section {
+  display: block;
+}
+
+body.timer-active.timer-expanded .sync-result {
+  display: block;
+}
+
+body.timer-active.timer-expanded .col-right {
+  display: flex;
+}
 
 body.timer-active.timer-expanded .col-left {
   flex: 1;
