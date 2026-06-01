@@ -16,12 +16,12 @@
 
 <body>
 
-<!-- 更新 banner（有新版本時自動顯示，關掉後不再出現） -->
-<div id="updateBanner" class="update-banner" hidden>
-  <span id="updateBannerText"></span>
-  <a href="changelog.html" class="ub-link">查看詳情</a>
-  <button type="button" class="ub-close" id="btnCloseBanner" title="關閉">✕</button>
-</div>
+  <!-- 更新 banner（有新版本時自動顯示，關掉後不再出現） -->
+  <div id="updateBanner" class="update-banner" hidden>
+    <span id="updateBannerText"></span>
+    <a href="changelog.html" class="ub-link">查看詳情</a>
+    <button type="button" class="ub-close" id="btnCloseBanner" title="關閉">✕</button>
+  </div>
 
   <div class="app-layout">
 
@@ -35,7 +35,8 @@
             <h1>番茄鐘</h1>
           </div>
           <div class="today-link-wrapper">
-            <a href="today.html" class="btn-today-link" title="前往今日計畫">今日計畫</a>
+            <a href="today.html" target="_blank" rel="noopener noreferrer" class="btn-today-link"
+              title="前往今日計畫（新分頁）">今日計畫</a>
             <a href="changelog.html" class="btn-changelog-link" id="btnChangelog" title="開發日記">
               📓
               <span class="cl-dot" id="clDot" hidden></span>
@@ -499,7 +500,7 @@
 
       // ── 更新提醒 ──
       // ★ 每次發布新版本，只需改這兩行 ★
-      var LATEST_VER  = 'v0.3';
+      var LATEST_VER = 'v0.3';
       var LATEST_DESC = '今日計畫現在支援跨裝置同步，並新增開發日記！';
 
       var seen = localStorage.getItem('cl-seen');
