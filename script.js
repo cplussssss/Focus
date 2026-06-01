@@ -152,6 +152,8 @@ function initElements() {
     btnShareLink: document.getElementById('btnShareLink'),
     userBadge: document.getElementById('userBadge'),
     btnLogoutMenu: document.getElementById('btnLogoutMenu'),
+    btnSettings: document.getElementById('btnSettings'),
+    settingsPopup: document.getElementById('settingsPopup'),
 
     // 帳號設定 Modal
     modalAccount: document.getElementById('modalAccount'),
@@ -1128,6 +1130,38 @@ function initEventListeners() {
       await firebaseAuth.signOut();
     } catch (e) { console.warn('Logout failed', e); }
   });
+  // settings popup toggle
+  if (EL.btnSettings && EL.settingsPopup) {
+    EL.btnSettings.addEventListener('click', (e) => {
+      const open = EL.settingsPopup.getAttribute('aria-hidden') === 'false';
+      if (open) {
+        EL.settingsPopup.setAttribute('aria-hidden', 'true');
+        EL.settingsPopup.hidden = true;
+      } else {
+        EL.settingsPopup.setAttribute('aria-hidden', 'false');
+        EL.settingsPopup.hidden = false;
+      }
+      e.stopPropagation();
+    });
+
+    // click outside to close
+    document.addEventListener('click', (ev) => {
+      if (!EL.settingsPopup) return;
+      if (EL.settingsPopup.hidden) return;
+      if (ev.target.closest && ev.target.closest('.settings-popup')) return;
+      if (ev.target.closest && ev.target.closest('#btnSettings')) return;
+      EL.settingsPopup.hidden = true;
+      EL.settingsPopup.setAttribute('aria-hidden', 'true');
+    });
+
+    // ESC to close
+    document.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Escape' && EL.settingsPopup && !EL.settingsPopup.hidden) {
+        EL.settingsPopup.hidden = true;
+        EL.settingsPopup.setAttribute('aria-hidden', 'true');
+      }
+    });
+  }
 
   // 帳號設定
   EL.btnAccount.addEventListener('click', openAccountModal);

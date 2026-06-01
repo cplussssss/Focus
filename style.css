@@ -342,6 +342,42 @@ body {
   font-weight: 600;
 }
 
+/* settings popup (replaces details) */
+.settings-toggle {
+  position: relative;
+}
+
+.settings-trigger {
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.settings-popup {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 220px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow-soft);
+  padding: 8px;
+  z-index: 2000;
+}
+
+.settings-popup[hidden] {
+  display: none;
+}
+
+.settings-popup-inner {
+  display: grid;
+  gap: 6px;
+}
+
 .settings-menu summary::-webkit-details-marker {
   display: none;
 }
