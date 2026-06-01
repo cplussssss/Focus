@@ -34,6 +34,7 @@
           <a href="today.html" target="_blank" rel="noopener noreferrer" class="my-plan-link">我的計畫</a>
         </div>
         <span class="sync-state" id="syncState"></span>
+        <button type="button" class="user-badge" id="userBadge" hidden title="">訪客</button>
         <details class="settings-menu">
           <summary>設定</summary>
           <div class="settings-menu-list">
@@ -42,12 +43,12 @@
             <button type="button" class="settings-item btn-share-link" id="btnShareLink" hidden>分享連結</button>
             <button type="button" class="settings-item btn-theme-toggle" id="btnThemeToggle" title="切換深/淺色">深淺色模式 <span
                 class="theme-icon">🌙</span></button>
-            <button type="button" class="settings-item btn-account" id="btnAccount" hidden>帳號</button>
             <a href="changelog.html" target="_blank" rel="noopener noreferrer" class="settings-item btn-changelog-link"
               id="btnChangelog" title="開發者日記（新分頁）">
               開發者日記
               <span class="cl-dot" id="clDot" hidden></span>
             </a>
+            <button type="button" class="settings-item btn-logout-menu" id="btnLogoutMenu">登出</button>
             <button type="button" class="settings-item btn-login-header" id="btnLoginHeader">登入</button>
           </div>
         </details>

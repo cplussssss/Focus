@@ -150,6 +150,8 @@ function initElements() {
     btnMyRecords: document.getElementById('btnMyRecords'),  // ★ 新增
     btnProfilePage: document.getElementById('btnProfilePage'),
     btnShareLink: document.getElementById('btnShareLink'),
+    userBadge: document.getElementById('userBadge'),
+    btnLogoutMenu: document.getElementById('btnLogoutMenu'),
 
     // 帳號設定 Modal
     modalAccount: document.getElementById('modalAccount'),
@@ -1120,6 +1122,12 @@ function initEventListeners() {
   EL.btnLoginHeader.addEventListener('click', () => showModal(EL.modalLogin));
   if (EL.btnProfilePage) EL.btnProfilePage.addEventListener('click', openPublicProfile);
   if (EL.btnShareLink) EL.btnShareLink.addEventListener('click', openAccountModal);
+  if (EL.userBadge) EL.userBadge.addEventListener('click', openAccountModal);
+  if (EL.btnLogoutMenu) EL.btnLogoutMenu.addEventListener('click', async () => {
+    try {
+      await firebaseAuth.signOut();
+    } catch (e) { console.warn('Logout failed', e); }
+  });
 
   // 帳號設定
   EL.btnAccount.addEventListener('click', openAccountModal);
@@ -1196,7 +1204,15 @@ function initFirebase() {
         if (EL.btnMyRecords) EL.btnMyRecords.hidden = user.email === DEMO_EMAIL;
         if (EL.btnAccount) {
           EL.btnAccount.hidden = false;
-          EL.btnAccount.textContent = user.displayName || user.email || '帳號';
+          const fullName = user.displayName || user.email || '帳號';
+          EL.btnAccount.textContent = '帳號';
+          EL.btnAccount.title = fullName; // keep full name in tooltip
+        }
+        if (EL.userBadge) {
+          const shortName = user.displayName || user.email || '帳號';
+          EL.userBadge.textContent = shortName;
+          EL.userBadge.title = shortName;
+          EL.userBadge.hidden = false;
         }
         if (EL.btnLoginHeader) EL.btnLoginHeader.hidden = true;
 
@@ -1216,6 +1232,7 @@ function initFirebase() {
         EL.syncState.textContent = '';
         if (EL.btnMyRecords) EL.btnMyRecords.hidden = true;
         if (EL.btnAccount) EL.btnAccount.hidden = true;
+        if (EL.userBadge) EL.userBadge.hidden = true;
         if (EL.btnLoginHeader) EL.btnLoginHeader.hidden = false;
         showModal(EL.modalLogin);   // ★ 未登入就強制顯示登入畫面
       }
