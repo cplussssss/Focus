@@ -326,23 +326,7 @@ body {
   text-align: right;
 }
 
-.settings-menu {
-  position: relative;
-}
-
-.settings-menu summary {
-  list-style: none;
-  cursor: pointer;
-  padding: 6px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: var(--bg-input);
-  color: var(--text-primary);
-  font-size: 0.88rem;
-  font-weight: 600;
-}
-
-/* settings popup (replaces details) */
+/* 設定浮動視窗 */
 .settings-toggle {
   position: relative;
 }
@@ -353,7 +337,11 @@ body {
   border: 1px solid var(--border);
   background: var(--bg-input);
   color: var(--text-primary);
+  font-size: 0.88rem;
+  font-weight: 600;
   cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .settings-popup {
