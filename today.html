@@ -416,14 +416,13 @@
 
     .goal-card.editing {
       border-color: var(--action);
-      box-shadow: 0 0 0 2px rgba(59, 130, 246, .24);
-      background: rgba(56, 189, 248, .08);
-      transform: scale(1.01);
+      box-shadow: 0 0 0 1px var(--action-dim);
+      background: var(--bg-input);
     }
 
     .goals-list.editing-active .goal-card:not(.editing) {
-      opacity: 0.35;
-      filter: grayscale(0.6) blur(0.1px);
+      opacity: 0.55;
+      filter: grayscale(0.2);
       pointer-events: none;
     }
 

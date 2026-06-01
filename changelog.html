@@ -5,105 +5,212 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📓</text></svg>" />
   <title>開發日記 — 番茄</title>
-  <link rel="stylesheet" href="style.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
   <style>
-    .cl-layout {
-      max-width: 720px;
-      margin: 0 auto;
-      padding: 28px 20px 80px;
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #fff;
+      color: #1a1a1a;
+      font-family: 'Georgia', 'Noto Serif TC', serif;
+      font-size: 15px;
+      line-height: 1.8;
     }
 
-    .cl-header {
+    /* 頁面容器：模擬 A4 紙感 */
+    .cl-page {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 52px 120px 80px;
+      min-height: 100vh;
+    }
+
+    /* 頂部導覽 */
+    .cl-nav {
       display: flex;
       align-items: center;
-      gap: 10px;
-      margin-bottom: 28px;
+      justify-content: space-between;
+      border-bottom: 2px solid #1a1a1a;
+      padding-bottom: 10px;
+      margin-bottom: 36px;
     }
-    .cl-header h1 { font-size: 1.4rem; margin: 0; }
+    .cl-nav-title {
+      font-size: .78rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      font-family: Arial, sans-serif;
+      color: #555;
+    }
     .cl-back {
-      margin-left: auto;
-      font-size: .82rem;
-      color: var(--text-muted);
+      font-size: .78rem;
+      color: #555;
       text-decoration: none;
-      padding: 4px 10px;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      transition: background .15s;
+      font-family: Arial, sans-serif;
+      letter-spacing: .04em;
     }
-    .cl-back:hover { background: var(--hover-bg); }
+    .cl-back:hover { color: #000; text-decoration: underline; }
 
-    /* Markdown 內容樣式 */
-    .cl-body { font-size: .9rem; line-height: 1.75; color: var(--text); }
+    /* Markdown 內容 */
+    .cl-body h1 {
+      font-size: 1.7rem;
+      font-weight: 700;
+      margin: 0 0 4px;
+      line-height: 1.25;
+      letter-spacing: -.01em;
+    }
 
-    .cl-body h1 { font-size: 1.3rem; margin: 0 0 6px; }
+    /* h1 下的副標題感橫線 */
+    .cl-body h1 + p,
+    .cl-body h1 + blockquote {
+      color: #555;
+      font-size: .9rem;
+      margin-top: 0;
+    }
+
     .cl-body h2 {
-      font-size: 1rem;
-      margin: 32px 0 10px;
-      padding: 10px 14px;
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-left: 3px solid var(--accent);
-      border-radius: 6px;
-      font-family: var(--font-mono);
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin: 40px 0 8px;
+      padding-top: 16px;
+      border-top: 1.5px solid #1a1a1a;
+      font-family: Arial, sans-serif;
+      letter-spacing: .02em;
     }
-    .cl-body h2:first-of-type { margin-top: 0; }
 
-    .cl-body p  { margin: 0 0 10px; color: var(--text-muted); }
-    .cl-body ul { margin: 0 0 8px; padding-left: 20px; }
-    .cl-body li { margin-bottom: 5px; color: var(--text); }
-    .cl-body strong { color: var(--text); }
-    .cl-body hr { border: none; border-top: 1px solid var(--border); margin: 4px 0 0; }
+    .cl-body h3 {
+      font-size: .92rem;
+      font-weight: 700;
+      margin: 20px 0 6px;
+      font-family: Arial, sans-serif;
+    }
+
+    .cl-body p {
+      margin: 0 0 12px;
+      color: #222;
+    }
+
+    .cl-body ul, .cl-body ol {
+      margin: 0 0 14px;
+      padding-left: 22px;
+    }
+    .cl-body li {
+      margin-bottom: 4px;
+      color: #222;
+    }
+
+    .cl-body strong { font-weight: 700; }
+
+    .cl-body hr {
+      border: none;
+      border-top: 1px solid #ccc;
+      margin: 28px 0 0;
+    }
+
     .cl-body blockquote {
-      margin: 10px 0;
-      padding: 8px 14px;
-      border-left: 3px solid var(--border);
-      color: var(--text-muted);
-      font-size: .84rem;
-    }
-    .cl-body code {
-      font-family: var(--font-mono);
-      font-size: .82rem;
-      background: var(--hover-bg);
-      padding: 1px 5px;
-      border-radius: 3px;
+      margin: 12px 0 16px 0;
+      padding: 0 0 0 16px;
+      border-left: 3px solid #bbb;
+      color: #555;
+      font-style: italic;
+      font-size: .9rem;
     }
 
-    .cl-loading {
-      color: var(--text-muted);
-      font-size: .88rem;
-      padding: 20px 0;
+    .cl-body code {
+      font-family: 'Courier New', monospace;
+      font-size: .82rem;
+      background: #f2f2f2;
+      padding: 1px 5px;
+      border-radius: 2px;
+      color: #c0392b;
     }
-    .cl-error {
-      color: #e85d3a;
+
+    /* 表格 */
+    .cl-body table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0 20px;
       font-size: .88rem;
-      padding: 20px 0;
+      font-family: Arial, sans-serif;
+    }
+    .cl-body th {
+      text-align: left;
+      padding: 7px 12px;
+      background: #1a1a1a;
+      color: #fff;
+      font-weight: 600;
+      font-size: .8rem;
+      letter-spacing: .04em;
+    }
+    .cl-body td {
+      padding: 7px 12px;
+      border-bottom: 1px solid #e0e0e0;
+      color: #222;
+      vertical-align: top;
+    }
+    .cl-body tr:last-child td { border-bottom: none; }
+    .cl-body tr:nth-child(even) td { background: #fafafa; }
+
+    /* 頁腳頁碼感 */
+    .cl-footer {
+      margin-top: 60px;
+      padding-top: 12px;
+      border-top: 1px solid #ccc;
+      font-size: .75rem;
+      color: #999;
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .cl-loading { color: #888; font-size: .88rem; font-family: Arial, sans-serif; }
+    .cl-error   { color: #c0392b; font-size: .88rem; font-family: Arial, sans-serif; }
+
+    @media (max-width: 900px) {
+      .cl-page { padding: 40px 60px 60px; }
+    }
+    @media (max-width: 600px) {
+      .cl-page { padding: 24px 20px 60px; }
+    }
+
+    @media print {
+      .cl-nav, .cl-footer { display: none; }
+      .cl-page { padding: 0; }
     }
   </style>
 </head>
 <body>
-<div class="cl-layout">
+<div class="cl-page">
 
-  <header class="cl-header">
-    <span style="font-size:1.6rem">📓</span>
-    <h1>開發日記</h1>
+  <nav class="cl-nav">
+    <span class="cl-nav-title">番茄鐘 · 開發日記</span>
     <a href="index.html" class="cl-back">← 回番茄鐘</a>
-  </header>
+  </nav>
 
   <div class="cl-body" id="clBody">
     <p class="cl-loading">載入中…</p>
   </div>
 
+  <footer class="cl-footer">
+    <span>Focus — 番茄鐘 &amp; 今日計畫</span>
+    <span id="clFooterDate"></span>
+  </footer>
+
 </div>
 
 <script>
-  // 固定淺色，標記已讀
+  // 固定白底，標記已讀
   (function () {
-    document.documentElement.setAttribute('data-theme', 'light');
-
     // 標記已讀：版本號要跟 index.html 裡的 LATEST_VER 一致
     var LATEST = 'v0.3';
     localStorage.setItem('cl-seen', LATEST);
+
+    // 頁腳日期
+    var d = new Date();
+    var pad = n => String(n).padStart(2,'0');
+    document.getElementById('clFooterDate').textContent =
+      d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
   })();
 
   // 讀取並渲染 changelog.md
