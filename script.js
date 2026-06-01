@@ -148,6 +148,8 @@ function initElements() {
     btnGoogleLogin: document.getElementById('btnGoogleLogin'),
     btnCancelLogin: document.getElementById('btnCancelLogin'),
     btnMyRecords: document.getElementById('btnMyRecords'),  // ★ 新增
+    btnProfilePage: document.getElementById('btnProfilePage'),
+    btnShareLink: document.getElementById('btnShareLink'),
 
     // 帳號設定 Modal
     modalAccount: document.getElementById('modalAccount'),
@@ -1116,6 +1118,8 @@ function initEventListeners() {
 
   // 登入按鈕（header）
   EL.btnLoginHeader.addEventListener('click', () => showModal(EL.modalLogin));
+  if (EL.btnProfilePage) EL.btnProfilePage.addEventListener('click', openPublicProfile);
+  if (EL.btnShareLink) EL.btnShareLink.addEventListener('click', openAccountModal);
 
   // 帳號設定
   EL.btnAccount.addEventListener('click', openAccountModal);
@@ -1190,7 +1194,10 @@ function initFirebase() {
         hideModal(EL.modalLogin);   // ★ 登入後關掉 Modal
         EL.syncState.textContent = user.email === DEMO_EMAIL ? '👀 訪客模式' : user.email;
         if (EL.btnMyRecords) EL.btnMyRecords.hidden = user.email === DEMO_EMAIL;
-        if (EL.btnAccount) EL.btnAccount.hidden = false;
+        if (EL.btnAccount) {
+          EL.btnAccount.hidden = false;
+          EL.btnAccount.textContent = user.displayName || user.email || '帳號';
+        }
         if (EL.btnLoginHeader) EL.btnLoginHeader.hidden = true;
 
         await firestoreDb.collection('users').doc(user.uid).set({
@@ -1569,13 +1576,26 @@ function updatePublicUI(isPublic, username) {
     ? '公開（所有人可以透過分享連結查看）'
     : '私密（只有你自己可以看）';
 
-  if (isPublic && username) {
+  const isShared = isPublic && username;
+  if (isShared) {
     const url = `${location.origin}${location.pathname.replace('index.html', '')}profile.html?user=${username}`;
     EL.shareUrlText.textContent = url;
     EL.shareUrlRow.hidden = false;
   } else {
     EL.shareUrlRow.hidden = true;
   }
+
+  if (EL.btnProfilePage) EL.btnProfilePage.hidden = !isShared;
+  if (EL.btnShareLink) EL.btnShareLink.hidden = !isShared;
+}
+
+function openPublicProfile() {
+  const url = EL.shareUrlText.textContent;
+  if (url) {
+    window.open(url, '_blank');
+    return;
+  }
+  openAccountModal();
 }
 
 /* ── 儲存用戶名稱 ── */

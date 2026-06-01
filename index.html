@@ -31,23 +31,26 @@
       <header class="app-header">
         <span class="logo-icon">🍅</span>
         <div class="header-left">
-          <div class="header-title-group">
-            <h1>番茄鐘</h1>
-          </div>
-          <div class="today-link-wrapper">
-            <a href="today.html" target="_blank" rel="noopener noreferrer" class="btn-today-link"
-              title="前往今日計畫（新分頁）">今日計畫</a>
-            <a href="changelog.html" class="btn-changelog-link" id="btnChangelog" title="開發日記">
-              📓
-              <span class="cl-dot" id="clDot" hidden></span>
-            </a>
-          </div>
+          <a href="today.html" target="_blank" rel="noopener noreferrer" class="my-plan-link">我的計畫</a>
         </div>
         <span class="sync-state" id="syncState"></span>
-        <button type="button" class="btn-my-records" id="btnMyRecords" hidden>我的紀錄</button>
-        <button type="button" class="btn-account" id="btnAccount" hidden>⚙</button>
-        <button type="button" class="btn-login-header" id="btnLoginHeader">登入</button>
-        <button type="button" class="btn-theme-toggle" id="btnThemeToggle" title="切換深/淺色">🌙</button>
+        <details class="settings-menu">
+          <summary>設定</summary>
+          <div class="settings-menu-list">
+            <button type="button" class="settings-item btn-my-records" id="btnMyRecords" hidden>我的紀錄</button>
+            <button type="button" class="settings-item btn-profile-page" id="btnProfilePage" hidden>公開頁面</button>
+            <button type="button" class="settings-item btn-share-link" id="btnShareLink" hidden>分享連結</button>
+            <button type="button" class="settings-item btn-theme-toggle" id="btnThemeToggle" title="切換深/淺色">深淺色模式 <span
+                class="theme-icon">🌙</span></button>
+            <button type="button" class="settings-item btn-account" id="btnAccount" hidden>帳號</button>
+            <a href="changelog.html" target="_blank" rel="noopener noreferrer" class="settings-item btn-changelog-link"
+              id="btnChangelog" title="開發者日記（新分頁）">
+              開發者日記
+              <span class="cl-dot" id="clDot" hidden></span>
+            </a>
+            <button type="button" class="settings-item btn-login-header" id="btnLoginHeader">登入</button>
+          </div>
+        </details>
       </header>
 
       <div class="timer-block">
@@ -483,17 +486,17 @@
       var saved = localStorage.getItem('theme') || 'dark';
       if (saved === 'light') {
         document.documentElement.setAttribute('data-theme', 'light');
-        if (btn) btn.textContent = '☀️';
+        if (btn) btn.innerHTML = '深淺色模式 <span class="theme-icon">☀️</span>';
       }
       if (btn) btn.addEventListener('click', function () {
         var current = document.documentElement.getAttribute('data-theme');
         if (current === 'light') {
           document.documentElement.removeAttribute('data-theme');
-          btn.textContent = '🌙';
+          btn.innerHTML = '深淺色模式 <span class="theme-icon">🌙</span>';
           localStorage.setItem('theme', 'dark');
         } else {
           document.documentElement.setAttribute('data-theme', 'light');
-          btn.textContent = '☀️';
+          btn.innerHTML = '深淺色模式 <span class="theme-icon">☀️</span>';
           localStorage.setItem('theme', 'light');
         }
       });

@@ -233,6 +233,17 @@ body {
   min-width: 0;
 }
 
+.my-plan-link {
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.my-plan-link:hover {
+  color: var(--action);
+}
+
 .header-title-group {
   min-width: 0;
 }
@@ -292,6 +303,84 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
   text-align: right;
+}
+
+.settings-menu {
+  position: relative;
+}
+
+.settings-menu summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.settings-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.settings-menu-list {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 150px;
+  width: max-content;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-soft);
+  padding: 6px;
+  display: grid;
+  gap: 6px;
+  z-index: 10;
+}
+
+.settings-item {
+  width: 100%;
+  text-align: left;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.settings-item.btn-profile-page,
+.settings-item.btn-share-link {
+  white-space: nowrap;
+}
+
+.settings-item:hover {
+  border-color: var(--border);
+  background: var(--bg-muted);
+}
+
+.settings-item.btn-changelog-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  text-decoration: none;
+}
+
+.settings-item.btn-changelog-link .cl-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--action);
+  margin-left: 6px;
+}
+
+.theme-icon {
+  margin-left: 6px;
 }
 
 /* ============================================================
