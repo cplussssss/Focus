@@ -329,8 +329,7 @@ body {
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
-  min-width: 150px;
-  width: max-content;
+  width: 160px;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
