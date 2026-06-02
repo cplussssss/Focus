@@ -25,6 +25,7 @@ let draggedId  = null;
 let activeTab  = 'list';
 let showDoneList   = false;
 let showDoneMatrix = false;
+let editingId      = null;
 
 // ── Firebase ──────────────────────────────────────────────────
 let firebaseAuth = null;
@@ -74,6 +75,14 @@ function fmtDeadline(dateStr) {
   if (diffDay === 0) return { text: '今天截止',             cls: 'dl-today' };
   if (diffDay <= 2)  return { text: `還有 ${diffDay} 天`,   cls: 'dl-soon' };
   return { text: `${due.getMonth()+1}/${due.getDate()}`,    cls: 'dl-ok' };
+}
+
+function isNearDeadline(deadline) {
+  if (!deadline) return false;
+  const today   = new Date(todayStr());
+  const due     = new Date(deadline);
+  const diffDay = Math.round((due - today) / 86400000);
+  return diffDay < 3;
 }
 
 function fmtDeadlineMx(dateStr) {
@@ -327,6 +336,7 @@ function renderList() {
   const active = goals.filter(g => !g.done);
 
   list.innerHTML = '';
+  list.classList.toggle('editing-active', editingId !== null);
   if (active.length === 0) {
     list.innerHTML = `<div class="empty-hint"><div class="ei">📭</div>還沒有進行中的目標，從上方新增吧！</div>`;
   } else {
@@ -353,13 +363,16 @@ function renderList() {
 }
 
 function buildListCard(g) {
-  const isRunning = (activeId === g.id);
-  const actualSec = g.actualSec || 0;
-  const estSec    = (g.estMin || 0) * 60;
-  const isOver    = actualSec > estSec && estSec > 0;
-  const q         = getQ(g);
-  const qNames    = { q1:'緊急重要', q2:'重要', q3:'緊急', q4:'一般' };
-  const dl        = fmtDeadline(g.deadline);
+  if (editingId === g.id) return buildEditCard(g);
+
+  const isRunning  = (activeId === g.id);
+  const actualSec  = g.actualSec || 0;
+  const estSec     = (g.estMin || 0) * 60;
+  const isOver     = actualSec > estSec && estSec > 0;
+  const q          = getQ(g);
+  const qNames     = { q1:'緊急重要', q2:'重要', q3:'緊急', q4:'一般' };
+  const dl         = fmtDeadline(g.deadline);
+  const autoUrgent = !g.urgent && isNearDeadline(g.deadline);
 
   const div = document.createElement('div');
   div.className = `goal-card${isRunning ? ' is-running' : ''}${g.done ? ' is-done' : ''}`;
@@ -368,12 +381,14 @@ function buildListCard(g) {
 
   div.innerHTML = `
     <button type="button" class="btn-del" data-action="delete" title="刪除">✕</button>
+    ${!g.done ? `<button type="button" class="btn-edit" data-action="edit" title="修改">✏</button>` : ''}
     <div class="goal-top">
       <div class="goal-check" data-action="toggle">${g.done ? '✓' : ''}</div>
       <div style="flex:1;min-width:0">
         <div class="goal-name">${escHtml(g.name)}</div>
         <div class="goal-meta">
           <span class="q-badge ${q}">${qNames[q]}</span>
+          ${autoUrgent ? `<span class="q-badge q3">⚡ 緊急</span>` : ''}
           ${g.estMin ? `<span style="font-size:.7rem;color:var(--text-muted);font-family:var(--font-mono)">預計 ${fmtMin(g.estMin)}</span>` : ''}
           ${dl ? `<span class="dl-tag ${dl.cls}">📅 ${dl.text}</span>` : ''}
         </div>
@@ -407,6 +422,65 @@ function buildListCard(g) {
     if (action === 'stop')   stopTimer(id);
     if (action === 'toggle') toggleDone(id);
     if (action === 'delete') deleteGoal(id);
+    if (action === 'edit')   { editingId = id; render(); }
+  });
+
+  return div;
+}
+
+function buildEditCard(g) {
+  const div = document.createElement('div');
+  div.className = 'goal-card editing';
+  div.dataset.id = g.id;
+  div.dataset.q  = getQ(g);
+
+  div.innerHTML = `
+    <div class="edit-card-inner">
+      <div class="goal-name" style="margin-bottom:8px">${escHtml(g.name)}</div>
+      <div class="edit-row">
+        <div style="flex:1;min-width:90px">
+          <label style="font-size:.67rem;color:var(--text-label);font-weight:600;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em">預計（分）</label>
+          <input type="number" class="edit-estMin" value="${g.estMin || ''}" min="1" max="999" placeholder="30" />
+        </div>
+        <div style="flex:1;min-width:130px">
+          <label style="font-size:.67rem;color:var(--text-label);font-weight:600;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em">截止日期</label>
+          <input type="date" class="edit-deadline" value="${g.deadline || ''}" />
+        </div>
+      </div>
+      <div class="edit-row edit-row--compact" style="gap:8px">
+        <span style="font-size:.67rem;color:var(--text-label);font-weight:600;text-transform:uppercase;letter-spacing:.06em">緊急 / 重要</span>
+        <button type="button" class="toggle-btn edit-urgent${g.urgent ? ' on' : ''}">⚡ 緊急</button>
+        <button type="button" class="toggle-btn edit-important${g.important ? ' on' : ''}">⭐ 重要</button>
+      </div>
+      <div class="edit-row">
+        <div style="flex:1">
+          <label style="font-size:.67rem;color:var(--text-label);font-weight:600;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em">備註說明</label>
+          <input type="text" class="edit-note" value="${escHtml(g.note || '')}" placeholder="補充說明（可省略）" />
+        </div>
+      </div>
+      <div class="edit-actions">
+        <button type="button" class="btn-add" style="flex:1;padding:8px;margin:0" data-action="save">儲存</button>
+        <button type="button" class="btn btn-secondary" style="flex:1;padding:8px" data-action="cancel">取消</button>
+      </div>
+    </div>`;
+
+  div.querySelector('.edit-urgent').addEventListener('click', function () { this.classList.toggle('on'); });
+  div.querySelector('.edit-important').addEventListener('click', function () { this.classList.toggle('on'); });
+
+  div.querySelector('[data-action="save"]').addEventListener('click', () => {
+    const estMin    = parseInt(div.querySelector('.edit-estMin').value) || 0;
+    const deadline  = div.querySelector('.edit-deadline').value         || null;
+    const urgent    = div.querySelector('.edit-urgent').classList.contains('on');
+    const important = div.querySelector('.edit-important').classList.contains('on');
+    const note      = div.querySelector('.edit-note').value.trim();
+    Object.assign(g, { estMin, deadline, urgent, important, note });
+    editingId = null;
+    scheduleSave(); render();
+  });
+
+  div.querySelector('[data-action="cancel"]').addEventListener('click', () => {
+    editingId = null;
+    render();
   });
 
   return div;
