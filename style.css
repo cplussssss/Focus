@@ -1400,26 +1400,18 @@ body {
   }
 }
 
-/* 我的紀錄按鈕 */
-.btn-my-records {
-  padding: 4px 12px;
-  border-radius: 99px;
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 0.78rem;
-  font-family: var(--font-ui);
-  cursor: pointer;
-  transition: all 0.2s;
-  white-space: nowrap;
-}
-
-.btn-my-records:hover {
-  border-color: var(--tomato);
-  color: var(--tomato-light);
-}
-
 /* ── 帳號設定 Modal ── */
+.account-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.account-header h3 {
+  margin: 0;
+}
+
 .account-user-row {
   display: flex;
   align-items: center;
@@ -1557,9 +1549,7 @@ body {
 
 /* 主題 pill 開關 */
 .theme-pill {
-  position: absolute;
-  top: 18px;
-  right: 18px;
+  flex-shrink: 0;
   width: 70px;
   height: 32px;
   border-radius: 16px;
@@ -1653,25 +1643,6 @@ body {
 
 .btn-login-header:hover {
   background: var(--tomato-dim);
-}
-
-/* 我的紀錄按鈕 */
-.btn-my-records {
-  padding: 4px 12px;
-  border-radius: 99px;
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 0.78rem;
-  font-family: var(--font-ui);
-  cursor: pointer;
-  transition: all 0.2s;
-  white-space: nowrap;
-}
-
-.btn-my-records:hover {
-  border-color: var(--tomato);
-  color: var(--tomato-light);
 }
 
 .login-divider {
