@@ -992,7 +992,7 @@ function initEventListeners() {
   EL.btnDemoLogin.addEventListener('click', handleDemoLogin);
 
   // 帳號設定按鈕
-  EL.btnAccount.addEventListener('click', openAccountModal);
+  if (EL.btnAccount) EL.btnAccount.addEventListener('click', openAccountModal);
 
   // 關閉帳號設定
   EL.btnCloseAccount.addEventListener('click', () => hideModal(EL.modalAccount));
@@ -1193,7 +1193,7 @@ function initEventListeners() {
   }
 
   // 帳號設定
-  EL.btnAccount.addEventListener('click', openAccountModal);
+  if (EL.btnAccount) EL.btnAccount.addEventListener('click', openAccountModal);
   EL.btnCloseAccount.addEventListener('click', () => hideModal(EL.modalAccount));
   EL.btnSaveUsername.addEventListener('click', handleSaveUsername);
   EL.togglePublic.addEventListener('change', handleTogglePublic);
