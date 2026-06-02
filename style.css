@@ -1122,6 +1122,7 @@ body {
 }
 
 .modal-box {
+  position: relative;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -1552,6 +1553,52 @@ body {
 .btn-account:hover {
   border-color: var(--text-muted);
   color: var(--text-primary);
+}
+
+/* 主題 pill 開關 */
+.theme-pill {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.theme-pill-moon,
+.theme-pill-sun {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.theme-pill-knob {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  background: var(--tomato);
+  border-radius: 50%;
+  top: 50%;
+  transform: translateY(-50%);
+  left: 3px;
+  transition: left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+[data-theme="light"] .theme-pill-knob {
+  left: 31px;
 }
 
 /* 帳號 Modal 區塊分隔 */

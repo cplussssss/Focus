@@ -1134,25 +1134,14 @@ function initEventListeners() {
 
   // 主題切換
   if (EL.btnThemeToggle) {
-    // 初始化主題圖示
-    const saved = localStorage.getItem('theme') || 'dark';
-    if (saved === 'light') {
-      document.documentElement.setAttribute('data-theme', 'light');
-      EL.btnThemeToggle.innerHTML = '深淺色模式 <span class="theme-icon">☀️</span>';
-    } else {
-      EL.btnThemeToggle.innerHTML = '深淺色模式 <span class="theme-icon">🌙</span>';
-    }
-    // 綁定點擊事件
     EL.btnThemeToggle.addEventListener('click', function (e) {
       e.preventDefault();
       const current = document.documentElement.getAttribute('data-theme');
       if (current === 'light') {
         document.documentElement.removeAttribute('data-theme');
-        this.innerHTML = '深淺色模式 <span class="theme-icon">🌙</span>';
         localStorage.setItem('theme', 'dark');
       } else {
         document.documentElement.setAttribute('data-theme', 'light');
-        this.innerHTML = '深淺色模式 <span class="theme-icon">☀️</span>';
         localStorage.setItem('theme', 'light');
       }
     });
