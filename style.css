@@ -1554,6 +1554,27 @@ body {
   color: var(--text-primary);
 }
 
+/* 帳號 Modal 區塊分隔 */
+.account-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 16px 0 12px;
+}
+
+.account-sub-section {
+  display: grid;
+  gap: 6px;
+}
+
+.account-sub-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 2px;
+}
+
 /* 登入按鈕 */
 .btn-login-header {
   padding: 4px 12px;

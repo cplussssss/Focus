@@ -35,25 +35,7 @@
         </div>
         <span class="sync-state" id="syncState"></span>
         <button type="button" class="user-badge" id="userBadge" hidden title="">訪客</button>
-        <div class="settings-toggle">
-          <button type="button" id="btnSettings" class="settings-trigger">設定</button>
-          <div class="settings-popup" id="settingsPopup" hidden aria-hidden="true">
-            <div class="settings-popup-inner">
-              <button type="button" class="settings-item btn-my-records" id="btnMyRecords">我的紀錄</button>
-              <button type="button" class="settings-item btn-theme-toggle" id="btnThemeToggle" title="切換深/淺色">深淺色模式
-                <span class="theme-icon">🌙</span></button>
-              <button type="button" class="settings-item btn-account-name" id="btnAccountName" title="管理帳號">帳號名稱</button>
-              <a href="changelog.html" target="_blank" rel="noopener noreferrer"
-                class="settings-item btn-changelog-link" id="btnChangelog" title="開發者日記（新分頁）">
-                開發者日記
-                <span class="cl-dot" id="clDot" hidden></span>
-              </a>
-              <button type="button" class="settings-item btn-profile-page" id="btnProfilePage" hidden>分享自己的紀錄</button>
-              <button type="button" class="settings-item btn-logout-menu" id="btnLogoutMenu" hidden>登出</button>
-              <button type="button" class="settings-item btn-login-header" id="btnLoginHeader">登入</button>
-            </div>
-          </div>
-        </div>
+        <button type="button" class="btn-login-header" id="btnLoginHeader">登入</button>
       </header>
 
       <div class="timer-block">
@@ -475,6 +457,26 @@
         </div>
       </div>
 
+      <div class="account-divider"></div>
+      <div class="account-sub-section">
+        <span class="account-sub-label">外觀</span>
+        <button type="button" class="settings-item btn-theme-toggle" id="btnThemeToggle">
+          深淺色模式 <span class="theme-icon">🌙</span>
+        </button>
+      </div>
+
+      <div class="account-divider"></div>
+      <div class="account-sub-section">
+        <span class="account-sub-label">其他</span>
+        <button type="button" class="settings-item btn-my-records" id="btnMyRecords">我的紀錄</button>
+        <a href="changelog.html" target="_blank" rel="noopener noreferrer"
+           class="settings-item btn-changelog-link" id="btnChangelog">
+          開發者日記
+          <span class="cl-dot" id="clDot" hidden></span>
+        </a>
+        <button type="button" class="settings-item btn-profile-page" id="btnProfilePage" hidden>分享自己的紀錄</button>
+      </div>
+
       <div class="modal-btn-row" style="margin-top:20px">
         <button type="button" class="btn btn-secondary" id="btnCloseAccount">關閉</button>
         <button type="button" class="btn btn-danger-sm" id="btnLogout">登出</button>
@@ -491,18 +493,6 @@
         document.documentElement.setAttribute('data-theme', 'light');
         if (btn) btn.innerHTML = '深淺色模式 <span class="theme-icon">☀️</span>';
       }
-      if (btn) btn.addEventListener('click', function () {
-        var current = document.documentElement.getAttribute('data-theme');
-        if (current === 'light') {
-          document.documentElement.removeAttribute('data-theme');
-          btn.innerHTML = '深淺色模式 <span class="theme-icon">🌙</span>';
-          localStorage.setItem('theme', 'dark');
-        } else {
-          document.documentElement.setAttribute('data-theme', 'light');
-          btn.innerHTML = '深淺色模式 <span class="theme-icon">☀️</span>';
-          localStorage.setItem('theme', 'light');
-        }
-      });
 
       // ── 更新提醒 ──
       // ★ 每次發布新版本，只需改這兩行 ★
