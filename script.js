@@ -1307,31 +1307,6 @@ function initFirebase() {
   } catch (err) { console.error('Firebase 初始化失敗：', err); }
 }
 
-/* ── Firestore：寫入單筆紀錄 ── */
-async function saveRecordToFirestore(record) {
-  if (!currentUser || !firestoreDb) return;
-  await firestoreDb
-    .collection('users').doc(currentUser.uid)
-    .collection('records').doc(String(record.id))
-    .set({
-      timestamp: record.timestamp || '',
-      startTime: record.startTime || '',
-      endTime: record.endTime || '',
-      task: record.taskName || '',
-      reason: record.taskReason || '',
-      plannedMinutes: Math.round((record.plannedSec || 0) / 60),
-      actualMinutes: Math.round((record.actualSec || 0) / 60),
-      status: record.status || 'incomplete',
-      stopReason: record.endReason || '',
-      note: record.taskNote || '',
-      category: record.category || '',
-      project: record.project || '',
-      focus: record.focus || 0,
-      distractions: Array.isArray(record.distractions)
-        ? record.distractions.join('、') : '',
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-}
 
 /* ============================================================
    AI 個人化回饋（Gemini via Cloudflare Worker）
@@ -1448,86 +1423,6 @@ function handleAccountNameClick() {
   }
 }
 
-/* ── Firestore：從雲端載入紀錄合併到本機 ── */
-async function loadFromFirestore() {
-  if (!currentUser || !firestoreDb) return;
-  try {
-    const snap = await firestoreDb
-      .collection('users').doc(currentUser.uid)
-      .collection('records')
-      .orderBy('createdAt', 'desc')
-      .limit(200).get();
-    if (snap.empty) return;
-
-    const localIds = new Set(STATE.records.map(r => String(r.id)));
-    let added = 0;
-    snap.docs.forEach(doc => {
-      if (localIds.has(doc.id)) return;
-      const d = doc.data();
-      STATE.records.push({
-        id: Number(doc.id) || doc.id,
-        timestamp: d.timestamp || '',
-        taskName: d.task || '',
-        taskReason: d.reason || '',
-        taskNote: d.note || '',
-        plannedSec: (d.plannedMinutes || 0) * 60,
-        actualSec: (d.actualMinutes || 0) * 60,
-        status: d.status || 'incomplete',
-        endReason: d.stopReason || '',
-        category: d.category || '',
-        project: d.project || '',
-        focus: d.focus || 0,
-        distractions: d.distractions
-          ? d.distractions.split('、').filter(Boolean) : [],
-        synced: true,
-      });
-      added++;
-    });
-    if (added > 0) {
-      STATE.records.sort((a, b) =>
-        String(b.timestamp).localeCompare(String(a.timestamp)));
-      saveToStorage();
-      renderHistory();
-      updateSummary();
-      setSyncResult(`☁ 從雲端載入 ${added} 筆紀錄`, false);
-    }
-  } catch (err) { console.warn('Firestore 載入失敗：', err); }
-}
-
-/* ── 查看他人公開紀錄（?user=UID） ── */
-async function loadPublicUserRecords(userId) {
-  if (!firestoreDb) { setTimeout(() => loadPublicUserRecords(userId), 800); return; }
-  try {
-    const userDoc = await firestoreDb.collection('users').doc(userId).get();
-    if (!userDoc.exists || !userDoc.data().isPublic) {
-      setSyncResult('此用戶的紀錄未公開或不存在', true); return;
-    }
-    const name = userDoc.data().displayName || userDoc.data().email || '匿名用戶';
-    const snap = await firestoreDb
-      .collection('users').doc(userId)
-      .collection('records')
-      .orderBy('createdAt', 'desc').limit(200).get();
-
-    const publicRecords = snap.docs.map(doc => {
-      const d = doc.data();
-      return {
-        id: doc.id, timestamp: d.timestamp || '',
-        taskName: d.task || '', taskReason: d.reason || '',
-        taskNote: d.note || '',
-        plannedSec: (d.plannedMinutes || 0) * 60,
-        actualSec: (d.actualMinutes || 0) * 60,
-        status: d.status || 'incomplete', endReason: d.stopReason || '',
-        category: d.category || '', project: d.project || '',
-        focus: d.focus || 0,
-        distractions: d.distractions ? d.distractions.split('、').filter(Boolean) : [],
-        synced: true,
-      };
-    });
-
-    setSyncResult(`👤 正在查看 ${name} 的公開紀錄（共 ${publicRecords.length} 筆）`, false);
-    renderHistory(publicRecords);
-  } catch (err) { setSyncResult('載入失敗：' + err.message, true); }
-}
 
 async function handleGoogleLogin() {
   try {
@@ -1615,14 +1510,9 @@ async function loadPublicUserRecords(userId) {
    Firestore 相關函式
    ============================================================ */
 
-// 寫入單筆紀錄到 Firestore
+// 寫入單筆紀錄到 Firestore（訪客帳號不寫入）
 async function saveRecordToFirestore(record) {
-  // ★ 訪客帳號 email，這個帳號的紀錄不會真的存入 Firestore
-  const DEMO_EMAIL = 'demo@focus.app';
-  if (currentUser && firestoreDb && currentUser.email !== DEMO_EMAIL) {
-    saveRecordToFirestore(record).catch(e => console.warn('Firestore 寫入失敗：', e));
-  }
-  if (!currentUser || !firestoreDb) return;
+  if (!currentUser || !firestoreDb || currentUser.email === DEMO_EMAIL) return;
   await firestoreDb
     .collection('users').doc(currentUser.uid)
     .collection('records').doc(String(record.id))
