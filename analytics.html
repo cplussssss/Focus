@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>" />
+  <title>訪客分析 — 番茄鐘</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <style>
+    :root {
+      --an-green: #1d9e75;
+      --an-green-bg: #e1f5ee;
+      --an-amber: #ba7517;
+      --an-amber-bg: #faeeda;
+      --an-red: #a32d2d;
+      --an-red-bg: #fcebeb;
+      --an-blue: #185fa5;
+      --an-blue-bg: #e6f1fb;
+      --an-purple: #534ab7;
+      --an-purple-bg: #eeedfe;
+      --an-gray: #5f5e5a;
+      --an-gray-bg: #f1efe8;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-sans, system-ui, sans-serif);
+      background: var(--bg, #0e0e0e);
+      color: var(--text, #e8e8e8);
+      min-height: 100vh;
+    }
+
+    .an-layout {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 28px 20px 80px;
+    }
+
+    .an-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 32px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border, rgba(255,255,255,.1));
+    }
+    .an-header h1 {
+      font-size: 1.3rem;
+      font-weight: 500;
+      color: var(--text, #e8e8e8);
+    }
+    .an-back {
+      margin-left: auto;
+      font-size: .82rem;
+      color: var(--text-muted, #888);
+      text-decoration: none;
+      padding: 4px 10px;
+      border: 1px solid var(--border, rgba(255,255,255,.12));
+      border-radius: 6px;
+      transition: background .15s;
+    }
+    .an-back:hover { background: var(--hover-bg, rgba(255,255,255,.06)); }
+
+    .an-section-title {
+      font-size: .7rem;
+      font-weight: 600;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--text-muted, #888);
+      margin: 32px 0 14px;
+    }
+
+    /* Metric cards */
+    .an-metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+    .an-metric {
+      background: var(--card-bg, rgba(255,255,255,.04));
+      border: 1px solid var(--border, rgba(255,255,255,.1));
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+    .an-metric-label {
+      font-size: .75rem;
+      color: var(--text-muted, #888);
+      margin-bottom: 6px;
+    }
+    .an-metric-value {
+      font-size: 1.5rem;
+      font-weight: 500;
+      color: var(--text, #e8e8e8);
+      line-height: 1;
+    }
+    .an-metric-sub {
+      font-size: .72rem;
+      color: var(--text-muted, #888);
+      margin-top: 4px;
+    }
+    .an-metric.accent-green { border-color: var(--an-green); }
+    .an-metric.accent-amber { border-color: var(--an-amber); }
+    .an-metric.accent-red   { border-color: var(--an-red); }
+    .an-metric.accent-blue  { border-color: var(--an-blue); }
+
+    /* Chart wrapper */
+    .an-chart-wrap {
+      background: var(--card-bg, rgba(255,255,255,.04));
+      border: 1px solid var(--border, rgba(255,255,255,.1));
+      border-radius: 10px;
+      padding: 18px 20px;
+      margin-bottom: 14px;
+    }
+    .an-chart-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .an-chart-title { font-size: .88rem; font-weight: 500; }
+
+    /* Event log */
+    .an-log {
+      background: var(--card-bg, rgba(255,255,255,.04));
+      border: 1px solid var(--border, rgba(255,255,255,.1));
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+    .an-log-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border, rgba(255,255,255,.08));
+    }
+    .an-log-title { font-size: .88rem; font-weight: 500; }
+    .an-log-body {
+      max-height: 340px;
+      overflow-y: auto;
+    }
+    .an-log-row {
+      display: grid;
+      grid-template-columns: 160px 120px 1fr auto;
+      gap: 8px;
+      align-items: center;
+      padding: 9px 18px;
+      border-bottom: 1px solid var(--border, rgba(255,255,255,.05));
+      font-size: .8rem;
+    }
+    .an-log-row:last-child { border-bottom: none; }
+    .an-log-time { color: var(--text-muted, #888); font-variant-numeric: tabular-nums; }
+    .an-log-session { color: var(--text-muted, #888); font-family: monospace; font-size: .76rem; }
+    .an-log-event { color: var(--text, #e8e8e8); }
+    .an-log-empty { padding: 24px 18px; font-size: .84rem; color: var(--text-muted, #888); text-align: center; }
+
+    /* Smoke test */
+    .an-smoke {
+      background: var(--card-bg, rgba(255,255,255,.04));
+      border: 1px solid var(--border, rgba(255,255,255,.1));
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+    .an-smoke-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border, rgba(255,255,255,.08));
+    }
+    .an-smoke-title { font-size: .88rem; font-weight: 500; }
+    .an-smoke-run {
+      font-size: .78rem;
+      padding: 5px 12px;
+      border: 1px solid var(--border, rgba(255,255,255,.15));
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text, #e8e8e8);
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .an-smoke-run:hover { background: var(--hover-bg, rgba(255,255,255,.08)); }
+    .an-smoke-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 18px;
+      border-bottom: 1px solid var(--border, rgba(255,255,255,.05));
+      font-size: .82rem;
+    }
+    .an-smoke-row:last-child { border-bottom: none; }
+    .an-smoke-status {
+      width: 72px;
+      flex-shrink: 0;
+      font-size: .72rem;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 4px;
+      text-align: center;
+    }
+    .s-pass { background: #0f3a28; color: #5dcaa5; }
+    .s-fail { background: #4a1a1a; color: #e24b4a; }
+    .s-skip { background: #2c2c2a; color: #888; }
+    .s-run  { background: #0d3a6e; color: #7ec8ff; }
+    .an-smoke-name { flex: 1; color: var(--text, #e8e8e8); }
+    .an-smoke-detail { font-size: .74rem; color: var(--text-muted, #888); font-family: monospace; }
+    .an-smoke-ms { font-size: .74rem; color: var(--text-muted, #888); width: 60px; text-align: right; flex-shrink: 0; }
+
+    /* Perf detail */
+    .an-perf-bar-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: .8rem;
+      margin-bottom: 10px;
+    }
+    .an-perf-label { width: 120px; flex-shrink: 0; color: var(--text-muted, #888); }
+    .an-perf-track {
+      flex: 1;
+      height: 8px;
+      background: rgba(255,255,255,.08);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .an-perf-fill { height: 100%; border-radius: 4px; transition: width .6s ease; }
+    .an-perf-val { width: 60px; text-align: right; color: var(--text, #e8e8e8); }
+
+    /* Badges */
+    .badge {
+      display: inline-block;
+      font-size: .68rem;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+    .badge-green { background: #0f3a28; color: #5dcaa5; }
+    .badge-amber { background: #4a3000; color: #f5c842; }
+    .badge-red   { background: #4a1a1a; color: #e24b4a; }
+
+    /* Tabs */
+    .an-tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 20px;
+      border-bottom: 1px solid var(--border, rgba(255,255,255,.1));
+    }
+    .an-tab {
+      padding: 8px 16px;
+      font-size: .84rem;
+      cursor: pointer;
+      color: var(--text-muted, #888);
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      background: transparent;
+      border-top: none;
+      border-left: none;
+      border-right: none;
+      transition: color .15s;
+    }
+    .an-tab.active {
+      color: var(--text, #e8e8e8);
+      border-bottom-color: var(--accent, #e85d3a);
+    }
+    .an-tab-panel { display: none; }
+    .an-tab-panel.active { display: block; }
+
+    .clear-btn {
+      font-size: .74rem;
+      padding: 4px 10px;
+      border: 1px solid var(--border, rgba(255,255,255,.12));
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text-muted, #888);
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .clear-btn:hover { border-color: var(--an-red); color: #e24b4a; }
+
+    /* Session heatmap */
+    .heatmap-grid {
+      display: grid;
+      grid-template-columns: repeat(24, 1fr);
+      gap: 3px;
+    }
+    .heatmap-cell {
+      aspect-ratio: 1;
+      border-radius: 2px;
+      position: relative;
+      cursor: default;
+    }
+    .heatmap-labels {
+      display: grid;
+      grid-template-columns: repeat(24, 1fr);
+      gap: 3px;
+      margin-top: 4px;
+    }
+    .heatmap-label {
+      font-size: .6rem;
+      text-align: center;
+      color: var(--text-muted, #888);
+    }
+
+    @media (max-width: 600px) {
+      .an-log-row { grid-template-columns: 1fr 1fr; }
+      .an-log-session, .an-log-time { display: none; }
+      .heatmap-label { font-size: .5rem; }
+    }
+  </style>
+</head>
+<body>
+<div class="an-layout">
+
+  <header class="an-header">
+    <span style="font-size:1.5rem" aria-hidden="true">📊</span>
+    <h1>訪客分析 &amp; 測試報告</h1>
+    <a href="index.html" class="an-back">← 回番茄鐘</a>
+  </header>
+
+  <!-- Tab bar -->
+  <div class="an-tabs">
+    <button class="an-tab active" onclick="switchTab('visitors')">訪客行為</button>
+    <button class="an-tab" onclick="switchTab('perf')">效能壓力測試</button>
+    <button class="an-tab" onclick="switchTab('smoke')">Smoke Test</button>
+  </div>
+
+  <!-- ===== TAB 1: VISITORS ===== -->
+  <div class="an-tab-panel active" id="tab-visitors">
+
+    <div class="an-section-title">今日總覽</div>
+    <div class="an-metrics" id="visitor-metrics">
+      <div class="an-metric accent-blue">
+        <div class="an-metric-label">總造訪次數</div>
+        <div class="an-metric-value" id="m-visits">—</div>
+        <div class="an-metric-sub" id="m-visits-sub">所有 session</div>
+      </div>
+      <div class="an-metric accent-green">
+        <div class="an-metric-label">不重複訪客</div>
+        <div class="an-metric-value" id="m-unique">—</div>
+        <div class="an-metric-sub">不同 session ID</div>
+      </div>
+      <div class="an-metric">
+        <div class="an-metric-label">平均停留</div>
+        <div class="an-metric-value" id="m-duration">—</div>
+        <div class="an-metric-sub">分鐘</div>
+      </div>
+      <div class="an-metric accent-amber">
+        <div class="an-metric-label">今日事件數</div>
+        <div class="an-metric-value" id="m-events">—</div>
+        <div class="an-metric-sub">用戶操作</div>
+      </div>
+    </div>
+
+    <!-- Hourly chart -->
+    <div class="an-chart-wrap" style="margin-top:14px;">
+      <div class="an-chart-head">
+        <span class="an-chart-title">每小時造訪分布（最近 7 天）</span>
+        <div style="display:flex;gap:12px;font-size:.75rem;color:var(--text-muted,#888);">
+          <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:3px;background:#378add;border-radius:2px;display:inline-block;"></span>造訪</span>
+          <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:3px;background:#1d9e75;border-radius:2px;display:inline-block;"></span>事件</span>
+        </div>
+      </div>
+      <div style="position:relative;height:160px;">
+        <canvas id="hourlyChart" role="img" aria-label="每小時造訪與事件分布折線圖">訪客每小時分布</canvas>
+      </div>
+    </div>
+
+    <!-- Heatmap -->
+    <div class="an-chart-wrap">
+      <div class="an-chart-head">
+        <span class="an-chart-title">24 小時熱力圖（造訪密度）</span>
+      </div>
+      <div class="heatmap-grid" id="heatmap"></div>
+      <div class="heatmap-labels" id="heatmap-labels"></div>
+    </div>
+
+    <!-- Top actions -->
+    <div class="an-chart-wrap">
+      <div class="an-chart-head">
+        <span class="an-chart-title">熱門操作 Top 8</span>
+      </div>
+      <div id="top-actions-bars"></div>
+    </div>
+
+    <!-- Event log -->
+    <div class="an-log">
+      <div class="an-log-head">
+        <span class="an-log-title">事件明細</span>
+        <button class="clear-btn" onclick="clearVisitorLog()">清除紀錄</button>
+      </div>
+      <div class="an-log-body" id="event-log-body">
+        <div class="an-log-empty">尚無事件。請先在番茄鐘頁面操作。</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===== TAB 2: PERF ===== -->
+  <div class="an-tab-panel" id="tab-perf">
+
+    <div class="an-section-title">頁面載入效能（Web Vitals）</div>
+    <div class="an-metrics">
+      <div class="an-metric" id="p-fcp-card">
+        <div class="an-metric-label">FCP</div>
+        <div class="an-metric-value" id="p-fcp">—</div>
+        <div class="an-metric-sub">首次內容繪製</div>
+      </div>
+      <div class="an-metric" id="p-lcp-card">
+        <div class="an-metric-label">LCP</div>
+        <div class="an-metric-value" id="p-lcp">—</div>
+        <div class="an-metric-sub">最大內容繪製</div>
+      </div>
+      <div class="an-metric" id="p-cls-card">
+        <div class="an-metric-label">CLS</div>
+        <div class="an-metric-value" id="p-cls">—</div>
+        <div class="an-metric-sub">累積佈局偏移</div>
+      </div>
+      <div class="an-metric" id="p-ttfb-card">
+        <div class="an-metric-label">TTFB</div>
+        <div class="an-metric-value" id="p-ttfb">—</div>
+        <div class="an-metric-sub">首位元組時間</div>
+      </div>
+    </div>
+
+    <div class="an-section-title" style="margin-top:28px;">Firestore 延遲測試</div>
+    <div class="an-metrics" style="margin-bottom:16px;">
+      <div class="an-metric" id="fs-read-card">
+        <div class="an-metric-label">Read 平均</div>
+        <div class="an-metric-value" id="fs-read">—</div>
+        <div class="an-metric-sub">ms</div>
+      </div>
+      <div class="an-metric" id="fs-write-card">
+        <div class="an-metric-label">Write 平均</div>
+        <div class="an-metric-value" id="fs-write">—</div>
+        <div class="an-metric-sub">ms</div>
+      </div>
+      <div class="an-metric" id="fs-p95-card">
+        <div class="an-metric-label">P95</div>
+        <div class="an-metric-value" id="fs-p95">—</div>
+        <div class="an-metric-sub">讀寫 P95 ms</div>
+      </div>
+      <div class="an-metric" id="fs-err-card">
+        <div class="an-metric-label">錯誤率</div>
+        <div class="an-metric-value" id="fs-err">—</div>
+        <div class="an-metric-sub">%</div>
+      </div>
+    </div>
+
+    <!-- Perf bars -->
+    <div class="an-chart-wrap">
+      <div class="an-chart-head">
+        <span class="an-chart-title">Web Vitals 達標情況</span>
+      </div>
+      <div id="perf-bars"></div>
+    </div>
+
+    <!-- Latency chart -->
+    <div class="an-chart-wrap">
+      <div class="an-chart-head">
+        <span class="an-chart-title">Firestore 延遲趨勢（最近 20 次讀寫）</span>
+        <div style="display:flex;gap:12px;font-size:.75rem;color:var(--text-muted,#888);">
+          <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:3px;background:#ba7517;border-radius:2px;display:inline-block;"></span>Read</span>
+          <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:3px;background:#378add;border-radius:2px;display:inline-block;"></span>Write</span>
+        </div>
+      </div>
+      <div style="position:relative;height:160px;">
+        <canvas id="latencyChart" role="img" aria-label="Firestore 讀寫延遲趨勢折線圖">Firestore 延遲趨勢</canvas>
+      </div>
+    </div>
+
+    <!-- API response times (stored) -->
+    <div class="an-log">
+      <div class="an-log-head">
+        <span class="an-log-title">API 延遲紀錄</span>
+        <button class="clear-btn" onclick="clearPerfLog()">清除</button>
+      </div>
+      <div class="an-log-body" id="perf-log-body">
+        <div class="an-log-empty">尚無延遲資料。請先操作番茄鐘幾次後回來查看。</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===== TAB 3: SMOKE TEST ===== -->
+  <div class="an-tab-panel" id="tab-smoke">
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <div class="an-section-title" style="margin:0;">核心功能 Smoke Test</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <span id="smoke-summary" style="font-size:.78rem;color:var(--text-muted,#888);"></span>
+        <button class="an-smoke-run" onclick="runSmokeTests()">▶ 執行所有測試</button>
+      </div>
+    </div>
+
+    <!-- A/B Feature flags -->
+    <div class="an-chart-wrap" style="margin-bottom:16px;">
+      <div class="an-chart-head">
+        <span class="an-chart-title">A/B 測試 / 功能開關</span>
+        <span style="font-size:.74rem;color:var(--text-muted,#888);">市場煙霧測試</span>
+      </div>
+      <div id="ab-flags"></div>
+    </div>
+
+    <!-- Smoke tests -->
+    <div class="an-smoke" id="smoke-container">
+      <div class="an-smoke-head">
+        <span class="an-smoke-title">功能驗證</span>
+        <span style="font-size:.74rem;color:var(--text-muted,#888);">自動 Smoke Test</span>
+      </div>
+      <div id="smoke-rows"></div>
+    </div>
+
+    <!-- Last smoke run -->
+    <div class="an-log">
+      <div class="an-log-head">
+        <span class="an-log-title">歷次測試紀錄</span>
+        <button class="clear-btn" onclick="clearSmokeLog()">清除</button>
+      </div>
+      <div class="an-log-body" id="smoke-history-body">
+        <div class="an-log-empty">尚未執行過測試。</div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+// =====================================================
+// STORAGE KEYS
+// =====================================================
+const KEYS = {
+  events:    'an_events',
+  perf:      'an_perf',
+  smoke:     'an_smoke_history',
+  abFlags:   'an_ab_flags',
+};
+
+// =====================================================
+// UTILITIES
+// =====================================================
+function ts(d) {
+  d = d || new Date();
+  const p = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+
+function load(key) {
+  try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; }
+}
+function save(key, data) {
+  try { localStorage.setItem(key, JSON.stringify(data)); } catch {}
+}
+
+function grade(val, good, ok) {
+  if (val <= good) return 'badge-green';
+  if (val <= ok)   return 'badge-amber';
+  return 'badge-red';
+}
+function gradeAccent(val, good, ok) {
+  if (val <= good) return 'accent-green';
+  if (val <= ok)   return 'accent-amber';
+  return 'accent-red';
+}
+
+// =====================================================
+// TAB SWITCHING
+// =====================================================
+function switchTab(name) {
+  document.querySelectorAll('.an-tab').forEach((t,i) => {
+    const panels = ['visitors','perf','smoke'];
+    t.classList.toggle('active', panels[i] === name);
+  });
+  document.querySelectorAll('.an-tab-panel').forEach(p => {
+    p.classList.toggle('active', p.id === 'tab-' + name);
+  });
+  if (name === 'perf')  renderPerf();
+  if (name === 'smoke') renderSmoke();
+  if (name === 'visitors') renderVisitors();
+}
+
+// =====================================================
+// TAB 1: VISITORS
+// =====================================================
+function renderVisitors() {
+  const events = load(KEYS.events);
+  const today = new Date().toDateString();
+
+  const todayEvts = events.filter(e => new Date(e.t).toDateString() === today);
+  const sessions  = [...new Set(events.map(e => e.sid))];
+  const todaySess = [...new Set(todayEvts.map(e => e.sid))];
+
+  // durations
+  const sessMap = {};
+  events.forEach(e => {
+    if (!sessMap[e.sid]) sessMap[e.sid] = { min: e.t, max: e.t };
+    if (e.t < sessMap[e.sid].min) sessMap[e.sid].min = e.t;
+    if (e.t > sessMap[e.sid].max) sessMap[e.sid].max = e.t;
+  });
+  const durations = Object.values(sessMap).map(s => (new Date(s.max) - new Date(s.min)) / 60000);
+  const avgDur = durations.length ? (durations.reduce((a,b)=>a+b,0)/durations.length).toFixed(1) : '—';
+
+  document.getElementById('m-visits').textContent   = sessions.length || '0';
+  document.getElementById('m-unique').textContent   = todaySess.length || '0';
+  document.getElementById('m-duration').textContent = avgDur;
+  document.getElementById('m-events').textContent   = todayEvts.length || '0';
+  document.getElementById('m-visits-sub').textContent = `今日 ${todaySess.length} 次`;
+
+  renderHourlyChart(events);
+  renderHeatmap(events);
+  renderTopActions(events);
+  renderEventLog(events);
+}
+
+let hourlyChartInst = null;
+function renderHourlyChart(events) {
+  const hourCounts  = new Array(24).fill(0);
+  const eventCounts = new Array(24).fill(0);
+  const now = Date.now();
+  const week = 7 * 86400 * 1000;
+  events.filter(e => now - new Date(e.t).getTime() < week).forEach(e => {
+    const h = new Date(e.t).getHours();
+    if (e.action === 'page_enter') hourCounts[h]++;
+    eventCounts[h]++;
+  });
+  const labels = Array.from({length:24}, (_,i) => i + 'h');
+  if (hourlyChartInst) hourlyChartInst.destroy();
+  hourlyChartInst = new Chart(document.getElementById('hourlyChart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label:'造訪', data: hourCounts,  borderColor:'#378add', backgroundColor:'rgba(55,138,221,.12)', borderWidth:2, pointRadius:2, tension:.3, fill:true },
+        { label:'事件', data: eventCounts, borderColor:'#1d9e75', backgroundColor:'rgba(29,158,117,.08)', borderWidth:2, pointRadius:2, tension:.3, fill:true }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color:'#888', font:{size:11}, maxRotation:0, autoSkip:true, maxTicksLimit:8 }, grid:{color:'rgba(255,255,255,.04)'} },
+        y: { ticks: { color:'#888', font:{size:11} }, grid:{color:'rgba(255,255,255,.06)'} }
+      }
+    }
+  });
+}
+
+function renderHeatmap(events) {
+  const counts = new Array(24).fill(0);
+  events.forEach(e => counts[new Date(e.t).getHours()]++);
+  const max = Math.max(...counts, 1);
+  const grid = document.getElementById('heatmap');
+  const labs  = document.getElementById('heatmap-labels');
+  grid.innerHTML = '';
+  labs.innerHTML  = '';
+  for (let h = 0; h < 24; h++) {
+    const alpha = 0.1 + 0.85 * (counts[h] / max);
+    const cell = document.createElement('div');
+    cell.className = 'heatmap-cell';
+    cell.style.background = `rgba(55,138,221,${alpha.toFixed(2)})`;
+    cell.title = `${h}:00 — ${counts[h]} 次`;
+    grid.appendChild(cell);
+    const lb = document.createElement('div');
+    lb.className = 'heatmap-label';
+    lb.textContent = h % 4 === 0 ? h : '';
+    labs.appendChild(lb);
+  }
+}
+
+function renderTopActions(events) {
+  const counts = {};
+  events.forEach(e => { counts[e.action] = (counts[e.action]||0) + 1; });
+  const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const max = sorted[0]?.[1] || 1;
+  const el = document.getElementById('top-actions-bars');
+  if (!sorted.length) { el.innerHTML = '<div style="font-size:.82rem;color:var(--text-muted,#888);padding:8px 0;">尚無資料</div>'; return; }
+  el.innerHTML = sorted.map(([action, count]) => `
+    <div class="an-perf-bar-row">
+      <div class="an-perf-label" style="font-size:.78rem;">${action}</div>
+      <div class="an-perf-track"><div class="an-perf-fill" style="width:${(count/max*100).toFixed(1)}%;background:#378add;"></div></div>
+      <div class="an-perf-val" style="font-size:.78rem;">${count}</div>
+    </div>
+  `).join('');
+}
+
+function renderEventLog(events) {
+  const el = document.getElementById('event-log-body');
+  if (!events.length) { el.innerHTML = '<div class="an-log-empty">尚無事件。請先在番茄鐘頁面操作。</div>'; return; }
+  const recent = [...events].reverse().slice(0, 200);
+  el.innerHTML = recent.map(e => `
+    <div class="an-log-row">
+      <span class="an-log-time">${e.t}</span>
+      <span class="an-log-session">${e.sid ? e.sid.slice(0,8) : '—'}</span>
+      <span class="an-log-event">${e.action}${e.detail ? ' — ' + e.detail : ''}</span>
+      <span></span>
+    </div>
+  `).join('');
+}
+
+function clearVisitorLog() {
+  if (!confirm('確定清除所有訪客紀錄？')) return;
+  save(KEYS.events, []);
+  renderVisitors();
+}
+
+// =====================================================
+// TAB 2: PERF
+// =====================================================
+function renderPerf() {
+  const perfData = load(KEYS.perf);
+
+  // Web Vitals from stored data or PerformanceObserver
+  readWebVitals();
+
+  // Firestore latency stats
+  const reads  = perfData.filter(p => p.type === 'read').map(p=>p.ms);
+  const writes = perfData.filter(p => p.type === 'write').map(p=>p.ms);
+  const all    = [...reads, ...writes];
+  const errors = perfData.filter(p => p.err).length;
+
+  const avg = arr => arr.length ? Math.round(arr.reduce((a,b)=>a+b,0)/arr.length) : null;
+  const p95 = arr => {
+    if (!arr.length) return null;
+    const s = [...arr].sort((a,b)=>a-b);
+    return s[Math.floor(s.length * .95)] || s[s.length-1];
+  };
+
+  const ra = avg(reads), wa = avg(writes), pa = p95(all);
+  const errPct = perfData.length ? ((errors/perfData.length)*100).toFixed(1) : null;
+
+  document.getElementById('fs-read').textContent  = ra != null ? ra + 'ms' : '—';
+  document.getElementById('fs-write').textContent = wa != null ? wa + 'ms' : '—';
+  document.getElementById('fs-p95').textContent   = pa != null ? pa + 'ms' : '—';
+  document.getElementById('fs-err').textContent   = errPct != null ? errPct + '%' : '—';
+
+  if (ra != null) document.getElementById('fs-read-card').className  = 'an-metric ' + gradeAccent(ra, 150, 400);
+  if (wa != null) document.getElementById('fs-write-card').className = 'an-metric ' + gradeAccent(wa, 200, 500);
+  if (errPct != null) document.getElementById('fs-err-card').className = 'an-metric ' + gradeAccent(parseFloat(errPct), 1, 5);
+
+  renderPerfBars();
+  renderLatencyChart(perfData);
+  renderPerfLog(perfData);
+}
+
+function readWebVitals() {
+  const nav = performance.getEntriesByType('navigation')[0];
+  const ttfb = nav ? Math.round(nav.responseStart - nav.requestStart) : null;
+  const fcp  = getStoredVital('fcp');
+  const lcp  = getStoredVital('lcp');
+  const cls  = getStoredVital('cls');
+
+  document.getElementById('p-ttfb').textContent = ttfb != null ? ttfb + 'ms' : '—';
+  document.getElementById('p-fcp').textContent  = fcp != null ? fcp + 'ms' : '—';
+  document.getElementById('p-lcp').textContent  = lcp != null ? lcp + 'ms' : '—';
+  document.getElementById('p-cls').textContent  = cls != null ? cls : '—';
+
+  if (ttfb != null) document.getElementById('p-ttfb-card').className = 'an-metric ' + gradeAccent(ttfb, 200, 600);
+  if (fcp  != null) document.getElementById('p-fcp-card').className  = 'an-metric ' + gradeAccent(fcp, 1800, 3000);
+  if (lcp  != null) document.getElementById('p-lcp-card').className  = 'an-metric ' + gradeAccent(lcp, 2500, 4000);
+  if (cls  != null) {
+    const clsNum = parseFloat(cls);
+    document.getElementById('p-cls-card').className = 'an-metric ' + gradeAccent(clsNum*100, 10, 25);
+  }
+}
+
+function getStoredVital(key) {
+  const v = localStorage.getItem('an_vital_' + key);
+  return v != null ? v : null;
+}
+
+function renderPerfBars() {
+  const fcp  = getStoredVital('fcp');
+  const lcp  = getStoredVital('lcp');
+  const cls  = getStoredVital('cls');
+  const ttfb = (() => { const nav = performance.getEntriesByType('navigation')[0]; return nav ? Math.round(nav.responseStart - nav.requestStart) : null; })();
+  const vitals = [
+    { name:'FCP',  val: fcp  != null ? parseFloat(fcp)  : null, unit:'ms', good:1800, ok:3000, max:4000 },
+    { name:'LCP',  val: lcp  != null ? parseFloat(lcp)  : null, unit:'ms', good:2500, ok:4000, max:5000 },
+    { name:'CLS',  val: cls  != null ? parseFloat(cls)*100 : null, unit:'×0.01', good:10, ok:25, max:50 },
+    { name:'TTFB', val: ttfb, unit:'ms', good:200, ok:600, max:1000 },
+  ];
+  const el = document.getElementById('perf-bars');
+  el.innerHTML = vitals.map(v => {
+    if (v.val == null) return `<div class="an-perf-bar-row"><div class="an-perf-label">${v.name}</div><div class="an-perf-track"><div class="an-perf-fill" style="width:0%;background:#444;"></div></div><div class="an-perf-val">—</div></div>`;
+    const pct = Math.min(100, (v.val / v.max * 100)).toFixed(1);
+    const color = v.val <= v.good ? '#1d9e75' : v.val <= v.ok ? '#ba7517' : '#e24b4a';
+    const label = v.unit === 'ms' ? Math.round(v.val) + 'ms' : (v.val/100).toFixed(3);
+    return `<div class="an-perf-bar-row">
+      <div class="an-perf-label">${v.name} <span class="badge ${grade(v.val,v.good,v.ok)}" style="font-size:.65rem;margin-left:4px;">${v.val <= v.good ? '好' : v.val <= v.ok ? '普通' : '差'}</span></div>
+      <div class="an-perf-track"><div class="an-perf-fill" style="width:${pct}%;background:${color};"></div></div>
+      <div class="an-perf-val">${label}</div>
+    </div>`;
+  }).join('');
+}
+
+let latencyChartInst = null;
+function renderLatencyChart(perfData) {
+  const reads  = perfData.filter(p=>p.type==='read').slice(-20);
+  const writes = perfData.filter(p=>p.type==='write').slice(-20);
+  const maxLen = Math.max(reads.length, writes.length, 5);
+  const labels = Array.from({length:maxLen}, (_,i) => '#'+(i+1));
+  if (latencyChartInst) latencyChartInst.destroy();
+  latencyChartInst = new Chart(document.getElementById('latencyChart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label:'Read',  data: reads.map(p=>p.ms),  borderColor:'#ba7517', backgroundColor:'rgba(186,117,23,.1)', borderWidth:2, pointRadius:3, tension:.3 },
+        { label:'Write', data: writes.map(p=>p.ms), borderColor:'#378add', backgroundColor:'rgba(55,138,221,.1)', borderWidth:2, pointRadius:3, tension:.3, borderDash:[4,3] }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color:'#888', font:{size:11} }, grid:{color:'rgba(255,255,255,.04)'} },
+        y: { ticks: { color:'#888', font:{size:11}, callback: v => v+'ms' }, grid:{color:'rgba(255,255,255,.06)'} }
+      }
+    }
+  });
+}
+
+function renderPerfLog(perfData) {
+  const el = document.getElementById('perf-log-body');
+  if (!perfData.length) { el.innerHTML = '<div class="an-log-empty">尚無延遲資料。</div>'; return; }
+  const recent = [...perfData].reverse().slice(0,100);
+  el.innerHTML = recent.map(p => {
+    const badge = p.err ? '<span class="badge badge-red">ERR</span>' : (p.ms < 200 ? '<span class="badge badge-green">快</span>' : p.ms < 500 ? '<span class="badge badge-amber">普通</span>' : '<span class="badge badge-red">慢</span>');
+    return `<div class="an-log-row">
+      <span class="an-log-time">${p.t}</span>
+      <span class="an-log-session" style="width:50px;">${p.type}</span>
+      <span class="an-log-event">${p.op || ''} ${badge}</span>
+      <span style="font-size:.78rem;color:var(--text-muted,#888);font-variant-numeric:tabular-nums;">${p.err ? 'ERR' : p.ms+'ms'}</span>
+    </div>`;
+  }).join('');
+}
+
+function clearPerfLog() {
+  if (!confirm('清除效能紀錄？')) return;
+  save(KEYS.perf, []);
+  renderPerf();
+}
+
+// =====================================================
+// TAB 3: SMOKE TEST + A/B
+// =====================================================
+const SMOKE_TESTS = [
+  { id:'ls_rw',    name:'localStorage 讀寫',    desc:'寫入再讀回，驗證值相符',   fn: testLocalStorage },
+  { id:'session',  name:'Session ID 產生',       desc:'確認有效 sessionId 存在',  fn: testSessionId },
+  { id:'timer',    name:'計時器邏輯',             desc:'setTimeout 精度 ±200ms',  fn: testTimer },
+  { id:'ab_flags', name:'A/B Flag 載入',          desc:'feature flags 可讀取',    fn: testABFlags },
+  { id:'evt_log',  name:'事件日誌寫入',           desc:'記錄一筆事件並驗證',       fn: testEventLog },
+  { id:'perf_api', name:'Performance API',        desc:'可讀取 navigation timing', fn: testPerfAPI },
+  { id:'json_p',   name:'JSON 解析',              desc:'正常 JSON 解析無例外',     fn: testJSON },
+  { id:'net_chk',  name:'網路狀態',               desc:'navigator.onLine',         fn: testNetwork },
+];
+
+let smokeState = {};
+SMOKE_TESTS.forEach(t => { smokeState[t.id] = { status:'skip', ms:null, detail:'' }; });
+
+async function runSmokeTests() {
+  document.getElementById('smoke-summary').textContent = '執行中…';
+  for (const test of SMOKE_TESTS) {
+    smokeState[test.id] = { status:'run', ms:null, detail:'' };
+    renderSmokeRows();
+    await sleep(80);
+    const start = Date.now();
+    try {
+      const result = await test.fn();
+      smokeState[test.id] = { status: result.pass ? 'pass' : 'fail', ms: Date.now()-start, detail: result.msg||'' };
+    } catch(e) {
+      smokeState[test.id] = { status:'fail', ms: Date.now()-start, detail: e.message };
+    }
+    renderSmokeRows();
+  }
+  const pass  = SMOKE_TESTS.filter(t => smokeState[t.id].status==='pass').length;
+  const total = SMOKE_TESTS.length;
+  document.getElementById('smoke-summary').textContent = `${pass}/${total} 通過`;
+
+  // save history
+  const history = load(KEYS.smoke);
+  history.push({ t: ts(), pass, total, results: JSON.parse(JSON.stringify(smokeState)) });
+  save(KEYS.smoke, history.slice(-50));
+  renderSmokeHistory();
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function renderSmokeRows() {
+  const el = document.getElementById('smoke-rows');
+  el.innerHTML = SMOKE_TESTS.map(test => {
+    const s = smokeState[test.id];
+    const cls = { pass:'s-pass', fail:'s-fail', skip:'s-skip', run:'s-run' }[s.status];
+    const label = { pass:'通過', fail:'失敗', skip:'未執行', run:'執行中…' }[s.status];
+    return `<div class="an-smoke-row">
+      <span class="an-smoke-status ${cls}">${label}</span>
+      <span class="an-smoke-name">${test.name}</span>
+      <span class="an-smoke-detail">${s.detail || test.desc}</span>
+      <span class="an-smoke-ms">${s.ms != null ? s.ms+'ms' : ''}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderSmokeHistory() {
+  const history = load(KEYS.smoke);
+  const el = document.getElementById('smoke-history-body');
+  if (!history.length) { el.innerHTML = '<div class="an-log-empty">尚未執行過測試。</div>'; return; }
+  el.innerHTML = [...history].reverse().slice(0,30).map(h => {
+    const allPass = h.pass === h.total;
+    const badge = allPass ? '<span class="badge badge-green">全通過</span>' : `<span class="badge badge-red">${h.total-h.pass} 失敗</span>`;
+    return `<div class="an-log-row">
+      <span class="an-log-time">${h.t}</span>
+      <span class="an-log-session"></span>
+      <span class="an-log-event">${badge} ${h.pass}/${h.total} 通過</span>
+      <span></span>
+    </div>`;
+  }).join('');
+}
+
+// A/B Flags
+const DEFAULT_FLAGS = [
+  { key:'ai_feedback',    label:'AI 個人化回饋',   desc:'番茄鐘完成後顯示 AI 建議',  defaultVal: true  },
+  { key:'today_plan',     label:'今日計畫',          desc:'左側今日計畫面板',           defaultVal: true  },
+  { key:'dark_mode_def',  label:'預設深色模式',      desc:'新訪客預設啟用深色',         defaultVal: true  },
+  { key:'smoke_auto_run', label:'自動 Smoke Test',   desc:'頁面載入時自動執行一次',     defaultVal: false },
+  { key:'perf_logging',   label:'效能日誌',          desc:'記錄 Firestore 延遲',        defaultVal: true  },
+];
+
+function loadFlags() {
+  const stored = load(KEYS.abFlags);
+  const flagMap = {};
+  stored.forEach(f => { flagMap[f.key] = f.val; });
+  return DEFAULT_FLAGS.map(f => ({ ...f, val: flagMap[f.key] != null ? flagMap[f.key] : f.defaultVal }));
+}
+
+function saveFlags(flags) {
+  save(KEYS.abFlags, flags.map(f => ({ key: f.key, val: f.val })));
+}
+
+function renderABFlags() {
+  const flags = loadFlags();
+  const el = document.getElementById('ab-flags');
+  el.innerHTML = flags.map((f, i) => `
+    <div style="display:flex;align-items:center;padding:10px 0;border-bottom:1px solid var(--border,rgba(255,255,255,.06));gap:12px;">
+      <div style="flex:1;">
+        <div style="font-size:.84rem;color:var(--text,#e8e8e8);margin-bottom:2px;">${f.label}</div>
+        <div style="font-size:.74rem;color:var(--text-muted,#888);">${f.desc}</div>
+      </div>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.78rem;color:var(--text-muted,#888);">
+        <input type="checkbox" ${f.val?'checked':''} onchange="toggleFlag(${i},this.checked)" style="width:16px;height:16px;cursor:pointer;" />
+        ${f.val ? '<span class="badge badge-green">開啟</span>' : '<span class="badge" style="background:#2c2c2a;color:#888;">關閉</span>'}
+      </label>
+    </div>
+  `).join('');
+}
+
+function toggleFlag(index, val) {
+  const flags = loadFlags();
+  flags[index].val = val;
+  saveFlags(flags);
+  renderABFlags();
+  trackEvent('ab_flag_toggle', flags[index].key + '=' + val);
+}
+
+function renderSmoke() {
+  renderSmokeRows();
+  renderSmokeHistory();
+  renderABFlags();
+  const history = load(KEYS.smoke);
+  if (history.length) {
+    const last = history[history.length-1];
+    document.getElementById('smoke-summary').textContent = `上次 ${last.pass}/${last.total} 通過`;
+  }
+}
+
+function clearSmokeLog() {
+  if (!confirm('清除測試歷史？')) return;
+  save(KEYS.smoke, []);
+  renderSmokeHistory();
+}
+
+// =====================================================
+// SMOKE TEST IMPLEMENTATIONS
+// =====================================================
+async function testLocalStorage() {
+  const key = '__smoke_test__';
+  const val = 'ok_' + Date.now();
+  localStorage.setItem(key, val);
+  const read = localStorage.getItem(key);
+  localStorage.removeItem(key);
+  if (read !== val) return { pass:false, msg:'值不符合' };
+  return { pass:true, msg:'讀寫正常' };
+}
+
+async function testSessionId() {
+  const sid = localStorage.getItem('an_session_id');
+  if (!sid) return { pass:false, msg:'無 session ID（先造訪主頁）' };
+  return { pass:true, msg: sid.slice(0,12)+'…' };
+}
+
+async function testTimer() {
+  const start = Date.now();
+  await sleep(100);
+  const elapsed = Date.now() - start;
+  const ok = elapsed >= 80 && elapsed <= 300;
+  return { pass: ok, msg: `${elapsed}ms（預期 80–300ms）` };
+}
+
+async function testABFlags() {
+  const flags = loadFlags();
+  return { pass: flags.length > 0, msg: `${flags.length} 個 flag` };
+}
+
+async function testEventLog() {
+  trackEvent('smoke_test_event', 'auto');
+  const events = load(KEYS.events);
+  const found = events.some(e => e.action === 'smoke_test_event');
+  return { pass: found, msg: found ? '寫入成功' : '寫入失敗' };
+}
+
+async function testPerfAPI() {
+  const nav = performance.getEntriesByType('navigation');
+  return { pass: nav.length > 0, msg: nav.length > 0 ? `domComplete ${Math.round(nav[0].domComplete)}ms` : '不支援' };
+}
+
+async function testJSON() {
+  try {
+    const obj = JSON.parse('{"a":1,"b":[1,2,3]}');
+    return { pass: obj.a === 1 && obj.b.length === 3, msg: '解析正確' };
+  } catch(e) {
+    return { pass:false, msg: e.message };
+  }
+}
+
+async function testNetwork() {
+  const online = navigator.onLine;
+  return { pass: online, msg: online ? '已連線' : '離線（offline）' };
+}
+
+// =====================================================
+// EVENT TRACKING (公開 API，供 index.html 呼叫)
+// =====================================================
+function getOrCreateSession() {
+  let sid = sessionStorage.getItem('an_session_id');
+  if (!sid) {
+    sid = 'sid_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+    sessionStorage.setItem('an_session_id', sid);
+    localStorage.setItem('an_session_id', sid);
+    trackEvent('page_enter', document.referrer ? 'ref:' + new URL(document.referrer).hostname : 'direct');
+  }
+  return sid;
+}
+
+function trackEvent(action, detail) {
+  const sid = sessionStorage.getItem('an_session_id') || 'unknown';
+  const events = load(KEYS.events);
+  events.push({ t: ts(), sid, action, detail: detail || '' });
+  if (events.length > 2000) events.splice(0, events.length - 2000);
+  save(KEYS.events, events);
+}
+window.trackEvent = trackEvent;
+
+// Perf logging
+function logPerf(type, op, ms, err) {
+  const flags = loadFlags();
+  const perfFlag = flags.find(f => f.key === 'perf_logging');
+  if (perfFlag && !perfFlag.val) return;
+  const data = load(KEYS.perf);
+  data.push({ t: ts(), type, op: op||'', ms: Math.round(ms), err: err||false });
+  if (data.length > 500) data.splice(0, data.length - 500);
+  save(KEYS.perf, data);
+}
+window.logPerf = logPerf;
+
+// Web Vitals capture
+function captureVitals() {
+  if ('PerformanceObserver' in window) {
+    try {
+      new PerformanceObserver(list => {
+        list.getEntries().forEach(e => {
+          if (e.name === 'first-contentful-paint') localStorage.setItem('an_vital_fcp', Math.round(e.startTime));
+        });
+      }).observe({ type:'paint', buffered:true });
+
+      new PerformanceObserver(list => {
+        const entries = list.getEntries();
+        if (entries.length) localStorage.setItem('an_vital_lcp', Math.round(entries[entries.length-1].startTime));
+      }).observe({ type:'largest-contentful-paint', buffered:true });
+
+      let clsVal = 0;
+      new PerformanceObserver(list => {
+        list.getEntries().forEach(e => { if (!e.hadRecentInput) clsVal += e.value; });
+        localStorage.setItem('an_vital_cls', clsVal.toFixed(4));
+      }).observe({ type:'layout-shift', buffered:true });
+    } catch(e) {}
+  }
+}
+
+// =====================================================
+// INIT
+// =====================================================
+(function init() {
+  getOrCreateSession();
+  captureVitals();
+
+  const theme = localStorage.getItem('theme') || 'dark';
+  if (theme === 'light') document.documentElement.setAttribute('data-theme', 'light');
+
+  const autoRun = loadFlags().find(f => f.key === 'smoke_auto_run');
+
+  renderVisitors();
+  renderSmokeRows();
+  renderSmokeHistory();
+  renderABFlags();
+
+  if (autoRun && autoRun.val) {
+    setTimeout(() => runSmokeTests(), 1500);
+  }
+})();
+</script>
+</body>
+</html>

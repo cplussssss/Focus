@@ -24,6 +24,26 @@
       padding: 24px 20px 72px;
     }
 
+    /* ── Back button ── */
+    .btn-back {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 1rem;
+      flex-shrink: 0;
+      transition: all var(--transition);
+    }
+    .btn-back:hover {
+      border-color: var(--text-muted);
+      color: var(--text-primary);
+    }
+
     /* ── Header ── */
     .today-header {
       display: flex;
@@ -1103,6 +1123,7 @@
 
     <!-- Header -->
     <header class="today-header">
+      <a href="index.html" class="btn-back" title="回番茄鐘">←</a>
       <span class="page-icon">📋</span>
       <h1>今日計畫</h1>
       <span class="today-date" id="todayDate"></span>
