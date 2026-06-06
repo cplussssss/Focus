@@ -2,8 +2,6 @@ const SUPABASE_URL = 'https://ujpwqxxriimtxsjconfk.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqcHdxeHhyaWltdHhzamNvbmZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1NDM5NjIsImV4cCI6MjA5NjExOTk2Mn0.PW8o1O7-kTC_Nl1wN39sqMOwN2H_CNtEKORmEe_u-rA';
 const ALLOWED_EMAIL = 'sijialai1473@gmail.com';
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
 document.getElementById('yr').textContent = new Date().getFullYear();
 
 function openModal() {
@@ -17,6 +15,13 @@ function closeModal() {
   document.getElementById('modal-overlay').classList.remove('open');
 }
 
+let supabase;
+try {
+  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+} catch (e) {
+  console.error('Supabase 載入失敗，請確認網路連線或 CDN 是否可存取。', e);
+}
+
 document.getElementById('modal-overlay').addEventListener('click', function(e) {
   if (e.target === this) closeModal();
 });
@@ -28,6 +33,12 @@ document.addEventListener('keydown', function(e) {
 async function signInWithGoogle() {
   const btn = document.getElementById('login-btn');
   const status = document.getElementById('modal-status');
+
+  if (!supabase) {
+    status.className = 'modal-status error';
+    status.textContent = '服務暫時無法連線，請重新整理頁面後再試。';
+    return;
+  }
 
   btn.disabled = true;
   status.className = 'modal-status loading';
@@ -47,7 +58,7 @@ async function signInWithGoogle() {
   }
 }
 
-supabase.auth.onAuthStateChange(async (event, session) => {
+if (supabase) supabase.auth.onAuthStateChange(async (event, session) => {
   if (event === 'SIGNED_IN' && session) {
     const email = session.user.email;
 
