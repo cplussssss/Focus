@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>錯題筆記 — TOEIC Prep</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/errors.css">
+  <!-- Supabase JS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="toeic.html" class="nav-logo">TOEIC Prep</a>
+      <a href="toeic.html" class="nav-link">📋 <span>讀書計畫</span></a>
+      <a href="errors.html" class="nav-link active">📝 <span>錯題筆記</span></a>
+      <a href="checklist.html" class="nav-link">✅ <span>每日檢核</span></a>
+    </div>
+  </nav>
+
+  <main class="page">
+    <!-- Header -->
+    <div class="page-header">
+      <div class="flex items-center gap-2" style="flex-wrap:wrap; gap:12px;">
+        <div>
+          <h1 class="page-title">錯題 <span class="gold-accent">筆記</span></h1>
+          <p class="page-subtitle">記錄每道錯題，建立專屬弱點分析庫</p>
+        </div>
+        <div class="ml-auto">
+          <button class="btn btn-primary" id="btn-add">＋ 新增錯題</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="filter-bar card">
+      <div class="filter-group">
+        <label for="filter-part">篩選 Part</label>
+        <select id="filter-part">
+          <option value="">全部</option>
+          <option>Part 1</option>
+          <option>Part 2</option>
+          <option>Part 3</option>
+          <option>Part 4</option>
+          <option>Part 5</option>
+          <option>Part 6</option>
+          <option>Part 7</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label for="filter-type">錯誤類型</label>
+        <select id="filter-type">
+          <option value="">全部</option>
+          <option>聽力理解</option>
+          <option>文法結構</option>
+          <option>詞彙選擇</option>
+          <option>閱讀理解</option>
+          <option>答題速度</option>
+          <option>生活常識</option>
+          <option>商業用語</option>
+          <option>其他</option>
+        </select>
+      </div>
+      <div class="filter-group filter-search">
+        <label for="filter-keyword">搜尋</label>
+        <input type="text" id="filter-keyword" placeholder="題號、關鍵字...">
+      </div>
+      <div class="filter-stats" id="filter-stats">載入中…</div>
+    </div>
+
+    <!-- Error List -->
+    <div id="error-list" class="error-list">
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <span>載入錯題中…</span>
+      </div>
+    </div>
+  </main>
+
+  <!-- Add / Edit Modal -->
+  <div class="modal-backdrop hidden" id="modal-backdrop">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-title">新增錯題</h2>
+        <button class="modal-close" id="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="f-part">Part *</label>
+            <select id="f-part">
+              <option value="">請選擇</option>
+              <option>Part 1</option>
+              <option>Part 2</option>
+              <option>Part 3</option>
+              <option>Part 4</option>
+              <option>Part 5</option>
+              <option>Part 6</option>
+              <option>Part 7</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="f-qno">題號</label>
+            <input type="text" id="f-qno" placeholder="如 Q23">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="f-error-type">錯誤類型 *</label>
+          <select id="f-error-type">
+            <option value="">請選擇</option>
+            <option>聽力理解</option>
+            <option>文法結構</option>
+            <option>詞彙選擇</option>
+            <option>閱讀理解</option>
+            <option>答題速度</option>
+            <option>生活常識</option>
+            <option>商業用語</option>
+            <option>其他</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="f-content">題目摘要</label>
+          <textarea id="f-content" placeholder="貼上題目或描述題目情境…" rows="3"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="f-note">我的筆記 *</label>
+          <textarea id="f-note" placeholder="為什麼錯？正確解題思路為何？" rows="4"></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn btn-secondary" id="btn-cancel">取消</button>
+          <button class="btn btn-primary" id="btn-submit">儲存</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/errors.js"></script>
+</body>
+</html>

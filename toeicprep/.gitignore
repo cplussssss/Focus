@@ -1,0 +1,17 @@
+# macOS
+.DS_Store
+Thumbs.db
+
+# 編輯器
+.vscode/
+.idea/
+*.swp
+
+# Node（只有本機開發時才用，GitHub Pages 不需要）
+node_modules/
+.env
+.env.local
+
+# 建置產物
+dist/
+build/

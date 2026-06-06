@@ -1,10 +1,4 @@
-# Claude Code 設定（本地工具設定，不需上傳）
-.claude/
-
-# 系統檔
-.DS_Store
-Thumbs.db
-desktop.ini
-
-# 捷徑檔
-*.lnk
+venv/
+__pycache__/
+*.pyc
+*.pyo

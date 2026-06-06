@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>每日檢核 — TOEIC Prep</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/checklist.css">
+  <!-- Supabase JS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="toeic.html" class="nav-logo">TOEIC Prep</a>
+      <a href="toeic.html" class="nav-link">📋 <span>讀書計畫</span></a>
+      <a href="errors.html" class="nav-link">📝 <span>錯題筆記</span></a>
+      <a href="checklist.html" class="nav-link active">✅ <span>每日檢核</span></a>
+    </div>
+  </nav>
+
+  <main class="page">
+    <!-- Header -->
+    <div class="page-header">
+      <h1 class="page-title">每日 <span class="gold-accent">檢核表</span></h1>
+      <p class="page-subtitle" id="today-label">載入中…</p>
+    </div>
+
+    <!-- Date + Mode Selector -->
+    <div class="cl-top-row">
+      <div class="form-group" style="margin:0; min-width:160px;">
+        <label for="cl-date">日期</label>
+        <input type="date" id="cl-date">
+      </div>
+
+      <div class="mode-selector">
+        <button class="mode-btn" data-mode="listening">
+          <span class="mode-btn-icon">🎧</span>
+          <span class="mode-btn-label">聽力模式</span>
+        </button>
+        <button class="mode-btn" data-mode="reading">
+          <span class="mode-btn-icon">📖</span>
+          <span class="mode-btn-label">閱讀模式</span>
+        </button>
+        <button class="mode-btn" data-mode="full">
+          <span class="mode-btn-icon">🏆</span>
+          <span class="mode-btn-label">全真模擬</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="progress-wrapper" id="progress-wrapper">
+      <div class="progress-info">
+        <span class="progress-label">今日進度</span>
+        <span class="progress-count" id="progress-count">0 / 0</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+      </div>
+    </div>
+
+    <!-- Checklist -->
+    <div id="checklist-container">
+      <div class="empty-state">
+        <div class="empty-state-icon">👆</div>
+        <div class="empty-state-text">請先選擇今日學習模式</div>
+      </div>
+    </div>
+
+    <!-- Save Button -->
+    <div class="save-row" id="save-row" style="display:none;">
+      <span class="save-hint" id="save-hint"></span>
+      <button class="btn btn-primary" id="btn-save">💾 儲存今日記錄</button>
+    </div>
+
+    <!-- Legend Note -->
+    <div class="legend-note">
+      <span class="legend-note-label">備註</span>
+      <span>L = 聽力模式（Listening）</span>
+      <span>R = 閱讀模式（Reading）</span>
+      <span>M = 全真模擬（Mock exam）</span>
+      <span>✦ = 休息日</span>
+      <span>★ = 正式考試日（第 11 週週日）</span>
+    </div>
+
+  </main>
+
+  <script type="module" src="js/checklist.js"></script>
+</body>
+</html>

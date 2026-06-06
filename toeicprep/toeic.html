@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>讀書計畫 — TOEIC Prep</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/plan.css">
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="toeic.html" class="nav-logo">TOEIC Prep</a>
+      <a href="toeic.html" class="nav-link active">📋 <span>讀書計畫</span></a>
+      <a href="errors.html" class="nav-link">📝 <span>錯題筆記</span></a>
+      <a href="checklist.html" class="nav-link">✅ <span>每日檢核</span></a>
+    </div>
+  </nav>
+
+  <main class="page">
+    <!-- Header -->
+    <div class="page-header">
+      <h1 class="page-title">11 週 <span class="gold-accent">備考計畫</span></h1>
+      <p class="page-subtitle">從零基礎到目標分數的系統化學習路徑</p>
+    </div>
+
+    <!-- Daily Modes -->
+    <section class="modes-section">
+      <h2 class="section-title">每日三種學習模式</h2>
+      <div class="modes-grid">
+
+        <div class="mode-card mode-listening">
+          <div class="mode-icon">🎧</div>
+          <div class="mode-label">聽力模式</div>
+          <div class="mode-desc">Part 1–4 專項訓練</div>
+          <ul class="mode-tasks">
+            <li>影子跟讀 20 分鐘</li>
+            <li>Part 1 照片描述 × 10 題</li>
+            <li>Part 2 應答問題 × 15 題</li>
+            <li>Part 3/4 短對話 × 1 組</li>
+            <li>錯題記錄與分析</li>
+          </ul>
+        </div>
+
+        <div class="mode-card mode-reading">
+          <div class="mode-icon">📖</div>
+          <div class="mode-label">閱讀模式</div>
+          <div class="mode-desc">Part 5–7 專項訓練</div>
+          <ul class="mode-tasks">
+            <li>單字卡複習 30 張</li>
+            <li>Part 5 文法填空 × 20 題</li>
+            <li>Part 6 段落填空 × 1 篇</li>
+            <li>Part 7 閱讀理解 × 1 篇</li>
+            <li>錯題記錄與分析</li>
+          </ul>
+        </div>
+
+        <div class="mode-card mode-full">
+          <div class="mode-icon">🏆</div>
+          <div class="mode-label">全真模擬</div>
+          <div class="mode-desc">完整模擬考試</div>
+          <ul class="mode-tasks">
+            <li>45 分鐘聽力全卷</li>
+            <li>75 分鐘閱讀全卷</li>
+            <li>嚴格計時不中斷</li>
+            <li>全面錯題分析</li>
+            <li>分數記錄與趨勢</li>
+          </ul>
+        </div>
+
+      </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- 11-Week Plan -->
+    <section class="weeks-section">
+      <h2 class="section-title">11 週學習進程</h2>
+
+      <div class="weeks-grid" id="weeks-grid">
+        <!-- Rendered by JS -->
+      </div>
+    </section>
+
+  </main>
+
+  <script type="module">
+    const weeks = [
+      {
+        week: 1,
+        phase: "基礎建立",
+        focus: "聽力入門 + 核心單字",
+        days: [
+          { day: "一", mode: "listening", key: "L" },
+          { day: "二", mode: "reading",   key: "R" },
+          { day: "三", mode: "listening", key: "L" },
+          { day: "四", mode: "reading",   key: "R" },
+          { day: "五", mode: "listening", key: "L" },
+          { day: "六", mode: "reading",   key: "R" },
+          { day: "日", mode: "rest",       key: "✦" },
+        ],
+        goals: ["建立每日學習習慣", "累積 300 個核心單字", "熟悉 Part 1–2 題型"],
+      },
+      {
+        week: 2,
+        phase: "基礎建立",
+        focus: "Part 2 應答 + 文法基礎",
+        days: [
+          { day: "一", mode: "listening", key: "L" },
+          { day: "二", mode: "reading",   key: "R" },
+          { day: "三", mode: "listening", key: "L" },
+          { day: "四", mode: "reading",   key: "R" },
+          { day: "五", mode: "listening", key: "L" },
+          { day: "六", mode: "reading",   key: "R" },
+          { day: "日", mode: "rest",       key: "✦" },
+        ],
+        goals: ["掌握 Part 2 常見句型", "完成時態複習", "累積 600 個單字"],
+      },
+      {
+        week: 3,
+        phase: "進階訓練",
+        focus: "Part 3–4 長篇對話",
+        days: [
+          { day: "一", mode: "listening", key: "L" },
+          { day: "二", mode: "reading",   key: "R" },
+          { day: "三", mode: "listening", key: "L" },
+          { day: "四", mode: "reading",   key: "R" },
+          { day: "五", mode: "listening", key: "L" },
+          { day: "六", mode: "full",       key: "M" },
+          { day: "日", mode: "rest",       key: "✦" },
+        ],
+        goals: ["能掌握 Part 3 主旨題", "第一次完整模擬", "分析弱點部分"],
+      },
+      {
+        week: 4,
+        phase: "進階訓練",
+        focus: "Part 5 文法強化",
+        days: [
+          { day: "一", mode: "reading",   key: "R" },
+          { day: "二", mode: "listening", key: "L" },
+          { day: "三", mode: "reading",   key: "R" },
+          { day: "四", mode: "listening", key: "L" },
+          { day: "五", mode: "reading",   key: "R" },
+          { day: "六", mode: "full",       key: "M" },
+          { day: "日", mode: "rest",       key: "✦" },
+        ],
+        goals: ["Part 5 正確率 > 75%", "熟悉詞性轉換題", "建立錯題本"],
+      },
+      {
+        week: 5,
+        phase: "進階訓練",
+        focus: "Part 6–7 閱讀速度",
+        days: [
+          { day: "一", mode: "reading",   key: "R" },
+          { day: "二", mode: "listening", key: "L" },
+          { day: "三", mode: "reading",   key: "R" },
+          { day: "四", mode: "listening", key: "L" },
+          { day: "五", mode: "reading",   key: "R" },
+          { day: "六", mode: "full",       key: "M" },
+          { day: "日", mode: "rest",       key: "✦" },
+        ],
+        goals: ["提升閱讀速度至 150 wpm", "Part 7 商業郵件熟悉", "累積 1000 單字"],
+      },
+      {
+        week: 6,
+        phase: "中期衝刺",
+        focus: "弱點專項補強",
+        days: [
+          { day: "一", mode: "listening", key: "L" },
+          { day: "二", mode: "reading",   key: "R" },
+          { day: "三", mode: "listening", key: "L" },
+          { day: "四", mode: "reading",   key: "R" },
+          { day: "五", mode: "full",       key: "M" },
+          { day: "六", mode: "full",       key: "M" },
+          { day: "日", mode: "rest",       key: "✦" },
+        ],
+        goals: ["針對錯題本集中複習", "第三次完整模擬", "目標突破 650 分"],
+      },
+      {
+        week: 7,
+        phase: "中期衝刺",
+        focus: "商業詞彙 + 情境練習",
+        days: [
+          { day: "一", mode: "reading",   key: "R" },
+          { day: "二", mode: "listening", key: "L" },
+          { day: "三", mode: "reading",   key: "R" },
+          { day: "四", mode: "listening", key: "L" },
+          { day: "五", mode: "reading",   key: "R" },
+          { day: "六", mode: "full",       key: "M" },
+          { day: "日", mode: "rest",       key: "✦" },
+        ],
+        goals: ["掌握 200 個商業詞彙", "Part 7 多篇閱讀訓練", "聽力正確率 > 80%"],
+      },
+      {
+        week: 8,
+        phase: "中期衝刺",
+        focus: "解題策略優化",
+        days: [
+          { day: "一", mode: "full",       key: "M" },
+          { day: "二", mode: "listening", key: "L" },
+          { day: "三", mode: "full",       key: "M" },
+          { day: "四", mode: "reading",   key: "R" },
+          { day: "五", mode: "full",       key: "M" },
+          { day: "六", mode: "rest",       key: "✦" },
+          { day: "日", mode: "rest",       key: "✦" },
+        ],
+        goals: ["建立答題節奏", "Part 5 完成時間 < 30 分", "總模擬分數趨勢向上"],
+      },
+      {
+        week: 9,
+        phase: "衝刺階段",
+        focus: "高頻錯題複習",
+        days: [
+          { day: "一", mode: "reading",   key: "R" },
+          { day: "二", mode: "listening", key: "L" },
+          { day: "三", mode: "reading",   key: "R" },
+          { day: "四", mode: "listening", key: "L" },
+          { day: "五", mode: "full",       key: "M" },
+          { day: "六", mode: "full",       key: "M" },
+          { day: "日", mode: "rest",       key: "✦" },
+        ],
+        goals: ["錯題本全部重刷一輪", "單字覆蓋率 > 90%", "目標突破 730 分"],
+      },
+      {
+        week: 10,
+        phase: "衝刺階段",
+        focus: "模擬考密集訓練",
+        days: [
+          { day: "一", mode: "full",       key: "M" },
+          { day: "二", mode: "listening", key: "L" },
+          { day: "三", mode: "full",       key: "M" },
+          { day: "四", mode: "reading",   key: "R" },
+          { day: "五", mode: "full",       key: "M" },
+          { day: "六", mode: "full",       key: "M" },
+          { day: "日", mode: "rest",       key: "✦" },
+        ],
+        goals: ["每週 4 次全真模擬", "分析每次失分原因", "穩定 730+ 分區間"],
+      },
+      {
+        week: 11,
+        phase: "最終衝刺",
+        focus: "考前調整 + 輕量複習",
+        days: [
+          { day: "一", mode: "full",       key: "M" },
+          { day: "二", mode: "reading",   key: "R" },
+          { day: "三", mode: "listening", key: "L" },
+          { day: "四", mode: "reading",   key: "R" },
+          { day: "五", mode: "rest",       key: "✦" },
+          { day: "六", mode: "rest",       key: "✦" },
+          { day: "日", mode: "exam",       key: "★" },
+        ],
+        goals: ["保持狀態不過量練習", "確認考試地點與時間", "充足睡眠、自信應考"],
+      },
+    ];
+
+    const modeStyle = {
+      listening: { label: "聽力", cls: "day-listening" },
+      reading:   { label: "閱讀", cls: "day-reading" },
+      full:      { label: "模擬", cls: "day-full" },
+      rest:      { label: "休息", cls: "day-rest" },
+      exam:      { label: "正式考試", cls: "day-exam" },
+    };
+
+    const phaseColor = {
+      "基礎建立": "phase-blue",
+      "進階訓練": "phase-purple",
+      "中期衝刺": "phase-gold",
+      "衝刺階段": "phase-orange",
+      "最終衝刺": "phase-red",
+    };
+
+    const grid = document.getElementById("weeks-grid");
+
+    weeks.forEach(w => {
+      const daysHtml = w.days.map(d => {
+        const s = modeStyle[d.mode];
+        return `<div class="day-cell ${s.cls}" title="${s.label}">${d.key}</div>`;
+      }).join("");
+
+      const goalsHtml = w.goals.map(g => `<li>${g}</li>`).join("");
+      const phaseCls  = phaseColor[w.phase] || "";
+
+      grid.innerHTML += `
+        <div class="week-card">
+          <div class="week-header">
+            <div class="week-num">W${w.week}</div>
+            <div class="week-info">
+              <span class="week-phase ${phaseCls}">${w.phase}</span>
+              <span class="week-focus">${w.focus}</span>
+            </div>
+          </div>
+          <div class="week-days">${daysHtml}</div>
+          <ul class="week-goals">${goalsHtml}</ul>
+        </div>
+      `;
+    });
+  </script>
+
+</body>
+</html>
