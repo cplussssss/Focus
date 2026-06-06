@@ -26,7 +26,6 @@ body {
   padding: 2rem;
 }
 
-/* ── Page load animation ── */
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(16px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -37,7 +36,6 @@ body {
 .delay-3 { animation-delay: 0.24s; }
 .delay-4 { animation-delay: 0.32s; }
 
-/* ── Header ── */
 .header {
   text-align: center;
   margin-bottom: 3rem;
@@ -69,7 +67,6 @@ body {
   font-weight: 300;
 }
 
-/* ── Grid ── */
 .tools-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -78,7 +75,6 @@ body {
   max-width: 660px;
 }
 
-/* ── Tool card ── */
 .tool-card {
   background: var(--bg-card);
   border: 0.5px solid var(--border);
@@ -90,6 +86,7 @@ body {
   display: block;
   position: relative;
   overflow: hidden;
+  text-align: left;
 }
 .tool-card:hover {
   border-color: var(--border-hover);
@@ -157,7 +154,6 @@ body {
   border-color: var(--border);
 }
 
-/* ── Footer ── */
 .footer {
   margin-top: 2.5rem;
   font-family: 'DM Mono', monospace;
@@ -167,7 +163,6 @@ body {
   gap: 1.5rem;
 }
 
-/* ── Modal overlay ── */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -235,42 +230,49 @@ body {
 .modal-subtitle {
   font-size: 13px;
   color: var(--text-secondary);
-  margin-bottom: 1.75rem;
+  margin-bottom: 1.25rem;
   line-height: 1.6;
   font-weight: 300;
 }
 
-/* Google login button */
-.btn-google {
+.password-input {
   width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
+  padding: 0.7rem 1rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  color: var(--text-primary);
+  background: var(--bg);
+  border: 0.5px solid var(--border-hover);
+  border-radius: 10px;
+  outline: none;
+  margin-bottom: 0.75rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.password-input:focus {
+  border-color: var(--accent-teal);
+  box-shadow: 0 0 0 3px rgba(29,158,117,0.1);
+}
+.password-input::placeholder { color: var(--text-tertiary); }
+
+.btn-login {
+  width: 100%;
   padding: 0.75rem 1rem;
-  background: var(--bg-card);
-  border: 1px solid var(--border-hover);
+  background: var(--accent-teal);
+  color: #ffffff;
+  border: none;
   border-radius: 10px;
   font-family: 'DM Sans', sans-serif;
   font-size: 14px;
   font-weight: 500;
-  color: var(--text-primary);
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+  transition: opacity 0.15s, transform 0.1s;
 }
-.btn-google:hover { background: var(--bg); border-color: var(--border-hover); }
-.btn-google:active { transform: scale(0.98); }
-.btn-google:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.btn-login:hover { opacity: 0.88; }
+.btn-login:active { transform: scale(0.98); }
+.btn-login:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-.google-icon {
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-}
-
-/* Status messages */
 .modal-status {
-  margin-top: 1rem;
+  margin-top: 0.75rem;
   padding: 0.75rem 1rem;
   border-radius: 10px;
   font-size: 13px;
