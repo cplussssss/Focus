@@ -25,12 +25,12 @@
       <p class="card-desc">專注計時器，搭配習慣追蹤與狀態偵測</p>
     </a>
 
-    <button class="tool-card fade-up delay-2" id="toeic-btn" onclick="openModal()" aria-haspopup="dialog">
+    <a class="tool-card fade-up delay-2" href="./toeicprep/">
       <div class="card-accent accent-teal-bar"></div>
       <div class="card-icon icon-teal">📚</div>
       <p class="card-name">TOEIC Prep</p>
       <p class="card-desc">讀書計畫、錯題筆記、每日檢核表</p>
-    </button>
+    </a>
 
     <div class="tool-card card-placeholder fade-up delay-3" aria-hidden="true">
       <div class="card-icon icon-dashed">＋</div>
@@ -44,35 +44,6 @@
     <span id="yr"></span>
   </footer>
 
-  <!-- ── Login Modal ── -->
-  <div class="modal-overlay" id="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-    <div class="modal">
-      <button class="modal-close" onclick="closeModal()" aria-label="關閉">✕</button>
-
-      <div class="modal-icon">📚</div>
-      <h2 class="modal-title" id="modal-title">TOEIC Prep</h2>
-      <p class="modal-subtitle">這是個人備考工具，請輸入密碼以繼續。</p>
-
-      <input
-        type="password"
-        id="password-input"
-        class="password-input"
-        placeholder="輸入密碼"
-        autocomplete="current-password"
-      />
-
-      <button class="btn-login" id="login-btn" onclick="submitPassword()">
-        進入
-      </button>
-
-      <div class="modal-status" id="modal-status"></div>
-
-      <div class="modal-divider"></div>
-      <p class="modal-note">如果有需要，可以<a href="mailto:sijialai1473@gmail.com">聯繫我</a>製作個人化的備考網站</p>
-    </div>
-  </div>
-
-  <script src="config.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
