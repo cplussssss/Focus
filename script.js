@@ -41,6 +41,8 @@ function submitPassword() {
     return;
   }
 
+const PASSWORD = 'serena';
+
   if (entered === PASSWORD) {
     btn.disabled = true;
     status.className = 'modal-status loading';
