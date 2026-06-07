@@ -5,7 +5,7 @@ async function callTTS(text, voiceId) {
   try {
     console.log("📡 [2] 準備發送 fetch 請求到 Worker...");
     
-    const response = await fetch('https://focus.sijialai14373.workers.dev/tts', {
+    const response = await fetch(TTS_WORKER, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text, voiceId })
