@@ -1,3 +1,39 @@
+async function callTTS(text, voiceId) {
+  console.log("🚀 [1] 成功觸發 callTTS 函式");
+  console.log("傳入參數:", { text, voiceId });
+
+  try {
+    console.log("📡 [2] 準備發送 fetch 請求到 Worker...");
+    
+    const response = await fetch('https://toeic.sijialai14373.workers.dev/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, voiceId })
+    });
+
+    console.log("✅ [3] 收到伺服器回應，狀態碼:", response.status);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("❌ Worker 回傳錯誤:", errorText);
+      return;
+    }
+
+    console.log("🎵 [4] 開始解析音訊資料...");
+    const blob = await response.blob();
+    const audioUrl = URL.createObjectURL(blob);
+    const audio = new Audio(audioUrl);
+    
+    console.log("▶️ [5] 嘗試播放音訊...");
+    await audio.play();
+    console.log("🎉 播放成功！");
+
+  } catch (error) {
+    console.error("💥 [Error] 在 callTTS 流程中崩潰了:", error);
+  }
+}
+
+
 // ============================================================
 // CONFIG
 // ============================================================
