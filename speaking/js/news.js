@@ -3,8 +3,8 @@
 // ============================================================
 const SUPABASE_URL = 'https://ujpwqxxriimtxsjconfk.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqcHdxeHhyaWltdHhzamNvbmZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1NDM5NjIsImV4cCI6MjA5NjExOTk2Mn0.PW8o1O7-kTC_Nl1wN39sqMOwN2H_CNtEKORmEe_u-rA';
-const NEWS_WORKER  = 'https://focus.sijialai14373.workers.dev/news';
-const GROQ_WORKER  = 'https://focus.sijialai14373.workers.dev/groq-vocab';
+const NEWS_WORKER  = 'https://focus.sijialai1473.workers.dev/news';
+const GROQ_WORKER  = 'https://focus.sijialai1473.workers.dev/groq-vocab';
 
 // ============================================================
 // STATE

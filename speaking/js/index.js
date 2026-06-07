@@ -37,7 +37,7 @@ async function callTTS(text, voiceId) {
 // ============================================================
 // CONFIG
 // ============================================================
-const TTS_WORKER = 'https://focus.sijialai14373.workers.dev/tts';
+const TTS_WORKER = 'https://focus.sijialai1473.workers.dev/tts';
 
 const VOICES = {
   us: 'EXAVITQu4vr4xnSDxMaL', // Sarah (American)
