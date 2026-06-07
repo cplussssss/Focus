@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我的單字庫 — Vocabulary</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/voc.css">
+</head>
+<body>
+
+<nav>
+  <span class="nav-logo">TOEIC Practice</span>
+  <div class="nav-links">
+    <a href="index.html">首頁</a>
+    <a href="speaking.html">口說練習</a>
+    <a href="news.html">新聞閱讀</a>
+    <a href="vocabulary.html" class="active">單字庫</a>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">My Vocabulary</h1>
+      <p class="word-count" id="word-count">載入中...</p>
+    </div>
+    <div class="view-toggle">
+      <button class="view-btn active" data-view="cards" onclick="setView('cards')">卡片</button>
+      <button class="view-btn" data-view="flip" onclick="setView('flip')">翻轉測驗</button>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <input class="search-box" id="search" placeholder="搜尋單字..." oninput="filterWords()">
+    <select class="sort-select" id="sort-sel" title="排序方式" onchange="renderWords()">
+      <option value="newest">最新加入</option>
+      <option value="oldest">最早加入</option>
+      <option value="alpha">A → Z</option>
+    </select>
+    <button class="btn-secondary" onclick="loadWords()">重新整理</button>
+  </div>
+
+  <div id="word-container"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="js/voc.js"></script>
+</body>
+</html>

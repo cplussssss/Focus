@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>口說練習 — Speaking Practice</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/index.css">
+</head>
+<body>
+
+<nav>
+  <span class="nav-logo">TOEIC Practice</span>
+  <div class="nav-links">
+    <a href="index.html">首頁</a>
+    <a href="speaking.html" class="active">口說練習</a>
+    <a href="news.html">新聞閱讀</a>
+    <a href="vocabulary.html">單字庫</a>
+  </div>
+</nav>
+
+<!-- ===== LIST VIEW ===== -->
+<div id="view-list" class="view active">
+  <div style="padding:2rem; max-width:900px; margin:0 auto;">
+    <h1 class="page-title">Speaking Practice</h1>
+    <p class="page-subtitle">選擇文章進入練習，或直接點「開始練習」進入捲動模式</p>
+    <div class="category-tabs" id="cat-tabs">
+      <button class="cat-tab active" data-cat="all">全部</button>
+      <button class="cat-tab" data-cat="daily">Daily Life</button>
+      <button class="cat-tab" data-cat="toeic">TOEIC</button>
+      <button class="cat-tab" data-cat="tech">Technology</button>
+    </div>
+    <div class="article-grid" id="article-grid"></div>
+  </div>
+</div>
+
+<!-- ===== ARTICLE DETAIL VIEW ===== -->
+<div id="view-article" class="view">
+  <button class="back-btn" onclick="showList()">← 返回列表</button>
+  <div class="article-header">
+    <div class="article-category-badge" id="det-cat"></div>
+    <h1 class="article-title" id="det-title"></h1>
+    <p class="article-meta" id="det-meta"></p>
+  </div>
+  <div class="action-bar">
+    <button class="btn-primary" onclick="startPractice(currentArticleIdx)">▶ 開始練習</button>
+    <select class="accent-select" id="det-accent" title="選擇口音">
+      <option value="us">🇺🇸 American</option>
+      <option value="uk">🇬🇧 British</option>
+      <option value="au">🇦🇺 Australian</option>
+    </select>
+    <button class="btn-secondary" id="btn-listen" onclick="listenTTS()">🔊 聆聽朗讀</button>
+    <div class="wave hidden" id="wave-indicator">
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+  </div>
+  <div class="article-body" id="det-body"></div>
+  <button class="btn-secondary" onclick="startPractice(currentArticleIdx)">▶ 進入捲動練習模式</button>
+</div>
+
+<!-- ===== PRACTICE VIEW ===== -->
+<div id="view-practice" class="view">
+  <div class="practice-header">
+    <button class="back-btn" onclick="showArticle(currentArticleIdx)" style="margin-bottom:0">← 返回文章</button>
+    <div class="practice-controls">
+      <div class="speed-row">
+        <label>速度</label>
+        <input type="range" id="speed" min="1" max="5" step="1" value="2" title="捲動速度" oninput="document.getElementById('speed-val').textContent=this.value">
+        <span class="speed-val" id="speed-val">2</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="stage-wrap">
+    <div class="fade-top"></div>
+    <div class="fade-bot"></div>
+    <div class="text-scroll" id="scroller"></div>
+    <div class="overlay-msg" id="overlay">
+      <p class="big">準備好就按開始</p>
+      <p>文字會自動向上滾動，請跟著朗讀</p>
+    </div>
+  </div>
+  <div class="progress-track"><div class="progress-fill" id="prog"></div></div>
+  <div class="status-bar">
+    <span id="stat-time">—</span>
+    <span id="stat-pct">0%</span>
+  </div>
+
+  <div class="practice-btns" style="margin-top:0.75rem">
+    <button class="btn-primary" id="btn-start" onclick="startScroll()">開始</button>
+    <button class="btn-secondary" id="btn-pause" onclick="pauseScroll()" disabled>暫停</button>
+    <button class="btn-secondary" onclick="resetScroll()">重置</button>
+    <span class="badge" id="scroll-badge">等待中</span>
+  </div>
+
+  <div class="tts-bar">
+    <label>口音</label>
+    <select class="accent-select" id="prac-accent" title="選擇口音" style="padding:0.35rem 0.7rem;font-size:0.85rem;">
+      <option value="us">🇺🇸 American</option>
+      <option value="uk">🇬🇧 British</option>
+      <option value="au">🇦🇺 Australian</option>
+    </select>
+    <button class="btn-secondary" id="btn-tts-prac" onclick="listenTTSPractice()" style="padding:0.35rem 0.9rem;font-size:0.85rem;">🔊 朗讀範例</button>
+    <div class="wave hidden" id="wave-prac"><span></span><span></span><span></span><span></span><span></span></div>
+    <span class="tts-status" id="tts-status-prac"></span>
+  </div>
+
+  <div class="article-switcher">
+    <label>切換文章</label>
+    <select id="article-switcher-sel" title="切換文章" onchange="switchArticle(this.value)"></select>
+  </div>
+</div>
+
+<script src="js/index.js"></script>
+</body>
+</html>

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>新聞閱讀 — News Reader</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/news.css">
+</head>
+<body>
+
+<nav>
+  <span class="nav-logo">TOEIC Practice</span>
+  <div class="nav-links">
+    <a href="index.html">首頁</a>
+    <a href="speaking.html">口說練習</a>
+    <a href="news.html" class="active">新聞閱讀</a>
+    <a href="vocabulary.html">單字庫</a>
+  </div>
+</nav>
+
+<div class="container">
+  <!-- NEWS LIST -->
+  <div id="list-view">
+    <h1 class="page-title">News Reader</h1>
+    <p class="page-subtitle">每日科技、財經、商業新聞 — AI 自動標註生詞</p>
+    <div class="toolbar">
+      <div class="cat-tabs" id="cat-tabs">
+        <button class="cat-tab active" data-q="technology">科技</button>
+        <button class="cat-tab" data-q="business">商業</button>
+        <button class="cat-tab" data-q="finance">財經</button>
+        <button class="cat-tab" data-q="startup">新創</button>
+      </div>
+      <button class="btn-primary" id="fetch-btn" onclick="fetchNews()">重新載入</button>
+    </div>
+    <div id="news-list"></div>
+  </div>
+
+  <!-- ARTICLE READER -->
+  <div id="reader">
+    <button class="reader-back" onclick="showList()">← 返回新聞列表</button>
+    <div class="reader-header">
+      <div class="reader-cat" id="r-cat"></div>
+      <h1 class="reader-title" id="r-title"></h1>
+      <div class="reader-meta">
+        <span id="r-source"></span>
+        <span id="r-date"></span>
+        <a class="reader-link" id="r-link" href="#" target="_blank">閱讀原文 ↗</a>
+      </div>
+    </div>
+    <div class="reader-toolbar">
+      <span style="font-size:0.82rem;color:var(--text2);">顯示模式：</span>
+      <button class="mode-btn active" data-mode="normal" onclick="setMode('normal')">一般</button>
+      <button class="mode-btn" data-mode="highlight" onclick="setMode('highlight')">螢光筆</button>
+      <button class="mode-btn" data-mode="caps" onclick="setMode('caps')">大寫</button>
+      <button class="mode-btn" data-mode="vocab" onclick="setMode('vocab')">標註單字</button>
+      <div id="annotate-status" class="annotate-status" style="display:none">
+        <div class="spinner"></div> AI 分析生詞中...
+      </div>
+    </div>
+    <div class="article-content" id="article-body"></div>
+    <a class="btn-secondary" id="r-link2" href="#" target="_blank" style="display:inline-flex;align-items:center;gap:0.4rem;text-decoration:none;">閱讀完整原文 ↗</a>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="js/news.js"></script>
+</body>
+</html>
