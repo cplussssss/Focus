@@ -23,10 +23,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Generate config.js
-        run: |
-          echo "const PASSWORD = '${{ secrets.TOEIC_PASSWORD }}';" > config.js
-        working-directory: .
+      - name: Inject password
+        run: sed -i "1s/^/const PASSWORD = '${{ secrets.TOEIC_PASSWORD }}';\n/" script.js
 
       - uses: actions/configure-pages@v5
 
