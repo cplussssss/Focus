@@ -1,9 +1,8 @@
 // ============================================================
-// CONFIG — 填入你的 API keys
+// CONFIG
 // ============================================================
+const TTS_WORKER = 'https://toeic.sijialai1473.workers.dev/tts';
 
-// ElevenLabs voice IDs for each accent
-// 可以去 elevenlabs.io/voice-library 找你喜歡的聲音換掉
 const VOICES = {
   us: 'EXAVITQu4vr4xnSDxMaL', // Sarah (American)
   uk: 'onwK4e9ZLuTAKqWW03F9', // Daniel (British)
@@ -297,17 +296,10 @@ async function callTTS(text, accentKey, onStart, onEnd) {
   const voiceId = VOICES[accentKey];
   onStart();
   try {
-    const resp = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+    const resp = await fetch(TTS_WORKER, {
       method: 'POST',
-      headers: {
-        'xi-api-key': ELEVENLABS_KEY,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        text: text,
-        model_id: 'eleven_multilingual_v2',
-        voice_settings: { stability: 0.5, similarity_boost: 0.75 }
-      })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, voiceId })
     });
     if (!resp.ok) { alert('TTS 錯誤：' + resp.status); onEnd(); return; }
     const blob = await resp.blob();
@@ -315,7 +307,7 @@ async function callTTS(text, accentKey, onStart, onEnd) {
     currentAudio = new Audio(url);
     currentAudio.play();
     currentAudio.onended = () => { onEnd(); };
-  } catch(e) { alert('TTS 失敗，請確認 API key'); onEnd(); }
+  } catch(e) { alert('TTS 失敗，請確認 Worker 設定'); onEnd(); }
 }
 
 function listenTTS() {

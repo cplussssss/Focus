@@ -3,6 +3,8 @@
 // ============================================================
 const SUPABASE_URL = 'https://ujpwqxxriimtxsjconfk.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqcHdxeHhyaWltdHhzamNvbmZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1NDM5NjIsImV4cCI6MjA5NjExOTk2Mn0.PW8o1O7-kTC_Nl1wN39sqMOwN2H_CNtEKORmEe_u-rA';
+const NEWS_WORKER  = 'https://toeic.sijialai1473.workers.dev/news';
+const GROQ_WORKER  = 'https://toeic.sijialai1473.workers.dev/groq-vocab';
 
 // ============================================================
 // STATE
@@ -30,8 +32,7 @@ async function fetchNews() {
   document.getElementById('news-list').innerHTML = '<div class="loading-spinner"><div class="spinner"></div>抓取新聞中...</div>';
 
   try {
-    const url = `https://gnews.io/api/v4/search?q=${currentCat}&lang=en&country=us&max=10&apikey=${GNEWS_KEY}`;
-    const res = await fetch(url);
+    const res = await fetch(`${NEWS_WORKER}?q=${currentCat}&max=10`);
     const data = await res.json();
     if (!data.articles || data.articles.length === 0) {
       document.getElementById('news-list').innerHTML = '<div class="empty-state"><div class="big">暫無新聞</div><p>請稍後再試或切換分類</p></div>';
@@ -158,17 +159,10 @@ Return ONLY a JSON array (no markdown, no explanation) like:
 Article:
 ${text.substring(0, 1500)}`;
 
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const res = await fetch(GROQ_WORKER, {
       method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + GROQ_KEY,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: 1000, temperature: 0.3
-      })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: text.substring(0, 1500) })
     });
 
     const data = await res.json();
