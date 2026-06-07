@@ -1,3 +1,5 @@
+const PASSWORD = 'serena';
+
 document.getElementById('yr').textContent = new Date().getFullYear();
 
 function openModal() {
@@ -15,15 +17,15 @@ function closeModal() {
   document.getElementById('modal-overlay').classList.remove('open');
 }
 
-document.getElementById('modal-overlay').addEventListener('click', function(e) {
+document.getElementById('modal-overlay').addEventListener('click', function (e) {
   if (e.target === this) closeModal();
 });
 
-document.addEventListener('keydown', function(e) {
+document.addEventListener('keydown', function (e) {
   if (e.key === 'Escape') closeModal();
 });
 
-document.getElementById('password-input').addEventListener('keydown', function(e) {
+document.getElementById('password-input').addEventListener('keydown', function (e) {
   if (e.key === 'Enter') submitPassword();
 });
 
@@ -41,7 +43,7 @@ function submitPassword() {
     return;
   }
 
-const PASSWORD = 'serena';
+
 
   if (entered === PASSWORD) {
     btn.disabled = true;
