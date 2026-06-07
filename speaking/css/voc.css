@@ -1,7 +1,7 @@
 :root {
-  --bg: #0f0f0f; --surface: #1a1a1a; --surface2: #242424;
-  --border: #2e2e2e; --text: #f0ede8; --text2: #9a9490;
-  --accent: #d4a853; --accent2: #e8c47a;
+  --bg: #f7f5f0; --surface: #ffffff; --surface2: #eeeae3;
+  --border: #ddd9d0; --text: #1a1917; --text2: #7a7570;
+  --accent: #b8871e; --accent2: #c09030;
   --danger: #c0392b; --radius: 12px; --transition: 0.2s ease;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -56,7 +56,7 @@ nav {
   transition: border-color var(--transition);
   position: relative;
 }
-.word-card:hover { border-color: rgba(212,168,83,0.4); }
+.word-card:hover { border-color: rgba(184,135,30,0.4); }
 
 .word-en {
   font-family: 'DM Serif Display', serif; font-size: 1.35rem;
@@ -96,7 +96,7 @@ nav {
   color: var(--text2); font-size: 0.82rem; cursor: pointer;
   transition: all var(--transition); font-family: 'DM Sans', sans-serif;
 }
-.view-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(212,168,83,0.08); }
+.view-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(184,135,30,0.08); }
 
 /* FLIP CARD */
 .flip-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }

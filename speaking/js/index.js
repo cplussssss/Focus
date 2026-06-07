@@ -5,7 +5,7 @@ async function callTTS(text, voiceId) {
   try {
     console.log("📡 [2] 準備發送 fetch 請求到 Worker...");
     
-    const response = await fetch('https://toeic.sijialai14373.workers.dev/tts', {
+    const response = await fetch('https://focus.sijialai14373.workers.dev/tts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text, voiceId })
@@ -37,7 +37,7 @@ async function callTTS(text, voiceId) {
 // ============================================================
 // CONFIG
 // ============================================================
-const TTS_WORKER = 'https://toeic.sijialai1473.workers.dev/tts';
+const TTS_WORKER = 'https://focus.sijialai14373.workers.dev/tts';
 
 const VOICES = {
   us: 'EXAVITQu4vr4xnSDxMaL', // Sarah (American)
