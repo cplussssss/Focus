@@ -5,6 +5,7 @@ const SUPABASE_URL = 'https://ujpwqxxriimtxsjconfk.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqcHdxeHhyaWltdHhzamNvbmZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1NDM5NjIsImV4cCI6MjA5NjExOTk2Mn0.PW8o1O7-kTC_Nl1wN39sqMOwN2H_CNtEKORmEe_u-rA';
 const NEWS_WORKER  = 'https://focus.sijialai1473.workers.dev/news';
 const GROQ_WORKER  = 'https://focus.sijialai1473.workers.dev/groq-vocab';
+const FETCH_WORKER = 'https://focus.sijialai1473.workers.dev/fetch-article';
 
 // ============================================================
 // STATE
@@ -13,6 +14,8 @@ let currentArticle = null;
 let currentMode = 'normal';
 let annotatedHTML = null;
 let currentCat = 'technology';
+let fullArticleText = null;   // 抓取原文後的完整內容
+let fetchingFull = false;     // 防止重複 fetch
 
 // ============================================================
 // TOAST
@@ -74,6 +77,8 @@ function openArticle(idx) {
   const articles = document.getElementById('news-list')._articles;
   currentArticle = articles[idx];
   annotatedHTML = null;
+  fullArticleText = null;
+  fetchingFull = false;
   currentMode = 'normal';
 
   document.getElementById('r-cat').textContent = currentCat;
@@ -88,12 +93,52 @@ function openArticle(idx) {
   document.getElementById('list-view').style.display = 'none';
   document.getElementById('reader').style.display = 'block';
   window.scrollTo(0,0);
+
+  // 背景抓取完整原文
+  fetchFullArticle(currentArticle.url);
 }
 
 function showList() {
   document.getElementById('list-view').style.display = 'block';
   document.getElementById('reader').style.display = 'none';
   currentArticle = null; annotatedHTML = null;
+  fullArticleText = null; fetchingFull = false;
+}
+
+// ============================================================
+// FETCH FULL ARTICLE TEXT
+// ============================================================
+async function fetchFullArticle(url) {
+  if (fetchingFull || !url) return;
+  fetchingFull = true;
+
+  // 顯示「抓取完整原文中」提示
+  const bodyEl = document.getElementById('article-body');
+  const indicator = document.createElement('div');
+  indicator.id = 'full-fetch-indicator';
+  indicator.style.cssText = 'font-size:0.82rem;color:var(--text2);display:flex;align-items:center;gap:0.4rem;padding:0.5rem 0 0;';
+  indicator.innerHTML = '<div class="spinner" style="width:14px;height:14px;border-width:1.5px;"></div> 抓取完整原文中...';
+  bodyEl.after(indicator);
+
+  try {
+    const res = await fetch(`${FETCH_WORKER}?url=${encodeURIComponent(url)}`);
+    if (!res.ok) throw new Error(res.status);
+    const data = await res.json();
+    const text = data.text || data.content || '';
+
+    if (text && text.length > 200) {
+      fullArticleText = text;
+      // 只在目前仍是這篇文章的情況下更新畫面
+      if (currentArticle?.url === url) {
+        annotatedHTML = null; // 清掉舊的標註，讓 vocab 模式重新分析完整文章
+        renderArticleBody(currentMode);
+      }
+    }
+  } catch(e) {
+    console.warn('Full article fetch failed, using fallback:', e.message);
+  } finally {
+    document.getElementById('full-fetch-indicator')?.remove();
+  }
 }
 
 // ============================================================
@@ -101,6 +146,9 @@ function showList() {
 // ============================================================
 function getArticleText() {
   if (!currentArticle) return '';
+  // 優先使用完整抓取的原文
+  if (fullArticleText) return fullArticleText;
+  // 降級：用 API 回傳的欄位拼湊
   const parts = [];
   if (currentArticle.title) parts.push(currentArticle.title + '.');
   if (currentArticle.description) parts.push(currentArticle.description);
