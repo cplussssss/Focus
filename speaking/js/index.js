@@ -371,8 +371,3 @@ function listenTTSPractice() {
 
 loadPracticeArticle(0);
 
-if (path === '/debug') {
-  return new Response(JSON.stringify({ 
-    key: env.ELEVENLABS_API_KEY ? env.ELEVENLABS_API_KEY.substring(0, 8) + '...' : 'NOT FOUND'
-  }), { status: 200, headers: cors });
-}
