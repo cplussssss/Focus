@@ -8,7 +8,13 @@ async function callTTS(text, voiceId) {
     const response = await fetch(TTS_WORKER, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, voiceId })
+      body: JSON.stringify({
+    text: '...',
+    voice: 'en-US-Wavenet-F',      // 美式女聲
+    voice: 'en-GB-Wavenet-A',   // 英式女聲
+    voice: 'en-AU-Wavenet-A',   // 澳洲女聲
+    languageCode: 'en-US'
+  })
     });
 
     console.log("✅ [3] 收到伺服器回應，狀態碼:", response.status);

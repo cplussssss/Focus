@@ -13,7 +13,14 @@ nav {
   padding: 1rem 2rem; border-bottom: 1px solid var(--border);
   position: sticky; top: 0; background: var(--bg); z-index: 100;
 }
-.nav-logo { font-family: 'DM Serif Display', serif; font-size: 1.2rem; color: var(--accent); }
+.nav-left { display: flex; align-items: center; gap: 1rem; }
+.nav-home {
+  font-family: 'DM Serif Display', serif; font-size: 1.25rem; font-style: italic;
+  color: var(--accent); text-decoration: none;
+  transition: opacity var(--transition);
+}
+.nav-home:hover { opacity: 0.7; }
+.nav-logo { font-family: 'DM Serif Display', serif; font-size: 1.2rem; color: var(--accent); text-decoration: none; cursor: pointer; }
 .nav-links { display: flex; gap: 1.5rem; }
 .nav-links a { color: var(--text2); text-decoration: none; font-size: 0.9rem; transition: color var(--transition); }
 .nav-links a:hover, .nav-links a.active { color: var(--text); }
