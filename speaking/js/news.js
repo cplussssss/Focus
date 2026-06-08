@@ -1,11 +1,10 @@
 // ============================================================
 // CONFIG
 // ============================================================
-const SUPABASE_URL = 'https://ujpwqxxriimtxsjconfk.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqcHdxeHhyaWltdHhzamNvbmZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1NDM5NjIsImV4cCI6MjA5NjExOTk2Mn0.PW8o1O7-kTC_Nl1wN39sqMOwN2H_CNtEKORmEe_u-rA';
 const NEWS_WORKER  = 'https://focus.sijialai1473.workers.dev/news';
 const GROQ_WORKER  = 'https://focus.sijialai1473.workers.dev/groq-vocab';
 const FETCH_WORKER = 'https://focus.sijialai1473.workers.dev/fetch-article';
+const VOC_WORKER   = 'https://focus.sijialai1473.workers.dev/voc';
 
 // ============================================================
 // STATE
@@ -195,18 +194,6 @@ async function annotateVocab() {
   const text = getArticleText();
 
   try {
-    const prompt = `You are a vocabulary assistant for English learners preparing for TOEIC.
-
-Given the following English article, identify 8-12 advanced or useful vocabulary words.
-Return ONLY a JSON array (no markdown, no explanation) like:
-[
-  {"word": "infrastructure", "definition_en": "the basic physical systems of a country", "definition_zh": "基礎設施", "example": "The city needs to improve its infrastructure."},
-  ...
-]
-
-Article:
-${text.substring(0, 1500)}`;
-
     const res = await fetch(GROQ_WORKER, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -246,29 +233,27 @@ function buildAnnotatedHTML(text, words) {
 }
 
 // ============================================================
-// SAVE WORD — Supabase
+// SAVE WORD — 透過 Worker 儲存到 Supabase
 // ============================================================
 async function saveWord(btn, word, def_en, def_zh, example) {
   if (btn.classList.contains('saved')) return;
   btn.textContent = '儲存中...'; btn.disabled = true;
 
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/vocabulary`, {
+    const res = await fetch(VOC_WORKER, {
       method: 'POST',
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': 'Bearer ' + SUPABASE_KEY,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=minimal'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        word, definition_en: def_en, definition_zh: def_zh,
+        word,
+        definition_en: def_en,
+        definition_zh: def_zh,
         example_sentence: example,
         source_title: currentArticle?.title || '',
         source_url: currentArticle?.url || ''
       })
     });
-    if (res.ok || res.status === 201) {
+
+    if (res.ok) {
       btn.textContent = '✓ 已加入';
       btn.classList.add('saved');
       showToast(`「${word}」已加入單字庫`);
@@ -277,7 +262,7 @@ async function saveWord(btn, word, def_en, def_zh, example) {
     }
   } catch(e) {
     btn.textContent = '+ 加入單字庫'; btn.disabled = false;
-    showToast('儲存失敗，請確認 Supabase 設定');
+    showToast('儲存失敗，請稍後再試');
   }
 }
 
