@@ -1,54 +1,12 @@
-async function callTTS(text, voiceId) {
-  console.log("🚀 [1] 成功觸發 callTTS 函式");
-  console.log("傳入參數:", { text, voiceId });
-
-  try {
-    console.log("📡 [2] 準備發送 fetch 請求到 Worker...");
-    
-    const response = await fetch(TTS_WORKER, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-    text: '...',
-    voice: 'en-US-Wavenet-F',      // 美式女聲
-    voice: 'en-GB-Wavenet-A',   // 英式女聲
-    voice: 'en-AU-Wavenet-A',   // 澳洲女聲
-    languageCode: 'en-US'
-  })
-    });
-
-    console.log("✅ [3] 收到伺服器回應，狀態碼:", response.status);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("❌ Worker 回傳錯誤:", errorText);
-      return;
-    }
-
-    console.log("🎵 [4] 開始解析音訊資料...");
-    const blob = await response.blob();
-    const audioUrl = URL.createObjectURL(blob);
-    const audio = new Audio(audioUrl);
-    
-    console.log("▶️ [5] 嘗試播放音訊...");
-    await audio.play();
-    console.log("🎉 播放成功！");
-
-  } catch (error) {
-    console.error("💥 [Error] 在 callTTS 流程中崩潰了:", error);
-  }
-}
-
-
 // ============================================================
 // CONFIG
 // ============================================================
 const TTS_WORKER = 'https://focus.sijialai1473.workers.dev/tts';
 
 const VOICES = {
-  us: 'EXAVITQu4vr4xnSDxMaL', // Sarah (American)
-  uk: 'onwK4e9ZLuTAKqWW03F9', // Daniel (British)
-  au: 'XB0fDUnXU5powFXDhCwa', // Charlotte (Australian)
+  us: { voice: 'en-US-Wavenet-F', languageCode: 'en-US' },
+  uk: { voice: 'en-GB-Wavenet-A', languageCode: 'en-GB' },
+  au: { voice: 'en-AU-Wavenet-A', languageCode: 'en-AU' },
 };
 
 const articles = [
@@ -320,7 +278,7 @@ function tick(ts) {
 }
 
 // ============================================================
-// TTS — ElevenLabs
+// TTS — Google Cloud Text-to-Speech
 // ============================================================
 function stopAudio() {
   if (currentAudio) { currentAudio.pause(); currentAudio = null; }
@@ -335,13 +293,17 @@ function stopAudio() {
 
 async function callTTS(text, accentKey, onStart, onEnd) {
   stopAudio();
-  const voiceId = VOICES[accentKey];
+  const voiceConfig = VOICES[accentKey] || VOICES['us'];
   onStart();
   try {
     const resp = await fetch(TTS_WORKER, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, voiceId })
+      body: JSON.stringify({
+        text: text,
+        voice: voiceConfig.voice,
+        languageCode: voiceConfig.languageCode
+      })
     });
     if (!resp.ok) { alert('TTS 錯誤：' + resp.status); onEnd(); return; }
     const blob = await resp.blob();
@@ -376,4 +338,3 @@ function listenTTSPractice() {
 }
 
 loadPracticeArticle(0);
-
