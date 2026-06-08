@@ -282,6 +282,7 @@ function tick(ts) {
 // ============================================================
 function stopAudio() {
   if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+  ttsLoading = false;
   document.getElementById('wave-indicator').classList.add('hidden');
   document.getElementById('btn-listen').disabled = false;
   document.getElementById('btn-listen').textContent = '🔊 聆聽朗讀';
@@ -289,12 +290,15 @@ function stopAudio() {
   if (wp) wp.classList.add('hidden');
   const ttsBtn = document.getElementById('btn-tts-prac');
   if (ttsBtn) { ttsBtn.disabled = false; ttsBtn.textContent = '🔊 朗讀範例'; }
+  const status = document.getElementById('tts-status-prac');
+  if (status) status.textContent = '';
 }
 
-async function callTTS(text, accentKey, onStart, onEnd) {
+async function callTTS(text, accentKey, onLoading, onReady, onEnd) {
   stopAudio();
+  ttsLoading = true;
   const voiceConfig = VOICES[accentKey] || VOICES['us'];
-  onStart();
+  onLoading();
   try {
     const resp = await fetch(TTS_WORKER, {
       method: 'POST',
@@ -305,35 +309,73 @@ async function callTTS(text, accentKey, onStart, onEnd) {
         languageCode: voiceConfig.languageCode
       })
     });
-    if (!resp.ok) { alert('TTS 錯誤：' + resp.status); onEnd(); return; }
+    if (!resp.ok) { alert('TTS 錯誤：' + resp.status); ttsLoading = false; onEnd(); return; }
     const blob = await resp.blob();
     const url = URL.createObjectURL(blob);
     currentAudio = new Audio(url);
+    ttsLoading = false;
+    onReady();
     currentAudio.play();
     currentAudio.onended = () => { onEnd(); };
-  } catch(e) { alert('TTS 失敗，請確認 Worker 設定'); onEnd(); }
+  } catch(e) { alert('TTS 失敗，請確認 Worker 設定'); ttsLoading = false; onEnd(); }
 }
 
-function listenTTS() {
+function toggleListenTTS() {
+  const btn = document.getElementById('btn-listen');
+  const wave = document.getElementById('wave-indicator');
+
+  if (ttsLoading) return;
+
+  if (currentAudio && !currentAudio.ended) {
+    if (currentAudio.paused) {
+      currentAudio.play();
+      wave.classList.remove('hidden');
+      btn.textContent = '⏸ 暫停';
+    } else {
+      currentAudio.pause();
+      wave.classList.add('hidden');
+      btn.textContent = '▶ 繼續';
+    }
+    return;
+  }
+
   const accent = document.getElementById('det-accent').value;
   const text = articles[currentArticleIdx].text;
-  const wave = document.getElementById('wave-indicator');
-  const btn = document.getElementById('btn-listen');
   callTTS(text, accent,
-    () => { wave.classList.remove('hidden'); btn.disabled = true; btn.textContent = '播放中...'; },
-    () => { wave.classList.add('hidden'); btn.disabled = false; btn.textContent = '🔊 聆聽朗讀'; }
+    () => { btn.disabled = true; btn.textContent = '載入中...'; },
+    () => { btn.disabled = false; wave.classList.remove('hidden'); btn.textContent = '⏸ 暫停'; },
+    () => { wave.classList.add('hidden'); btn.textContent = '🔊 聆聽朗讀'; }
   );
 }
 
-function listenTTSPractice() {
+function toggleListenTTSPractice() {
+  const btn = document.getElementById('btn-tts-prac');
+  const wave = document.getElementById('wave-prac');
+  const status = document.getElementById('tts-status-prac');
+
+  if (ttsLoading) return;
+
+  if (currentAudio && !currentAudio.ended) {
+    if (currentAudio.paused) {
+      currentAudio.play();
+      wave.classList.remove('hidden');
+      btn.textContent = '⏸ 暫停';
+      status.textContent = '';
+    } else {
+      currentAudio.pause();
+      wave.classList.add('hidden');
+      btn.textContent = '▶ 繼續';
+      status.textContent = '已暫停';
+    }
+    return;
+  }
+
   const accent = document.getElementById('prac-accent').value;
   const text = articles[currentArticleIdx].text;
-  const wave = document.getElementById('wave-prac');
-  const btn = document.getElementById('btn-tts-prac');
-  const status = document.getElementById('tts-status-prac');
   callTTS(text, accent,
-    () => { wave.classList.remove('hidden'); btn.disabled = true; btn.textContent = '播放中...'; status.textContent = '載入中...'; },
-    () => { wave.classList.add('hidden'); btn.disabled = false; btn.textContent = '🔊 朗讀範例'; status.textContent = ''; }
+    () => { btn.disabled = true; btn.textContent = '載入中...'; status.textContent = '載入中...'; },
+    () => { btn.disabled = false; wave.classList.remove('hidden'); btn.textContent = '⏸ 暫停'; status.textContent = ''; },
+    () => { wave.classList.add('hidden'); btn.textContent = '🔊 朗讀範例'; status.textContent = ''; }
   );
 }
 
