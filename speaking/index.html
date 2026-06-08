@@ -52,7 +52,7 @@
       <option value="uk">🇬🇧 British</option>
       <option value="au">🇦🇺 Australian</option>
     </select>
-    <button class="btn-secondary" id="btn-listen" onclick="listenTTS()">🔊 聆聽朗讀</button>
+    <button class="btn-secondary" id="btn-listen" onclick="toggleListenTTS()">🔊 聆聽朗讀</button>
     <div class="wave hidden" id="wave-indicator">
       <span></span><span></span><span></span><span></span><span></span>
     </div>
@@ -103,7 +103,7 @@
       <option value="uk">🇬🇧 British</option>
       <option value="au">🇦🇺 Australian</option>
     </select>
-    <button class="btn-secondary" id="btn-tts-prac" onclick="listenTTSPractice()" style="padding:0.35rem 0.9rem;font-size:0.85rem;">🔊 朗讀範例</button>
+    <button class="btn-secondary" id="btn-tts-prac" onclick="toggleListenTTSPractice()" style="padding:0.35rem 0.9rem;font-size:0.85rem;">🔊 朗讀範例</button>
     <div class="wave hidden" id="wave-prac"><span></span><span></span><span></span><span></span><span></span></div>
     <span class="tts-status" id="tts-status-prac"></span>
   </div>
