@@ -14,13 +14,14 @@
 
   // 解析 JWT payload（只看 exp，簽名由 Worker 驗）
   function _parseJWT(token) {
-    try {
-      const b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-      const payload = JSON.parse(atob(b64));
-      if (payload.exp && Date.now() / 1000 > payload.exp) return null;
-      return payload;
-    } catch { return null; }
-  }
+  try {
+    const b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+    const payload = JSON.parse(new TextDecoder().decode(bytes));
+    if (payload.exp && Date.now() / 1000 > payload.exp) return null;
+    return payload;
+  } catch { return null; }
+}
 
   function _init() {
     const params = new URLSearchParams(window.location.search);
