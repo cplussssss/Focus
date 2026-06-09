@@ -9,6 +9,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 </head>
 <body>
 
@@ -120,13 +122,11 @@
       document.getElementById('btnGoogleLogin').addEventListener('click', async function () {
         var btn = this;
         btn.disabled = true;
-        btn.textContent = '登入中...';
         try {
           await FocusAuth.signInWithGoogle();
         } catch (e) {
+          if (e.code !== 'auth/popup-closed-by-user') console.error('登入失敗', e);
           btn.disabled = false;
-          btn.textContent = '重試登入';
-          console.error('登入失敗', e);
         }
       });
 

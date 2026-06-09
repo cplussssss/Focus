@@ -6,14 +6,6 @@
 const DEMO_EMAIL = 'demo@focus.app';
 // Cloudflare Worker URL（Gemini API 中間層）
 const GEMINI_WORKER_URL = 'https://focus.sijialai1473.workers.dev';
-const FIREBASE_CONFIG = {
-  apiKey: 'AIzaSyDeAM6lR-NcH--3avA1fqnA620DX2ktsNM',
-  authDomain: 'focus-e5f62.firebaseapp.com',
-  projectId: 'focus-e5f62',
-  storageBucket: 'focus-e5f62.firebasestorage.app',
-  messagingSenderId: '1075734057431',
-  appId: '1:1075734057431:web:add0bd3e6f1069ac317b92',
-};
 
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzKjukXmuP_2wt83HA_w3rdZjw_zKkfsQZXAnTzMimHQX0bhOoVCzbJErwOfLMuzVFi/exec';
 const STORAGE_KEY = 'pomodoro_records_v2';
@@ -1013,7 +1005,7 @@ function initEventListeners() {
 
   // 登出
   EL.btnLogout.addEventListener('click', async () => {
-    await firebaseAuth.signOut();
+    await FocusAuth.signOut();
     hideModal(EL.modalAccount);
   });
 
@@ -1128,7 +1120,7 @@ function initEventListeners() {
   if (EL.userBadge) EL.userBadge.addEventListener('click', openAccountModal);
   if (EL.btnLogoutMenu) EL.btnLogoutMenu.addEventListener('click', async () => {
     try {
-      await firebaseAuth.signOut();
+      await FocusAuth.signOut();
     } catch (e) { console.warn('Logout failed', e); }
   });
 
@@ -1193,7 +1185,7 @@ function initEventListeners() {
     });
   });
   EL.btnLogout.addEventListener('click', async () => {
-    await firebaseAuth.signOut();
+    await FocusAuth.signOut();
     hideModal(EL.modalAccount);
   });
   EL.btnMyRecords.addEventListener('click', handleMyRecords);
@@ -1244,9 +1236,9 @@ function initEventListeners() {
    ============================================================ */
 function initFirebase() {
   try {
-    firebase.initializeApp(FIREBASE_CONFIG);
+    // Firebase 已由 auth.js 初始化，直接取得實例
     firebaseAuth = firebase.auth();
-    firestoreDb = firebase.firestore();
+    firestoreDb = FocusAuth.getFirestore() || firebase.firestore();
 
     firebaseAuth.onAuthStateChanged(async (user) => {
       currentUser = user;
@@ -1415,15 +1407,13 @@ function handleAccountNameClick() {
 async function handleGoogleLogin() {
   try {
     hideModal(EL.modalLogin);
-    const provider = new firebase.auth.GoogleAuthProvider();
-    provider.addScope('email');
-    provider.addScope('profile');
-    provider.setCustomParameters({ prompt: 'select_account' });
-    await firebaseAuth.signInWithPopup(provider);
+    await FocusAuth.signInWithGoogle();
     // onAuthStateChanged 會自動處理後續
   } catch (err) {
-    console.error('Google 登入失敗：', err);
-    setSyncResult('登入失敗：' + (err.message || err.code), true);
+    if (err.code !== 'auth/popup-closed-by-user') {
+      console.error('Google 登入失敗：', err);
+      setSyncResult('登入失敗：' + (err.message || err.code), true);
+    }
   }
 }
 
