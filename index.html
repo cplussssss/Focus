@@ -16,11 +16,13 @@
   <div class="auth-corner">
     <button type="button" class="btn-auth-login" id="btnAuthLogin">登入</button>
     <div id="authUserArea" class="auth-user-area" hidden>
-      <div class="btn-auth-user" id="btnAuthUser">
+      <button type="button" class="btn-auth-user" id="btnAuthUser">
         <img class="auth-avatar" id="authAvatar" src="" alt="" hidden />
         <span id="authName"></span>
+      </button>
+      <div class="auth-dropdown" id="authDropdown">
+        <button type="button" class="btn-auth-logout" id="btnAuthLogout">登出</button>
       </div>
-      <button type="button" class="btn-auth-logout" id="btnAuthLogout">登出</button>
     </div>
   </div>
 
@@ -128,7 +130,19 @@
         }
       });
 
+      var dropdown = document.getElementById('authDropdown');
+
+      document.getElementById('btnAuthUser').addEventListener('click', function (e) {
+        e.stopPropagation();
+        dropdown.classList.toggle('open');
+      });
+
+      document.addEventListener('click', function () {
+        dropdown.classList.remove('open');
+      });
+
       document.getElementById('btnAuthLogout').addEventListener('click', function () {
+        dropdown.classList.remove('open');
         FocusAuth.signOut();
       });
     })();
