@@ -3,6 +3,59 @@
 // ============================================================
 const SUPABASE_URL = 'https://ujpwqxxriimtxsjconfk.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqcHdxeHhyaWltdHhzamNvbmZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1NDM5NjIsImV4cCI6MjA5NjExOTk2Mn0.PW8o1O7-kTC_Nl1wN39sqMOwN2H_CNtEKORmEe_u-rA';
+const TTS_WORKER = 'https://focus.sijialai1473.workers.dev/tts';
+
+// ============================================================
+// TTS
+// ============================================================
+let _vocAudio = null;
+
+async function speakText(text, btnEl) {
+  if (window.FocusAuth && window.FocusAuth.getCurrentUser() === null) {
+    window.FocusAuth.showLoginRequired();
+    return;
+  }
+  // 如果正在播放同一個按鈕，就暫停/繼續
+  if (_vocAudio && btnEl.dataset.playing === '1') {
+    if (_vocAudio.paused) {
+      _vocAudio.play();
+      btnEl.textContent = '⏸';
+    } else {
+      _vocAudio.pause();
+      btnEl.textContent = '▶';
+    }
+    return;
+  }
+  // 停掉前一個
+  if (_vocAudio) { _vocAudio.pause(); _vocAudio = null; }
+  document.querySelectorAll('.voc-speak-btn[data-playing="1"]').forEach(b => {
+    b.dataset.playing = '0'; b.textContent = '🔊';
+  });
+
+  btnEl.textContent = '…'; btnEl.disabled = true;
+  try {
+    const resp = await fetch(TTS_WORKER, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, voice: 'en-US-Wavenet-F', languageCode: 'en-US' })
+    });
+    if (!resp.ok) throw new Error(resp.status);
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    _vocAudio = new Audio(url);
+    btnEl.dataset.playing = '1';
+    btnEl.disabled = false;
+    btnEl.textContent = '⏸';
+    _vocAudio.play();
+    _vocAudio.onended = () => {
+      btnEl.dataset.playing = '0'; btnEl.textContent = '🔊';
+      _vocAudio = null;
+    };
+  } catch(e) {
+    btnEl.disabled = false; btnEl.textContent = '🔊';
+    showToast('語音載入失敗');
+  }
+}
 
 // ============================================================
 // STATE
@@ -79,10 +132,17 @@ function renderCardView(words, container) {
   container.innerHTML = '<div class="word-grid">' + words.map(w => `
     <div class="word-card" id="card-${w.id}">
       <button class="delete-btn" onclick="deleteWord('${w.id}')" title="刪除">✕</button>
-      <div class="word-en">${w.word}</div>
+      <div class="word-en-row">
+        <div class="word-en">${w.word}</div>
+        <button class="voc-speak-btn" data-playing="0" onclick="speakText('${w.word.replace(/'/g,"\\'")}', this)" title="播放單字">🔊</button>
+      </div>
       <div class="word-zh">${w.definition_zh || ''}</div>
       <div class="word-def">${w.definition_en || ''}</div>
-      ${w.example_sentence ? `<div class="word-example">${w.example_sentence}</div>` : ''}
+      ${w.example_sentence ? `
+      <div class="word-example-row">
+        <div class="word-example">${w.example_sentence}</div>
+        <button class="voc-speak-btn voc-speak-ex" data-playing="0" onclick="speakText('${(w.example_sentence||'').replace(/'/g,"\\'")}', this)" title="播放例句">🔊</button>
+      </div>` : ''}
       <div class="word-source">
         ${w.source_title ? `<a href="${w.source_url || '#'}" target="_blank" title="${w.source_title}">來源: ${w.source_title.substring(0,30)}${w.source_title.length>30?'...':''}</a>` : '<span></span>'}
         <span class="word-date">${formatDate(w.created_at)}</span>

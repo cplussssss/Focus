@@ -7,6 +7,7 @@
 <title>Speaking</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/index.css">
+<script src="../auth.js"></script>
 </head>
 <body>
 
@@ -27,6 +28,24 @@
   <div style="padding:2rem; max-width:900px; margin:0 auto;">
     <h1 class="page-title">Speaking Practice</h1>
     <p class="page-subtitle">選擇文章進入練習，或直接點「開始練習」進入捲動模式</p>
+
+    <!-- ★ 週計畫區塊 -->
+    <div class="week-plan-card" id="week-plan-container">
+      <!-- 由 JS 渲染 -->
+    </div>
+
+    <!-- ★ 綜合練習區塊 -->
+    <div class="mixed-practice-card">
+      <div class="mixed-header">
+        <span class="mixed-title">🎲 綜合練習</span>
+        <span class="mixed-desc">隨機挑一篇，馬上開練</span>
+      </div>
+      <div class="mixed-actions">
+        <button class="btn-mixed" onclick="startRandomPractice()">🔀 隨機一篇</button>
+        <button class="btn-mixed btn-mixed-today" onclick="startTodayMixed()">📅 今日文章</button>
+      </div>
+    </div>
+
     <div class="category-tabs" id="cat-tabs">
       <button class="cat-tab active" data-cat="all">全部</button>
       <button class="cat-tab" data-cat="daily">Daily Life</button>

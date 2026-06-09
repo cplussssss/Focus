@@ -1290,7 +1290,6 @@ function initFirebase() {
         if (EL.btnLoginHeader) EL.btnLoginHeader.hidden = false;
         if (EL.btnLogoutMenu) EL.btnLogoutMenu.hidden = true;
         if (EL.btnAccountName) refreshSettingsAccountName();
-        showModal(EL.modalLogin);   // ★ 未登入就強制顯示登入畫面
       }
     });
   } catch (err) { console.error('Firebase 初始化失敗：', err); }

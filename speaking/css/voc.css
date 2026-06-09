@@ -65,10 +65,32 @@ nav {
 }
 .word-card:hover { border-color: rgba(184,135,30,0.4); }
 
+/* word en + speak row */
+.word-en-row {
+  display: flex; align-items: center; gap: 0.5rem;
+}
 .word-en {
   font-family: 'DM Serif Display', serif; font-size: 1.35rem;
   color: var(--accent2); line-height: 1.2;
 }
+
+/* example + speak row */
+.word-example-row {
+  display: flex; align-items: flex-start; gap: 0.4rem;
+}
+.word-example-row .word-example { flex: 1; }
+
+/* speak buttons */
+.voc-speak-btn {
+  flex-shrink: 0;
+  background: none; border: 1px solid var(--border);
+  border-radius: 6px; padding: 2px 7px;
+  font-size: 0.78rem; cursor: pointer; color: var(--text2);
+  transition: all var(--transition); line-height: 1.4;
+}
+.voc-speak-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(184,135,30,0.07); }
+.voc-speak-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.voc-speak-ex { font-size: 0.72rem; margin-top: 0.15rem; }
 .word-zh { font-size: 0.9rem; color: var(--text2); }
 .word-def { font-size: 0.85rem; color: var(--text); line-height: 1.6; }
 .word-example {

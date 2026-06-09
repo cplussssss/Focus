@@ -5,6 +5,7 @@ const NEWS_WORKER  = 'https://focus.sijialai1473.workers.dev/news';
 const GROQ_WORKER  = 'https://focus.sijialai1473.workers.dev/groq-vocab';
 const FETCH_WORKER = 'https://focus.sijialai1473.workers.dev/fetch-article';
 const VOC_WORKER   = 'https://focus.sijialai1473.workers.dev/voc';
+const TTS_WORKER   = 'https://focus.sijialai1473.workers.dev/tts';
 
 // ============================================================
 // STATE
@@ -13,8 +14,10 @@ let currentArticle = null;
 let currentMode = 'normal';
 let annotatedHTML = null;
 let currentCat = 'technology';
-let fullArticleText = null;   // 抓取原文後的完整內容
-let fetchingFull = false;     // 防止重複 fetch
+let fullArticleText = null;
+let fetchingFull = false;
+let _newsAudio = null;
+let _newsTtsLoading = false;
 
 // ============================================================
 // TOAST
@@ -23,6 +26,71 @@ function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ============================================================
+// TTS — 新聞語音播放
+// ============================================================
+function toggleNewsTTS() {
+  if (window.FocusAuth && window.FocusAuth.getCurrentUser() === null) {
+    window.FocusAuth.showLoginRequired();
+    return;
+  }
+  const btn = document.getElementById('news-tts-btn');
+  const wave = document.getElementById('news-tts-wave');
+  if (_newsTtsLoading) return;
+
+  // 已有音頻：暫停/繼續
+  if (_newsAudio && !_newsAudio.ended) {
+    if (_newsAudio.paused) {
+      _newsAudio.play();
+      wave.classList.remove('hidden');
+      btn.textContent = '⏸ 暫停';
+    } else {
+      _newsAudio.pause();
+      wave.classList.add('hidden');
+      btn.textContent = '▶ 繼續';
+    }
+    return;
+  }
+
+  const text = getArticleText();
+  if (!text) return;
+  _newsTtsLoading = true;
+  btn.disabled = true; btn.textContent = '載入中...';
+
+  fetch(TTS_WORKER, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: text.substring(0, 4000), voice: 'en-US-Wavenet-F', languageCode: 'en-US' })
+  })
+  .then(r => { if (!r.ok) throw new Error(r.status); return r.blob(); })
+  .then(blob => {
+    const url = URL.createObjectURL(blob);
+    _newsAudio = new Audio(url);
+    _newsTtsLoading = false;
+    btn.disabled = false; btn.textContent = '⏸ 暫停';
+    wave.classList.remove('hidden');
+    _newsAudio.play();
+    _newsAudio.onended = () => {
+      wave.classList.add('hidden');
+      btn.textContent = '🔊 朗讀文章';
+    };
+  })
+  .catch(() => {
+    _newsTtsLoading = false;
+    btn.disabled = false; btn.textContent = '🔊 朗讀文章';
+    showToast('語音載入失敗');
+  });
+}
+
+function stopNewsTTS() {
+  if (_newsAudio) { _newsAudio.pause(); _newsAudio = null; }
+  _newsTtsLoading = false;
+  const btn = document.getElementById('news-tts-btn');
+  const wave = document.getElementById('news-tts-wave');
+  if (btn) { btn.disabled = false; btn.textContent = '🔊 朗讀文章'; }
+  if (wave) wave.classList.add('hidden');
 }
 
 // ============================================================
@@ -80,12 +148,19 @@ function openArticle(idx) {
   fetchingFull = false;
   currentMode = 'normal';
 
+  stopNewsTTS();
+
   document.getElementById('r-cat').textContent = currentCat;
   document.getElementById('r-title').textContent = currentArticle.title;
   document.getElementById('r-source').textContent = currentArticle.source?.name || '';
   document.getElementById('r-date').textContent = formatDate(currentArticle.publishedAt);
   document.getElementById('r-link').href = currentArticle.url;
   document.getElementById('r-link2').href = currentArticle.url;
+
+  // 清空並隱藏摘要
+  const summaryEl = document.getElementById('article-summary');
+  summaryEl.style.display = 'none';
+  summaryEl.innerHTML = '';
 
   renderArticleBody('normal');
   document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === 'normal'));
@@ -98,6 +173,7 @@ function openArticle(idx) {
 }
 
 function showList() {
+  stopNewsTTS();
   document.getElementById('list-view').style.display = 'block';
   document.getElementById('reader').style.display = 'none';
   currentArticle = null; annotatedHTML = null;
@@ -111,7 +187,6 @@ async function fetchFullArticle(url) {
   if (fetchingFull || !url) return;
   fetchingFull = true;
 
-  // 顯示「抓取完整原文中」提示
   const bodyEl = document.getElementById('article-body');
   const indicator = document.createElement('div');
   indicator.id = 'full-fetch-indicator';
@@ -127,16 +202,66 @@ async function fetchFullArticle(url) {
 
     if (text && text.length > 200) {
       fullArticleText = text;
-      // 只在目前仍是這篇文章的情況下更新畫面
       if (currentArticle?.url === url) {
-        annotatedHTML = null; // 清掉舊的標註，讓 vocab 模式重新分析完整文章
+        annotatedHTML = null;
         renderArticleBody(currentMode);
+        // 抓取完成後產生摘要
+        generateSummary(text);
       }
     }
   } catch(e) {
     console.warn('Full article fetch failed, using fallback:', e.message);
   } finally {
     document.getElementById('full-fetch-indicator')?.remove();
+  }
+}
+
+// ============================================================
+// AI SUMMARY
+// ============================================================
+async function generateSummary(text) {
+  if (window.FocusAuth && window.FocusAuth.getCurrentUser() === null) {
+    window.FocusAuth.showLoginRequired();
+    return;
+  }
+  const summaryEl = document.getElementById('article-summary');
+  summaryEl.style.display = 'block';
+  summaryEl.innerHTML = '<div class="summary-loading"><div class="spinner" style="width:14px;height:14px;border-width:1.5px;display:inline-block;"></div> AI 摘要生成中...</div>';
+
+  try {
+    const res = await fetch(GROQ_WORKER, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text: text.substring(0, 2000),
+        mode: 'summary'
+      })
+    });
+    const data = await res.json();
+    const raw = data.choices?.[0]?.message?.content?.trim() || '';
+
+    // 嘗試解析 JSON，若失敗直接顯示文字
+    let summaryHTML = '';
+    try {
+      const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
+      summaryHTML = `
+        <div class="summary-points">
+          ${(parsed.points || []).map(p => `<div class="summary-point">• ${p}</div>`).join('')}
+        </div>
+        ${parsed.keywords ? `<div class="summary-keywords">${parsed.keywords.map(k=>`<span class="summary-kw">${k}</span>`).join('')}</div>` : ''}
+      `;
+    } catch {
+      summaryHTML = `<div class="summary-text">${raw}</div>`;
+    }
+
+    summaryEl.innerHTML = `
+      <div class="summary-header">
+        <span class="summary-label">📋 文章摘要</span>
+      </div>
+      ${summaryHTML}
+    `;
+  } catch(e) {
+    summaryEl.style.display = 'none';
   }
 }
 
@@ -155,6 +280,18 @@ function getArticleText() {
   return parts.join('\n\n');
 }
 
+function toTitleCase(text) {
+  // 小詞不大寫（介詞、冠詞、連接詞）
+  const minor = new Set(['a','an','the','and','but','or','nor','for','so','yet','at','by','in','of','on','to','up','as','is','it']);
+  return text.replace(/[^\n.!?]+[.!?\n]*/g, sentence => {
+    return sentence.replace(/\b\w+/g, (word, offset) => {
+      const lower = word.toLowerCase();
+      if (offset === 0 || !minor.has(lower)) return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+      return lower;
+    });
+  });
+}
+
 function renderArticleBody(mode) {
   const el = document.getElementById('article-body');
   const text = getArticleText();
@@ -168,7 +305,8 @@ function renderArticleBody(mode) {
     el.innerHTML = highlighted.split('\n\n').map(p => `<p>${p}</p>`).join('');
   } else if (mode === 'caps') {
     el.classList.add('mode-caps');
-    el.innerHTML = text.split('\n\n').map(p => `<p>${p}</p>`).join('');
+    const titleText = toTitleCase(text);
+    el.innerHTML = titleText.split('\n\n').map(p => `<p>${p}</p>`).join('');
   } else if (mode === 'vocab') {
     if (annotatedHTML) {
       el.innerHTML = annotatedHTML;
@@ -189,6 +327,10 @@ function setMode(mode) {
 // AI VOCAB ANNOTATION — Groq
 // ============================================================
 async function annotateVocab() {
+  if (window.FocusAuth && window.FocusAuth.getCurrentUser() === null) {
+    window.FocusAuth.showLoginRequired();
+    return;
+  }
   const statusEl = document.getElementById('annotate-status');
   statusEl.style.display = 'flex';
   const text = getArticleText();

@@ -7,6 +7,7 @@
 <title>Voc</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/voc.css">
+<script src="../auth.js"></script>
 </head>
 <body>
 
@@ -29,8 +30,8 @@
       <p class="word-count" id="word-count">載入中...</p>
     </div>
     <div class="view-toggle">
-      <button class="view-btn active" data-view="cards" onclick="setView('cards')">卡片</button>
-      <button class="view-btn" data-view="flip" onclick="setView('flip')">翻轉測驗</button>
+      <button type="button" class="view-btn active" data-view="cards" onclick="setView('cards')">卡片</button>
+      <button type="button" class="view-btn" data-view="flip" onclick="setView('flip')">翻轉測驗</button>
     </div>
   </div>
 
@@ -41,7 +42,7 @@
       <option value="oldest">最早加入</option>
       <option value="alpha">A → Z</option>
     </select>
-    <button class="btn-secondary" onclick="loadWords()">重新整理</button>
+    <button type="button" class="btn-secondary" onclick="loadWords()">重新整理</button>
   </div>
 
   <div id="word-container"></div>

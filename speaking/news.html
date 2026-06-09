@@ -7,6 +7,7 @@
 <title>News</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/news.css">
+<script src="../auth.js"></script>
 </head>
 <body>
 
@@ -60,7 +61,14 @@
       <div id="annotate-status" class="annotate-status" style="display:none">
         <div class="spinner"></div> AI 分析生詞中...
       </div>
+      <div class="news-tts-bar">
+        <button class="btn-secondary news-tts-btn" id="news-tts-btn" onclick="toggleNewsTTS()">🔊 朗讀文章</button>
+        <div class="wave hidden" id="news-tts-wave">
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+      </div>
     </div>
+    <div id="article-summary" class="article-summary" style="display:none"></div>
     <div class="article-content" id="article-body"></div>
     <a class="btn-secondary" id="r-link2" href="#" target="_blank" style="display:inline-flex;align-items:center;gap:0.4rem;text-decoration:none;">閱讀完整原文 ↗</a>
   </div>

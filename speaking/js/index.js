@@ -105,8 +105,226 @@ Today, cloud computing powers much of the digital world. Social media platforms,
 ];
 
 // ============================================================
-// STATE
+// EXTRA ARTICLES (for 14-article plans)
 // ============================================================
+const extraArticles = [
+  {
+    emoji: '🌿', category: 'daily', categoryLabel: 'Daily Life',
+    title: 'A Walk in the Park',
+    wordCount: 120,
+    text: `Every Sunday afternoon, Tom takes a long walk in the park near his home. He leaves his phone on silent and simply enjoys the surroundings. The park has a small lake, several benches, and tall trees that provide shade even on warm days.\n\nHe usually brings a bottle of water and sometimes a book. If the weather is nice, he sits by the lake and reads for an hour before heading back. He finds that these quiet walks help him reset and feel less stressed after a busy week.\n\nTom believes that taking time away from screens is important. He often notices small things during his walks — a duck with her ducklings, the sound of wind through the leaves, or an elderly couple feeding birds. These simple moments remind him to slow down.`
+  },
+  {
+    emoji: '🏢', category: 'toeic', categoryLabel: 'TOEIC',
+    title: 'A Business Meeting',
+    wordCount: 155,
+    text: `The quarterly review meeting begins at nine o'clock sharp. All team leads are seated around the conference table, each with a printed agenda in front of them. The department head opens the meeting by reviewing last quarter's performance numbers.\n\nThe sales team reports a twelve percent increase in revenue, driven mainly by new contracts in the Asia Pacific region. However, the operations team notes that supply chain delays have affected delivery times and customer satisfaction scores.\n\nAfter the presentations, the floor is opened for discussion. Several managers suggest investing in automated inventory systems to reduce delays. Others recommend hiring additional customer service staff ahead of the peak season.\n\nThe meeting wraps up with a list of action items assigned to each team. Everyone agrees to submit their progress reports by the end of the following week. The department head thanks the group and reminds them that collaboration is key to achieving the annual target.`
+  },
+  {
+    emoji: '🌐', category: 'tech', categoryLabel: 'Technology',
+    title: 'The Internet of Things',
+    wordCount: 165,
+    text: `The Internet of Things, or IoT, refers to the growing network of physical devices connected to the internet. These devices range from smart home appliances and wearable fitness trackers to industrial sensors and self-driving vehicles. They collect and share data in real time, often without requiring any human input.\n\nIn the home, IoT devices can automate everyday tasks. A smart thermostat learns your schedule and adjusts the temperature accordingly. A connected refrigerator can track food inventory and even place orders when supplies run low. These conveniences are designed to save time and reduce energy consumption.\n\nDespite the benefits, IoT raises significant security concerns. Many devices are manufactured with minimal security features, making them easy targets for hackers. A compromised device can serve as an entry point into a home or corporate network.\n\nAs the number of connected devices continues to grow — projected to reach over 30 billion by 2030 — the need for stronger security standards and privacy regulations becomes increasingly urgent.`
+  },
+  {
+    emoji: '📚', category: 'daily', categoryLabel: 'Daily Life',
+    title: 'Learning a New Language',
+    wordCount: 145,
+    text: `Learning a new language is one of the most rewarding challenges a person can take on. It opens doors to new cultures, strengthens the brain, and creates opportunities that would otherwise be impossible.\n\nThe most effective learners combine multiple methods: formal study, conversation practice, and immersion through music, films, and podcasts. Simply memorizing vocabulary lists is rarely enough. The key is to use the language actively and regularly, even if you make mistakes.\n\nConsistency matters more than intensity. Studying for thirty minutes every day produces better results than cramming for hours once a week. Finding a conversation partner or joining a language exchange program can also accelerate progress significantly.\n\nMost learners experience a period of frustration before things begin to click. This phase is completely normal. The breakthrough moment — when you suddenly understand a sentence without consciously translating it — makes all the effort worthwhile.`
+  },
+  {
+    emoji: '💡', category: 'toeic', categoryLabel: 'TOEIC',
+    title: 'Presenting Ideas at Work',
+    wordCount: 150,
+    text: `Presenting an idea clearly and persuasively is a valuable skill in any workplace. Whether you are pitching a new project, proposing a process change, or sharing research findings, the ability to communicate well can make or break your chances of getting buy-in.\n\nStart by understanding your audience. A presentation for senior executives should focus on business impact and return on investment, while a technical team may want more detailed specifications. Tailoring your message shows that you respect the listener's time and perspective.\n\nKeep your structure simple: state the problem, offer your solution, and explain the expected outcome. Support your points with data or concrete examples. Avoid jargon unless you are certain your audience understands it.\n\nPractice your delivery out loud before the actual presentation. Confidence comes from preparation. If you stumble during the real thing, stay calm, take a breath, and carry on. Most audiences are far more forgiving than presenters expect.`
+  },
+  {
+    emoji: '🚀', category: 'tech', categoryLabel: 'Technology',
+    title: 'Space Exploration Today',
+    wordCount: 170,
+    text: `Space exploration has entered a new era, driven not just by national space agencies but also by private companies. Firms like SpaceX, Blue Origin, and Rocket Lab have dramatically lowered the cost of launching satellites and sending cargo into orbit. The rise of commercial spaceflight has opened opportunities that once seemed decades away.\n\nOne of the most ambitious goals of the current era is establishing a sustained human presence on the Moon and eventually Mars. NASA's Artemis program aims to return astronauts to the lunar surface and use it as a stepping stone for deeper space missions.\n\nBeyond exploration, space technology has direct benefits for life on Earth. GPS navigation, weather forecasting, and global internet connectivity all depend on satellites. As more countries and companies enter the space industry, questions about regulation, debris management, and the use of resources become increasingly important.\n\nThe next decade promises to be the most active period in the history of space exploration, with multiple missions targeting the Moon, Mars, and even the asteroid belt.`
+  },
+];
+
+// Merged pool for week plans
+const allArticles = [...articles, ...extraArticles];
+
+// ============================================================
+// WEEK PLAN
+// ============================================================
+const WEEK_STORAGE_KEY = 'speaking_week_plan';
+
+function getWeekPlan() {
+  try {
+    const raw = localStorage.getItem(WEEK_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function saveWeekPlan(plan) {
+  localStorage.setItem(WEEK_STORAGE_KEY, JSON.stringify(plan));
+}
+
+function getMondayOf(date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = (day === 0 ? -6 : 1 - day);
+  d.setDate(d.getDate() + diff);
+  d.setHours(0,0,0,0);
+  return d.toISOString().slice(0,10);
+}
+
+function getOrCreateWeekPlan() {
+  const thisMonday = getMondayOf(new Date());
+  let plan = getWeekPlan();
+  if (!plan || plan.monday !== thisMonday || plan.mode !== undefined) {
+    plan = {
+      monday: thisMonday,
+      days: Array.from({length: 7}, () => ({ articleIndices: [], done: [] }))
+    };
+    saveWeekPlan(plan);
+  }
+  return plan;
+}
+
+function setTodayArticles(count) {
+  const plan = getOrCreateWeekPlan();
+  const todayIdx = getTodayDayIndex();
+  const usedIndices = new Set(plan.days.flatMap(d => d.articleIndices));
+  const available = allArticles.map((_, i) => i).filter(i => !usedIndices.has(i));
+  const selected = [];
+  while (selected.length < count && available.length > 0) {
+    const rand = Math.floor(Math.random() * available.length);
+    selected.push(available[rand]);
+    available.splice(rand, 1);
+  }
+  plan.days[todayIdx] = { articleIndices: selected, done: [] };
+  saveWeekPlan(plan);
+  renderWeekPlan();
+}
+
+function resetTodayPlan() {
+  const plan = getOrCreateWeekPlan();
+  const todayIdx = getTodayDayIndex();
+  plan.days[todayIdx] = { articleIndices: [], done: [] };
+  saveWeekPlan(plan);
+  renderWeekPlan();
+}
+
+function getTodayDayIndex() {
+  const day = new Date().getDay();
+  return day === 0 ? 6 : day - 1;
+}
+
+function getDayLabel(offset) {
+  return ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][offset];
+}
+
+function getArticleByPoolIdx(idx) {
+  return allArticles[idx];
+}
+
+function renderWeekPlan() {
+  const container = document.getElementById('week-plan-container');
+  if (!container) return;
+
+  const plan = getOrCreateWeekPlan();
+  const todayIdx = getTodayDayIndex();
+  const todayDay = plan.days[todayIdx];
+  const hasTodayPlan = todayDay.articleIndices.length > 0;
+
+  let html = `<div class="week-header">
+    <span class="week-title">本週練習紀錄</span>
+    ${hasTodayPlan ? `<button class="week-reset-btn" onclick="resetTodayPlan()">重設今日</button>` : ''}
+  </div>
+  <div class="week-days">`;
+
+  plan.days.forEach((day, dIdx) => {
+    const isToday = dIdx === todayIdx;
+    const hasPlan = day.articleIndices.length > 0;
+    const allDone = hasPlan && day.articleIndices.every(ai => day.done.includes(ai));
+
+    html += `<div class="week-day ${isToday ? 'today' : ''} ${allDone ? 'day-done' : ''}">
+      <div class="day-label">${getDayLabel(dIdx)}</div>
+      <div class="day-articles">`;
+
+    if (dIdx > todayIdx) {
+      html += `<div class="day-rest">—</div>`;
+    } else if (!hasPlan) {
+      html += `<div class="day-rest">${isToday ? '?' : '—'}</div>`;
+    } else {
+      day.articleIndices.forEach(ai => {
+        const a = getArticleByPoolIdx(ai);
+        if (!a) return;
+        const done = day.done.includes(ai);
+        html += `<div class="day-article ${done ? 'done' : ''}" ${isToday ? `onclick="openDayArticle(${ai})"` : ''} title="${a.title}">
+          <span class="day-emoji">${a.emoji}</span>
+          ${done ? '<span class="day-check">✓</span>' : ''}
+        </div>`;
+      });
+    }
+
+    html += `</div></div>`;
+  });
+
+  html += `</div>`;
+
+  if (!hasTodayPlan) {
+    html += `<div class="week-setup">
+      <p class="week-setup-desc">今日練習計畫</p>
+      <div class="week-setup-btns">
+        <button class="btn-plan" onclick="setTodayArticles(1)">📖 練 1 篇<span>輕鬆練習</span></button>
+        <button class="btn-plan" onclick="setTodayArticles(2)">🔥 練 2 篇<span>加強練習</span></button>
+      </div>
+    </div>`;
+  } else {
+    html += `<div class="today-tasks"><div class="today-label">今日練習</div>`;
+    todayDay.articleIndices.forEach(ai => {
+      const a = getArticleByPoolIdx(ai);
+      if (!a) return;
+      const done = todayDay.done.includes(ai);
+      html += `<div class="today-article ${done ? 'done' : ''}">
+        <span class="today-emoji">${a.emoji}</span>
+        <div class="today-info">
+          <div class="today-title">${a.title}</div>
+          <div class="today-meta">${a.wordCount} words · ${a.categoryLabel}</div>
+        </div>
+        <div class="today-actions">
+          <button class="btn-today-practice" onclick="startPracticeAndMark(${ai}, ${todayIdx})">▶ 練習</button>
+          ${!done ? `<button class="btn-today-done" onclick="markDone(${ai}, ${todayIdx})">✓ 完成</button>` : '<span class="done-badge">✓ 完成</span>'}
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  container.innerHTML = html;
+}
+
+function openDayArticle(ai) {
+  const a = getArticleByPoolIdx(ai);
+  if (!a) return;
+  if (ai >= articles.length) {
+    while (articles.length <= ai) articles.push(allArticles[articles.length]);
+  }
+  showArticle(ai);
+}
+
+function startPracticeAndMark(ai, dayIdx) {
+  markDone(ai, dayIdx);
+  openDayArticle(ai);
+  setTimeout(() => startPractice(ai), 100);
+}
+
+function markDone(ai, dayIdx) {
+  const plan = getWeekPlan();
+  if (!plan) return;
+  if (!plan.days[dayIdx].done.includes(ai)) {
+    plan.days[dayIdx].done.push(ai);
+    saveWeekPlan(plan);
+    renderWeekPlan();
+  }
+}
 let currentArticleIdx = 0;
 let currentCat = 'all';
 let raf = null, currentY = 0, maxScroll = 0, lastTs = null, scrollRunning = false, scrollDone = false;
@@ -127,7 +345,7 @@ function showList() { showView('view-list'); }
 
 function showArticle(idx) {
   currentArticleIdx = idx;
-  const a = articles[idx];
+  const a = allArticles[idx] || articles[idx];
   document.getElementById('det-cat').textContent = a.categoryLabel;
   document.getElementById('det-title').textContent = a.emoji + ' ' + a.title;
   document.getElementById('det-meta').textContent = a.wordCount + ' words · ' + a.categoryLabel;
@@ -177,19 +395,22 @@ document.getElementById('cat-tabs').addEventListener('click', e => {
 
 renderList('all');
 
-// Populate article switcher
+// Populate article switcher (use allArticles)
 const switcher = document.getElementById('article-switcher-sel');
-articles.forEach((a, i) => {
+allArticles.forEach((a, i) => {
   const opt = document.createElement('option');
   opt.value = i; opt.textContent = a.emoji + ' ' + a.title;
   switcher.appendChild(opt);
 });
 
+// Init week plan
+renderWeekPlan();
+
 // ============================================================
 // PRACTICE — SCROLL
 // ============================================================
 function loadPracticeArticle(idx) {
-  const a = articles[idx];
+  const a = allArticles[idx] || articles[idx];
   document.querySelector('.practice-title') && (document.querySelector('.practice-title').textContent = a.title);
   const scroller = document.getElementById('scroller');
   scroller.innerHTML = '<p>' + a.text.split('\n\n').join('</p><p style="margin-top:1.2em">') + '</p>';
@@ -295,6 +516,11 @@ function stopAudio() {
 }
 
 async function callTTS(text, accentKey, onLoading, onReady, onEnd) {
+  if (window.FocusAuth && window.FocusAuth.getCurrentUser() === null) {
+    window.FocusAuth.showLoginRequired();
+    onEnd();
+    return;
+  }
   stopAudio();
   ttsLoading = true;
   const voiceConfig = VOICES[accentKey] || VOICES['us'];
@@ -340,7 +566,7 @@ function toggleListenTTS() {
   }
 
   const accent = document.getElementById('det-accent').value;
-  const text = articles[currentArticleIdx].text;
+  const text = (allArticles[currentArticleIdx] || articles[currentArticleIdx]).text;
   callTTS(text, accent,
     () => { btn.disabled = true; btn.textContent = '載入中...'; },
     () => { btn.disabled = false; wave.classList.remove('hidden'); btn.textContent = '⏸ 暫停'; },
@@ -371,12 +597,37 @@ function toggleListenTTSPractice() {
   }
 
   const accent = document.getElementById('prac-accent').value;
-  const text = articles[currentArticleIdx].text;
+  const text = allArticles[currentArticleIdx]?.text || articles[currentArticleIdx]?.text || '';
   callTTS(text, accent,
     () => { btn.disabled = true; btn.textContent = '載入中...'; status.textContent = '載入中...'; },
     () => { btn.disabled = false; wave.classList.remove('hidden'); btn.textContent = '⏸ 暫停'; status.textContent = ''; },
     () => { wave.classList.add('hidden'); btn.textContent = '🔊 朗讀範例'; status.textContent = ''; }
   );
+}
+
+// ============================================================
+// MIXED PRACTICE
+// ============================================================
+function startRandomPractice() {
+  const idx = Math.floor(Math.random() * allArticles.length);
+  // Ensure allArticles[idx] is accessible via articles array
+  if (idx >= articles.length) {
+    while (articles.length <= idx) articles.push(allArticles[articles.length]);
+  }
+  startPractice(idx);
+}
+
+function startTodayMixed() {
+  const plan = getWeekPlan();
+  if (!plan) { startRandomPractice(); return; }
+  const todayIdx = getTodayDayIndex();
+  const todayArts = plan.days[todayIdx]?.articleIndices || [];
+  if (todayArts.length === 0) { startRandomPractice(); return; }
+  const ai = todayArts[Math.floor(Math.random() * todayArts.length)];
+  if (ai >= articles.length) {
+    while (articles.length <= ai) articles.push(allArticles[articles.length]);
+  }
+  startPractice(ai);
 }
 
 loadPracticeArticle(0);
