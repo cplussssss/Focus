@@ -41,7 +41,8 @@ jobs:
           sed -i "s|'__FIREBASE_STORAGE_BUCKET__'|'${FIREBASE_STORAGE_BUCKET}'|g" auth.js
           sed -i "s|'__FIREBASE_MESSAGING_SENDER_ID__'|'${FIREBASE_MESSAGING_SENDER_ID}'|g" auth.js
           sed -i "s|'__FIREBASE_APP_ID__'|'${FIREBASE_APP_ID}'|g" auth.js
-            - uses: actions/configure-pages@v5
+
+      - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v3
         with:
@@ -49,4 +50,3 @@ jobs:
 
       - uses: actions/deploy-pages@v4
         id: deployment
-
