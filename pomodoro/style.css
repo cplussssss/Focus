@@ -280,6 +280,7 @@ body {
   flex-shrink: 0;
   -webkit-user-select: none;
   user-select: none;
+  text-decoration: none;
 }
 
 /* 小型使用者徽章（顯示在 header） */
