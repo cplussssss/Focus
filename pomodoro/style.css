@@ -316,15 +316,7 @@ body {
   }
 }
 
-.sync-state {
-  font-size: 0.72rem;
-  color: var(--text-muted);
-  max-width: 110px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  text-align: right;
-}
+
 
 /* 設定浮動視窗 */
 .settings-toggle {
