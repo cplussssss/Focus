@@ -195,6 +195,69 @@ function formatDate(iso) {
 }
 
 // ============================================================
+// ADD WORD MODAL
+// ============================================================
+function openAddModal() {
+  if (window.FocusAuth && window.FocusAuth.getCurrentUser() === null) {
+    window.FocusAuth.showLoginRequired();
+    return;
+  }
+  document.getElementById('new-word').value = '';
+  document.getElementById('new-zh').value = '';
+  document.getElementById('new-en').value = '';
+  document.getElementById('new-example').value = '';
+  document.getElementById('add-modal').classList.add('open');
+  document.getElementById('new-word').focus();
+}
+
+function closeAddModal() {
+  document.getElementById('add-modal').classList.remove('open');
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('add-modal')) closeAddModal();
+}
+
+async function saveNewWord() {
+  const word = document.getElementById('new-word').value.trim();
+  if (!word) { showToast('請輸入單字'); document.getElementById('new-word').focus(); return; }
+
+  const btn = document.getElementById('save-btn');
+  btn.disabled = true; btn.textContent = '儲存中…';
+
+  const payload = {
+    word,
+    definition_zh: document.getElementById('new-zh').value.trim() || null,
+    definition_en: document.getElementById('new-en').value.trim() || null,
+    example_sentence: document.getElementById('new-example').value.trim() || null,
+  };
+
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/vocabulary`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation'
+      },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error(res.status);
+    const [newRow] = await res.json();
+    allWords.unshift(newRow);
+    document.getElementById('word-count').textContent = allWords.length + ' 個單字';
+    closeAddModal();
+    renderWords();
+    showToast('單字已新增');
+  } catch(e) {
+    showToast('新增失敗，請稍後再試');
+  } finally {
+    btn.disabled = false; btn.textContent = '儲存';
+  }
+}
+
+// ============================================================
 // INIT
 // ============================================================
 loadWords();

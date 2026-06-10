@@ -43,9 +43,34 @@
       <option value="alpha">A → Z</option>
     </select>
     <button type="button" class="btn-secondary" onclick="loadWords()">重新整理</button>
+    <button type="button" class="btn-primary" onclick="openAddModal()">＋ 新增單字</button>
   </div>
 
   <div id="word-container"></div>
+</div>
+
+<!-- Add Word Modal -->
+<div class="modal-overlay" id="add-modal" onclick="handleOverlayClick(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">新增單字</h2>
+      <button type="button" class="modal-close" onclick="closeAddModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <label class="modal-label">單字 <span class="required">*</span></label>
+      <input class="modal-input" id="new-word" placeholder="e.g. ephemeral" autocomplete="off">
+      <label class="modal-label">中文解釋</label>
+      <input class="modal-input" id="new-zh" placeholder="e.g. 短暫的">
+      <label class="modal-label">英文解釋</label>
+      <input class="modal-input" id="new-en" placeholder="e.g. lasting for a very short time">
+      <label class="modal-label">例句</label>
+      <textarea class="modal-input modal-textarea" id="new-example" placeholder="e.g. The ephemeral beauty of cherry blossoms..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn-secondary" onclick="closeAddModal()">取消</button>
+      <button type="button" class="btn-primary" id="save-btn" onclick="saveNewWord()">儲存</button>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>

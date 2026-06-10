@@ -155,6 +155,59 @@ nav {
 .spinner { width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; }
 .loading-state { text-align: center; padding: 3rem; color: var(--text2); display: flex; align-items: center; justify-content: center; gap: 0.75rem; }
 
+/* ADD BUTTON */
+.btn-primary {
+  background: var(--accent); color: #fff;
+  border: 1px solid var(--accent); border-radius: var(--radius);
+  padding: 0.6rem 1rem; font-size: 0.88rem;
+  cursor: pointer; font-family: 'DM Sans', sans-serif;
+  transition: all var(--transition); white-space: nowrap;
+}
+.btn-primary:hover { background: var(--accent2); border-color: var(--accent2); }
+
+/* MODAL */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200; opacity: 0; pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); width: 100%; max-width: 480px;
+  margin: 1rem; box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+  transform: translateY(12px); transition: transform 0.2s ease;
+}
+.modal-overlay.open .modal { transform: translateY(0); }
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.2rem 1.4rem; border-bottom: 1px solid var(--border);
+}
+.modal-title { font-family: 'DM Serif Display', serif; font-size: 1.3rem; }
+.modal-close {
+  background: none; border: none; color: var(--text2);
+  font-size: 1rem; cursor: pointer; padding: 0.2rem 0.5rem;
+  border-radius: 6px; transition: all var(--transition);
+}
+.modal-close:hover { color: var(--danger); background: rgba(192,57,43,0.1); }
+.modal-body { padding: 1.2rem 1.4rem; display: flex; flex-direction: column; gap: 0.75rem; }
+.modal-label { font-size: 0.85rem; color: var(--text2); }
+.required { color: var(--danger); }
+.modal-input {
+  width: 100%; background: var(--surface2);
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 0.6rem 0.9rem; color: var(--text);
+  font-size: 0.9rem; font-family: 'DM Sans', sans-serif;
+  transition: border-color var(--transition);
+}
+.modal-input:focus { outline: none; border-color: var(--accent); }
+.modal-textarea { resize: vertical; min-height: 80px; }
+.modal-footer {
+  display: flex; gap: 0.75rem; justify-content: flex-end;
+  padding: 1rem 1.4rem; border-top: 1px solid var(--border);
+}
+
 /* toast */
 .toast { position: fixed; bottom: 2rem; right: 2rem; background: var(--surface2); border: 1px solid var(--accent); color: var(--accent); padding: 0.65rem 1.2rem; border-radius: var(--radius); font-size: 0.88rem; z-index: 999; opacity: 0; transform: translateY(8px); transition: all 0.25s ease; pointer-events: none; }
 .toast.show { opacity: 1; transform: translateY(0); }
