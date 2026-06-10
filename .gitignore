@@ -5,3 +5,4 @@ __pycache__/
 analyze/
 config.js
 auth.local.js
+.wrangler/

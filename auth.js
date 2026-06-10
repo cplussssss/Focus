@@ -8,7 +8,7 @@
     storageBucket:     '__FIREBASE_STORAGE_BUCKET__',
     messagingSenderId: '__FIREBASE_MESSAGING_SENDER_ID__',
     appId:             '__FIREBASE_APP_ID__',
-};
+}
 
   var _user = undefined; // undefined=初始化中, null=未登入, object=已登入
   var _listeners = [];
