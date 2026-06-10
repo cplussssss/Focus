@@ -2,13 +2,13 @@
 
 (function () {
   var FIREBASE_CONFIG = {
-    apiKey: 'AIzaSyDeAM6lR-NcH--3avA1fqnA620DX2ktsNM',
-    authDomain: 'focus-e5f62.firebaseapp.com',
-    projectId: 'focus-e5f62',
-    storageBucket: 'focus-e5f62.firebasestorage.app',
-    messagingSenderId: '1075734057431',
-    appId: '1:1075734057431:web:add0bd3e6f1069ac317b92',
-  };
+    apiKey:            '__FIREBASE_API_KEY__',
+    authDomain:        '__FIREBASE_AUTH_DOMAIN__',
+    projectId:         '__FIREBASE_PROJECT_ID__',
+    storageBucket:     '__FIREBASE_STORAGE_BUCKET__',
+    messagingSenderId: '__FIREBASE_MESSAGING_SENDER_ID__',
+    appId:             '__FIREBASE_APP_ID__',
+};
 
   var _user = undefined; // undefined=初始化中, null=未登入, object=已登入
   var _listeners = [];
