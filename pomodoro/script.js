@@ -83,7 +83,6 @@ function initElements() {
     btnBreak: document.getElementById('btnBreak'),
     btnClearHistory: document.getElementById('btnClearHistory'),
     historyList: document.getElementById('historyList'),
-    syncState: document.getElementById('syncState'),
     syncResult: document.getElementById('syncResult'),
 
     // 摘要面板
@@ -1244,7 +1243,6 @@ function initFirebase() {
       currentUser = user;
       if (user) {
         hideModal(EL.modalLogin);   // ★ 登入後關掉 Modal
-        EL.syncState.textContent = user.email === DEMO_EMAIL ? '👀 訪客模式' : user.email;
         if (EL.btnMyRecords) EL.btnMyRecords.hidden = user.email === DEMO_EMAIL;
         if (EL.btnAccount) {
           EL.btnAccount.hidden = false;
@@ -1275,7 +1273,6 @@ function initFirebase() {
           await checkDailyGoal();
         }
       } else {
-        EL.syncState.textContent = '';
         if (EL.btnMyRecords) EL.btnMyRecords.hidden = true;
         if (EL.btnAccount) EL.btnAccount.hidden = true;
         if (EL.userBadge) EL.userBadge.hidden = true;
