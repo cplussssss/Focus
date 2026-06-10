@@ -139,19 +139,17 @@
         });
       });
 
-      // // Dropdown toggle
-      // var btnAuthUser = document.getElementById('btnAuthUser');
-      // var authDropdown = document.getElementById('authDropdown');
+      var btnAuthUser = document.getElementById('btnAuthUser');
+      var authDropdown = document.getElementById('authDropdown');
 
-      // btnAuthUser.addEventListener('click', function (e) {
-      //   e.stopPropagation();
-      //   authDropdown.classList.toggle('open');
-      // });
+      btnAuthUser.addEventListener('click', function (e) {
+        e.stopPropagation();
+        authDropdown.classList.toggle('open');
+      });
 
-      // // 點其他地方關閉
-      // document.addEventListener('click', function () {
-      //   authDropdown.classList.remove('open');
-      // });
+      document.addEventListener('click', function () {
+        authDropdown.classList.remove('open');
+      });
 
       document.getElementById('btnAuthLogout').addEventListener('click', function () {
         FocusAuth.signOut();
