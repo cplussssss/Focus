@@ -168,7 +168,9 @@ function openArticle(idx) {
   document.getElementById('reader').style.display = 'block';
   window.scrollTo(0,0);
 
-  // 背景抓取完整原文
+  // 先用現有文字產生摘要，同時背景抓取完整原文
+  const initialText = getArticleText();
+  if (initialText.length > 100) generateSummary(initialText);
   fetchFullArticle(currentArticle.url);
 }
 
@@ -205,8 +207,10 @@ async function fetchFullArticle(url) {
       if (currentArticle?.url === url) {
         annotatedHTML = null;
         renderArticleBody(currentMode);
-        // 抓取完成後產生摘要
-        generateSummary(text);
+        // 全文比初始文字長很多時才重新生成摘要
+        const currentSummary = document.getElementById('article-summary');
+        const isStillLoading = currentSummary?.querySelector('.summary-loading');
+        if (isStillLoading) generateSummary(text);
       }
     }
   } catch(e) {
@@ -237,8 +241,10 @@ async function generateSummary(text) {
         mode: 'summary'
       })
     });
+    if (!res.ok) throw new Error(`Worker responded ${res.status}`);
     const data = await res.json();
     const raw = data.choices?.[0]?.message?.content?.trim() || '';
+    if (!raw) throw new Error('empty response');
 
     // 嘗試解析 JSON，若失敗直接顯示文字
     let summaryHTML = '';
@@ -261,7 +267,8 @@ async function generateSummary(text) {
       ${summaryHTML}
     `;
   } catch(e) {
-    summaryEl.style.display = 'none';
+    console.error('generateSummary failed:', e);
+    summaryEl.innerHTML = '<div class="summary-loading" style="color:var(--text2)">摘要生成失敗</div>';
   }
 }
 
